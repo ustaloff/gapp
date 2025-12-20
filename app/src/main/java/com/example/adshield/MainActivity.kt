@@ -9,6 +9,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -48,10 +50,19 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    DashboardScreen(
-                        onStartClick = { checkPermissionsAndStart() },
-                        onStopClick = { stopVpnService() }
-                    )
+                    var currentScreen by remember { mutableStateOf("dashboard") }
+
+                    if (currentScreen == "dashboard") {
+                        DashboardScreen(
+                            onStartClick = { checkPermissionsAndStart() },
+                            onStopClick = { stopVpnService() },
+                            onWhitelistClick = { currentScreen = "whitelist" }
+                        )
+                    } else if (currentScreen == "whitelist") {
+                        com.example.adshield.ui.AppListScreen(
+                            onBackClick = { currentScreen = "dashboard" }
+                        )
+                    }
                 }
             }
         }
@@ -94,7 +105,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun DashboardScreen(
     onStartClick: () -> Unit,
-    onStopClick: () -> Unit
+    onStopClick: () -> Unit,
+    onWhitelistClick: () -> Unit
 ) {
     val isRunning by VpnStats.isRunning.collectAsState()
     val blockedCount by VpnStats.blockedCount.collectAsState()
@@ -128,13 +140,17 @@ fun DashboardScreen(
         }
     }
 
+    // Scroll state for smaller screens
+    val scrollState = rememberScrollState()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(24.dp)
+            .verticalScroll(scrollState),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(20.dp))
         Text(
             text = "AdShield",
             style = MaterialTheme.typography.displayMedium,
@@ -147,11 +163,11 @@ fun DashboardScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         StatusIndicator(isRunning)
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(30.dp))
 
         // Stats Row
         Row(
@@ -170,6 +186,17 @@ fun DashboardScreen(
                 color = Color(0xFF42A5F5), // Blue
                 modifier = Modifier.weight(1f)
             )
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        // Settings / Whitelist Button
+        OutlinedButton(
+            onClick = onWhitelistClick,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Text("⛔ APP WHITELIST (SPLIT TUNNELING)")
         }
         
         Spacer(modifier = Modifier.height(16.dp))
@@ -214,7 +241,7 @@ fun DashboardScreen(
             }
         }
 
-        Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.height(32.dp))
 
         Button(
             onClick = {
