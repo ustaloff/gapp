@@ -68,10 +68,10 @@ class DnsProxy(private val vpnService: VpnService) {
 
             var dnsResponse: ByteArray? = null
             if (FilterEngine.shouldBlock(domain)) {
-                VpnStats.incrementBlocked()
+                VpnStats.incrementBlocked(domain)
                 dnsResponse = dnsMessage.createBlockedResponse()
             } else {
-                VpnStats.incrementTotal()
+                VpnStats.incrementTotal(domain)
                 
                 val socket = getPooledSocket()
                 try {

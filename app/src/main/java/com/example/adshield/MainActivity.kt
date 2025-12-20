@@ -108,104 +108,143 @@ fun DashboardScreen(
     onStopClick: () -> Unit,
     onWhitelistClick: () -> Unit
 ) {
-    val isRunning by VpnStats.isRunning.collectAsState()
-    val blockedCount by VpnStats.blockedCount.collectAsState()
-    val totalCount by VpnStats.totalRequests.collectAsState()
+    val isRunning = VpnStats.isRunning.value
+    val blockedCount = VpnStats.blockedCount.value
+    val totalCount = VpnStats.totalCount.value
+    val recentLogs = VpnStats.recentLogs
     
-    // Coroutine Scope for UI actions (downloading)
     val scope = rememberCoroutineScope()
-    
-    // Filter State
     var filterCount by remember { mutableStateOf(com.example.adshield.filter.FilterEngine.getRuleCount()) }
     var isUpdatingFilters by remember { mutableStateOf(false) }
 
-    // Auto-update on first launch if list is small
     LaunchedEffect(Unit) {
         if (filterCount < 100) {
             isUpdatingFilters = true
-            kotlinx.coroutines.delay(1000) // Small delay for UX
-            // Perform download in IO context inside the LaunchedEffect scope
+            kotlinx.coroutines.delay(1000)
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 val newRules = com.example.adshield.data.FilterRepository.downloadAndParseFilters()
-                 // Switch back to Main is implicit when updating state in Compose but let's be safe/explicit if needed, 
-                 // actually LaunchedEffect runs on main, so we just need to offload the heavy work.
                  if (newRules.isNotEmpty()) {
                      com.example.adshield.filter.FilterEngine.updateBlocklist(newRules)
-                     // Update UI state on Main thread (implied by return from withContext)
                  }
             }
-            // Update UI state after suspension
             filterCount = com.example.adshield.filter.FilterEngine.getRuleCount()
             isUpdatingFilters = false
         }
     }
 
-    // Scroll state for smaller screens
     val scrollState = rememberScrollState()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp)
+            .background(MaterialTheme.colorScheme.background)
+            .padding(horizontal = 20.dp)
             .verticalScroll(scrollState),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(48.dp))
+        
+        // Header
         Text(
             text = "AdShield",
-            style = MaterialTheme.typography.displayMedium,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.headlineLarge,
+            fontWeight = FontWeight.ExtraBold,
             color = MaterialTheme.colorScheme.primary
         )
         Text(
-            text = "Protecting your privacy",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            text = "Premium Protection Active",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.secondary
         )
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
+        // Large Status Shield
         StatusIndicator(isRunning)
 
-        Spacer(modifier = Modifier.height(30.dp))
+        Spacer(modifier = Modifier.height(32.dp))
+        
+        // Dynamic Graph
+        Text(
+            text = "BLOCKS PER MINUTE",
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.align(Alignment.Start).padding(start = 4.dp, bottom = 8.dp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        BlockedGraph(VpnStats.blockedHistory)
+
+        Spacer(modifier = Modifier.height(24.dp))
 
         // Stats Row
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             StatCard(
-                title = "Blocked Ads",
+                title = "Blocked",
                 value = blockedCount.toString(),
-                color = Color(0xFFEF5350), // Red
+                color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.weight(1f)
             )
             StatCard(
-                title = "Total Requests",
+                title = "Analysed",
                 value = totalCount.toString(),
-                color = Color(0xFF42A5F5), // Blue
+                color = MaterialTheme.colorScheme.tertiary,
                 modifier = Modifier.weight(1f)
             )
         }
         
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
         
-        // Settings / Whitelist Button
+        // Real-time Activity Logs
+        Text(
+            text = "RECENT ACTIVITY",
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.align(Alignment.Start).padding(start = 4.dp, bottom = 8.dp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        
+        Card(
+            modifier = Modifier.fillMaxWidth().height(260.dp),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha=0.3f))
+        ) {
+            if (recentLogs.isEmpty()) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("No activity yet", style = MaterialTheme.typography.bodySmall)
+                }
+            } else {
+                Column(modifier = Modifier.padding(12.dp).verticalScroll(rememberScrollState())) {
+                    recentLogs.forEach { log ->
+                        LogItem(log)
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        // Actions
         OutlinedButton(
             onClick = onWhitelistClick,
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
+            modifier = Modifier.fillMaxWidth().height(52.dp),
+            shape = RoundedCornerShape(16.dp),
+            border = ButtonDefaults.outlinedButtonBorder.copy(width = 1.dp)
         ) {
-            Text("⛔ APP WHITELIST (SPLIT TUNNELING)")
+            Icon(androidx.compose.ui.res.painterResource(android.R.drawable.ic_menu_agenda), contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("MANAGE APP WHITELIST")
         }
         
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
         
-        // Filter Database Card
+        // Update Filters Card
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha=0.5f))
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha=0.4f))
         ) {
             Row(
                 modifier = Modifier.padding(16.dp).fillMaxWidth(),
@@ -213,16 +252,15 @@ fun DashboardScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text("Filter Rules", fontWeight = FontWeight.Bold)
-                    Text("$filterCount active", style = MaterialTheme.typography.bodySmall)
+                    Text("Protection Engine", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    Text("$filterCount rules online", style = MaterialTheme.typography.bodySmall)
                 }
                 
                 if (isUpdatingFilters) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                 } else {
                     TextButton(onClick = {
                         isUpdatingFilters = true
-                        // Use rememberCoroutineScope's launch
                         scope.launch {
                              kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                                 val newRules = com.example.adshield.data.FilterRepository.downloadAndParseFilters()
@@ -230,12 +268,11 @@ fun DashboardScreen(
                                     com.example.adshield.filter.FilterEngine.updateBlocklist(newRules)
                                 }
                              }
-                             // Back on Main Logic
                              filterCount = com.example.adshield.filter.FilterEngine.getRuleCount()
                              isUpdatingFilters = false
                         }
                     }) {
-                        Text("UPDATE")
+                        Text("RELOAD", fontWeight = FontWeight.ExtraBold)
                     }
                 }
             }
@@ -244,26 +281,52 @@ fun DashboardScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
-            onClick = {
-                if (isRunning) onStopClick() else onStartClick()
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
+            onClick = { if (isRunning) onStopClick() else onStartClick() },
+            modifier = Modifier.fillMaxWidth().height(64.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = if (isRunning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
             ),
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(20.dp),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
         ) {
             Text(
-                text = if (isRunning) "STOP PROTECTION" else "ACTIVATE SHIELD",
+                text = if (isRunning) "DEACTIVATE SHIELD" else "ACTIVATE ADSHIELD",
                 fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.ExtraBold
             )
         }
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(40.dp))
     }
 }
+
+@Composable
+fun LogItem(log: com.example.adshield.data.VpnLogEntry) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .background(if (log.isBlocked) Color(0xFFEF5350) else Color(0xFF66BB6A), RoundedCornerShape(4.dp))
+        )
+        Spacer(Modifier.width(12.dp))
+        Column {
+            Text(
+                text = log.domain,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1
+            )
+            Text(
+                text = if (log.isBlocked) "Blocked by Shield" else "Allowed by Engine",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
 
 @Composable
 fun StatCard(title: String, value: String, color: Color, modifier: Modifier = Modifier) {
@@ -322,3 +385,34 @@ fun StatusIndicator(isRunning: Boolean) {
         )
     }
 }
+
+@Composable
+fun BlockedGraph(history: List<Int>) {
+    val maxVal = (history.maxOrNull() ?: 1).coerceAtLeast(5)
+    
+    Card(
+        modifier = Modifier.fillMaxWidth().height(100.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha=0.2f))
+    ) {
+        Row(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.Bottom
+        ) {
+            history.forEach { value ->
+                val heightFactor = value.toFloat() / maxVal
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight(heightFactor.coerceIn(0.05f, 1f))
+                        .background(
+                            color = if (value > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                            shape = RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp)
+                        )
+                )
+            }
+        }
+    }
+}
+
