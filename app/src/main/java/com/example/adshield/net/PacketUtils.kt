@@ -75,22 +75,28 @@ object PacketUtils {
     private fun calculateChecksum(buffer: ByteBuffer, offset: Int, length: Int): Short {
         var sum = 0
         var i = offset
-
+        
+        // Sum 16-bit words
         while (i < offset + length - 1) {
-            val word = ((buffer.get(i).toInt() and 0xFF) shl 8) or (buffer.get(i + 1).toInt() and 0xFF)
+            // Get 16-bit word (Big Endian)
+            val firstByte = buffer.get(i).toInt() and 0xFF
+            val secondByte = buffer.get(i + 1).toInt() and 0xFF
+            val word = (firstByte shl 8) or secondByte
             sum += word
             i += 2
         }
 
-        if (length % 2 != 0) {
-            sum += (buffer.get(offset + length - 1).toInt() and 0xFF) shl 8
+        // Handle odd byte
+        if (i < offset + length) {
+            val firstByte = buffer.get(i).toInt() and 0xFF
+            sum += (firstByte shl 8)
         }
 
+        // Fold 32-bit sum to 16 bits
         while ((sum shr 16) > 0) {
-            sum = (sum and 0xFFFF) + (sum shr 16)
+             sum = (sum and 0xFFFF) + (sum shr 16)
         }
 
-        // Return the one's complement of the sum.
-        return (sum xor 0xFFFF).toShort()
+        return (sum.inv() and 0xFFFF).toShort()
     }
 }

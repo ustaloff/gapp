@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import com.example.adshield.data.VpnStats
 import com.example.adshield.service.LocalVpnService
 import com.example.adshield.ui.theme.AdShieldTheme
@@ -98,6 +99,34 @@ fun DashboardScreen(
     val isRunning by VpnStats.isRunning.collectAsState()
     val blockedCount by VpnStats.blockedCount.collectAsState()
     val totalCount by VpnStats.totalRequests.collectAsState()
+    
+    // Coroutine Scope for UI actions (downloading)
+    val scope = rememberCoroutineScope()
+    
+    // Filter State
+    var filterCount by remember { mutableStateOf(com.example.adshield.filter.FilterEngine.getRuleCount()) }
+    var isUpdatingFilters by remember { mutableStateOf(false) }
+
+    // Auto-update on first launch if list is small
+    LaunchedEffect(Unit) {
+        if (filterCount < 100) {
+            isUpdatingFilters = true
+            kotlinx.coroutines.delay(1000) // Small delay for UX
+            // Perform download in IO context inside the LaunchedEffect scope
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                val newRules = com.example.adshield.data.FilterRepository.downloadAndParseFilters()
+                 // Switch back to Main is implicit when updating state in Compose but let's be safe/explicit if needed, 
+                 // actually LaunchedEffect runs on main, so we just need to offload the heavy work.
+                 if (newRules.isNotEmpty()) {
+                     com.example.adshield.filter.FilterEngine.updateBlocklist(newRules)
+                     // Update UI state on Main thread (implied by return from withContext)
+                 }
+            }
+            // Update UI state after suspension
+            filterCount = com.example.adshield.filter.FilterEngine.getRuleCount()
+            isUpdatingFilters = false
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -118,12 +147,13 @@ fun DashboardScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        Spacer(modifier = Modifier.height(48.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
         StatusIndicator(isRunning)
 
-        Spacer(modifier = Modifier.height(48.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
+        // Stats Row
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -140,6 +170,48 @@ fun DashboardScreen(
                 color = Color(0xFF42A5F5), // Blue
                 modifier = Modifier.weight(1f)
             )
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        // Filter Database Card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha=0.5f))
+        ) {
+            Row(
+                modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text("Filter Rules", fontWeight = FontWeight.Bold)
+                    Text("$filterCount active", style = MaterialTheme.typography.bodySmall)
+                }
+                
+                if (isUpdatingFilters) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                } else {
+                    TextButton(onClick = {
+                        isUpdatingFilters = true
+                        // Use rememberCoroutineScope's launch
+                        scope.launch {
+                             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                val newRules = com.example.adshield.data.FilterRepository.downloadAndParseFilters()
+                                if (newRules.isNotEmpty()) {
+                                    com.example.adshield.filter.FilterEngine.updateBlocklist(newRules)
+                                }
+                             }
+                             // Back on Main Logic
+                             filterCount = com.example.adshield.filter.FilterEngine.getRuleCount()
+                             isUpdatingFilters = false
+                        }
+                    }) {
+                        Text("UPDATE")
+                    }
+                }
+            }
         }
 
         Spacer(modifier = Modifier.weight(1f))

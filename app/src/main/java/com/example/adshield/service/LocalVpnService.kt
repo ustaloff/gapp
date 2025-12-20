@@ -79,6 +79,24 @@ class LocalVpnService : VpnService() {
                 addAddress("10.0.0.2", 32)
                 addDnsServer(vpnDnsServer)
                 addRoute(vpnDnsServer, 32)
+                
+                // 1. Always exclude AdShield itself (Network Loop prevention)
+                addDisallowedApplication(packageName)
+                
+                // 2. Exclude user-selected apps (Split Tunneling)
+                val prefs = com.example.adshield.data.AppPreferences(this@LocalVpnService)
+                val excludedApps = prefs.getExcludedApps()
+                Log.i("LocalVpnService", "Excluding ${excludedApps.size} user-selected apps from VPN")
+                
+                excludedApps.forEach { excludedPackage ->
+                    try {
+                        addDisallowedApplication(excludedPackage)
+                    } catch (e: Exception) {
+                        Log.e("LocalVpnService", "Failed to exclude app: $excludedPackage", e)
+                    }
+                }
+
+                setBlocking(true)
             }.establish()
         } catch (e: Exception) {
             Log.e("LocalVpnService", "Error setting up VPN builder", e)
@@ -91,15 +109,48 @@ class LocalVpnService : VpnService() {
         try {
             FileInputStream(vpnInterface.fileDescriptor).use { inputStream ->
                 FileOutputStream(vpnInterface.fileDescriptor).use { outputStream ->
+                    // Allocate buffer. MTU is usually 1500, but 32767 is safe for safety.
                     val packet = ByteBuffer.allocate(32767)
                     val dnsProxy = DnsProxy(this@LocalVpnService)
+                    
                     while (isActive) {
+                        // Read blocking
                         val length = inputStream.read(packet.array())
+                        
                         if (length > 0) {
                             packet.limit(length)
-                            dnsProxy.handleDnsRequest(packet)?.let {
-                                outputStream.write(it.array(), 0, it.limit())
-                            }
+                            
+                            // Check for IPv4 UDP packet to avoid wasting threads on garbage
+                            // (Though we only route proper traffic, it's good safety)
+                             val firstByte = packet.get(0).toInt()
+                             // Basic check: Version 4
+                             if ((firstByte shr 4) == 4) {
+                                 // Check Protocol (Byte 9)
+                                 val protocol = packet.get(9).toInt()
+                                 if (protocol == 17) { // UDP
+                                     // 1. Copy data
+                                    val packetData = ByteArray(length)
+                                    System.arraycopy(packet.array(), 0, packetData, 0, length)
+                                    val packetCopy = ByteBuffer.wrap(packetData)
+                                    
+                                    // 2. Launch coroutine
+                                    launch {
+                                        try {
+                                            val response = dnsProxy.handleDnsRequest(packetCopy)
+                                            if (response != null) {
+                                                synchronized(outputStream) {
+                                                    outputStream.write(response.array(), 0, response.limit())
+                                                }
+                                            } else {
+                                                Log.w("LocalVpnService", "DNS Proxy returned null")
+                                            }
+                                        } catch (e: Exception) {
+                                             Log.e("LocalVpnService", "Error processing packet", e)
+                                        }
+                                    }
+                                 }
+                             }
+                            
                             packet.clear()
                         }
                     }

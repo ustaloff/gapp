@@ -4,24 +4,63 @@ object FilterEngine {
 
     // Using a simple in-memory set for the blocklist.
     // In a real app, this would be loaded from a file or database.
-    private val blocklist = setOf(
-        // Common ad/tracker domains
+    // Using a volatile variable for thread-safe replacement of the read-only set.
+    @Volatile
+    private var blocklist: Set<String> = setOf(
+        // === FALLBACK / BOOTSTRAP LIST ===
+        // Used before external lists are downloaded
+        // ... (Keep the critical ones) ...
         "doubleclick.net",
         "ad.google.com",
-        "googleadservices.com",
-        "googlesyndication.com",
-        "admob.google.com",
-        "pagead2.googlesyndication.com",
-        "graph.facebook.com",
-        "connect.facebook.net",
-        "app-measurement.com",
-        "crashlytics.com",
-        "analytics.google.com",
-
-        // Example test domains
-        "block.me",
-        "ads.example.com"
+        "mc.yandex.ru",
+        "an.yandex.ru",
+        "videoroll.net",
+        "marketgid.com",
+        "mgid.com",
+        "googleadservices.com"
+        // REMOVED gvt1/gvt2 as they break video streaming
     )
+    
+    // Safety Allowlist - These domains are NEVER blocked
+    private val allowlist = setOf(
+        "facebook.com",
+        "www.facebook.com",
+        "twitch.tv",
+        "www.twitch.tv",
+        "ttvnw.net", // Twitch video CDN
+        "youtube.com",
+        "www.youtube.com",
+        "googlevideo.com",
+        "hdrezka.ac",
+        "hdrezka.ag",
+        "rezka.ag",
+        "static.hdrezka.ac",
+        "hls.hdrezka.ac",
+        // Additional critical infrastructures
+        "google.com",
+        "googleapis.com",
+        "gstatic.com",
+        "amazon.com",
+        "amazonaws.com",
+        "cloudfront.net",
+        "cdn.net",
+        "cloudflare.com",
+        "microsoft.com",
+        "apple.com"
+    )
+
+    fun updateBlocklist(newRules: Set<String>) {
+        if (newRules.isNotEmpty()) {
+            // Merge with fallback or just replace? 
+            // Replacing is cleaner for "update", but merging with a core "safety net" is often better.
+            // Let's replace but ensure our hardcoded favorites are included if we want strictness.
+            // For now, simpler is better: replacement.
+            blocklist = newRules
+            android.util.Log.i("FilterEngine", "Blocklist updated. New size: ${blocklist.size}")
+        }
+    }
+
+    fun getRuleCount(): Int = blocklist.size
 
     /**
      * Checks if a domain should be blocked.
@@ -35,10 +74,27 @@ object FilterEngine {
             return false
         }
 
-        var currentDomain = domain.toLowerCase()
+        var currentDomain = domain.lowercase()
+        
+        // 0. Safety Check: Allowlist
+        // If the domain or its parent is in the allowlist, NEVER block it.
+        var tempDomain = currentDomain
+        while (tempDomain.isNotEmpty()) {
+             if (allowlist.contains(tempDomain)) {
+                 // android.util.Log.d("FilterEngine", "ALLOWLISTED: $currentDomain (matched $tempDomain)")
+                 return false
+             }
+             val dotIndex = tempDomain.indexOf('.')
+             if (dotIndex == -1) break
+             tempDomain = tempDomain.substring(dotIndex + 1)
+        }
+        
+        // Save original for logging
+        val originalDomain = currentDomain
 
         while (currentDomain.isNotEmpty()) {
             if (blocklist.contains(currentDomain)) {
+                android.util.Log.i("FilterEngine", "BLOCKED: $originalDomain (matched $currentDomain)")
                 return true
             }
             val dotIndex = currentDomain.indexOf('.')
@@ -47,7 +103,9 @@ object FilterEngine {
             }
             currentDomain = currentDomain.substring(dotIndex + 1)
         }
-
+        
+        // Debug Log: What are we letting through?
+        // android.util.Log.d("FilterEngine", "ALLOWED: $originalDomain")
         return false
     }
 }
