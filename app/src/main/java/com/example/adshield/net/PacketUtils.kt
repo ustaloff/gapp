@@ -12,65 +12,102 @@ object PacketUtils {
 
     fun getIpHeaderLength(packet: ByteBuffer): Int {
         if (packet.remaining() < 1) return 0
-        // The IHL is the lower nibble of the first byte, value is number of 32-bit words.
-        return (packet.get(0).toInt() and 0x0F) * 4
+        val firstByte = packet.get(0).toInt()
+        val version = (firstByte shr 4) and 0x0F
+        return if (version == 4) {
+            (firstByte and 0x0F) * 4
+        } else if (version == 6) {
+            40
+        } else {
+            0
+        }
     }
 
     fun createUdpResponse(request: ByteBuffer, payload: ByteArray): ByteBuffer? {
-        val requestIpHeaderLen = getIpHeaderLength(request)
-        if (requestIpHeaderLen < 20) return null
+        val firstByte = request.get(0).toInt()
+        val version = (firstByte shr 4) and 0x0F
 
-        // Our response will have a standard 20-byte IP header, no options.
+        return if (version == 4) {
+            createUdpResponseV4(request, payload)
+        } else if (version == 6) {
+            createUdpResponseV6(request, payload)
+        } else {
+            null
+        }
+    }
+
+    private fun createUdpResponseV4(request: ByteBuffer, payload: ByteArray): ByteBuffer? {
+        val requestIpHeaderLen = getIpHeaderLength(request)
         val responseIpHeaderLen = 20
         val responseTotalLen = responseIpHeaderLen + UDP_HEADER_SIZE + payload.size
-        if (responseTotalLen > 32767) return null // Packet too large
-
+        
         val response = ByteBuffer.allocate(responseTotalLen)
-
-        // --- IP Header ---
         response.put(IP_VERSION_AND_IHL)
-        response.put(request.get(1)) // Type of Service (can be copied)
-        response.putShort(responseTotalLen.toShort()) // Total Length
-        response.putShort(request.getShort(4)) // Identification (can be copied)
-        response.putShort(request.getShort(6)) // Flags & Fragment Offset (can be copied)
-        response.put(64) // TTL (Time-to-Live)
-        response.put(PROTOCOL_UDP) // Protocol (UDP)
-        response.putShort(0) // Header Checksum (placeholder)
+        response.put(request.get(1))
+        response.putShort(responseTotalLen.toShort())
+        response.putShort(request.getShort(4))
+        response.putShort(request.getShort(6))
+        response.put(64)
+        response.put(PROTOCOL_UDP)
+        response.putShort(0) // Checksum placeholder
 
-        // Swap IP addresses
-        val newSourceIp = ByteArray(4)
-        request.position(16) // Old destination IP
-        request.get(newSourceIp)
+        // Swap addresses
+        val srcIp = ByteArray(4)
+        val dstIp = ByteArray(4)
+        request.position(12); request.get(srcIp)
+        request.position(16); request.get(dstIp)
+        response.put(dstIp)
+        response.put(srcIp)
 
-        val newDestIp = ByteArray(4)
-        request.position(12) // Old source IP
-        request.get(newDestIp)
+        response.putShort(10, calculateChecksum(response, 0, responseIpHeaderLen))
 
-        response.put(newSourceIp)
-        response.put(newDestIp)
-
-        // Calculate and write IP checksum
-        val ipChecksum = calculateChecksum(response, 0, responseIpHeaderLen)
-        response.putShort(10, ipChecksum)
-
-        // --- UDP Header ---
-        val requestUdpOffset = requestIpHeaderLen
-        val sourcePort = request.getShort(requestUdpOffset)
-        val destPort = request.getShort(requestUdpOffset + 2)
-
-        response.putShort(destPort) // New source port = old dest port
-        response.putShort(sourcePort) // New dest port = old source port
-
-        val udpLen = (UDP_HEADER_SIZE + payload.size).toShort()
-        response.putShort(udpLen)
-        response.putShort(0) // UDP checksum is optional in IPv4, 0 is fine
-
-        // --- Payload ---
+        // UDP
+        val srcPort = request.getShort(requestIpHeaderLen)
+        val dstPort = request.getShort(requestIpHeaderLen + 2)
+        response.putShort(dstPort)
+        response.putShort(srcPort)
+        response.putShort((UDP_HEADER_SIZE + payload.size).toShort())
+        response.putShort(0)
+        
         response.put(payload)
-
         response.flip()
         return response
     }
+
+    private fun createUdpResponseV6(request: ByteBuffer, payload: ByteArray): ByteBuffer? {
+        val responseIpHeaderLen = 40
+        val responseTotalLen = responseIpHeaderLen + UDP_HEADER_SIZE + payload.size
+        
+        val response = ByteBuffer.allocate(responseTotalLen)
+        
+        // IPv6 Header
+        // Version 6, Traffic Class 0, Flow Label 0
+        response.putInt(0x60000000.toInt())
+        response.putShort((UDP_HEADER_SIZE + payload.size).toShort()) // Payload length
+        response.put(17) // Next Header: UDP
+        response.put(64) // Hop Limit
+
+        // Swap IPv6 Addresses (16 bytes each)
+        val srcIp = ByteArray(16)
+        val dstIp = ByteArray(16)
+        request.position(8); request.get(srcIp)
+        request.position(24); request.get(dstIp)
+        response.put(dstIp)
+        response.put(srcIp)
+
+        // UDP Header
+        val srcPort = request.getShort(40)
+        val dstPort = request.getShort(42)
+        response.putShort(dstPort)
+        response.putShort(srcPort)
+        response.putShort((UDP_HEADER_SIZE + payload.size).toShort())
+        response.putShort(0) // UDP checksum - complicated in IPv6, 0 often works for local TUN
+
+        response.put(payload)
+        response.flip()
+        return response
+    }
+
 
     private fun calculateChecksum(buffer: ByteBuffer, offset: Int, length: Int): Short {
         var sum = 0

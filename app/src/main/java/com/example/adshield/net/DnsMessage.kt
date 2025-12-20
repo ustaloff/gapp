@@ -20,7 +20,9 @@ class DnsMessage(private val rawData: ByteArray) {
         questionSection = rawData.sliceArray(12 until questionEndPos)
     }
 
-    private fun parseName(buffer: ByteBuffer): Pair<String, ByteArray> {
+    private fun parseName(buffer: ByteBuffer, depth: Int = 0): Pair<String, ByteArray> {
+        if (depth > 10) return Pair("", byteArrayOf(0)) // Prevent infinite recursion
+
         val nameParts = mutableListOf<String>()
         val nameBuffer = mutableListOf<Byte>()
         val startPos = buffer.position()
@@ -35,7 +37,7 @@ class DnsMessage(private val rawData: ByteArray) {
                 val pointer = (length and 0x3F) shl 8 or (buffer.get().toInt() and 0xFF)
                 val currentPos = buffer.position()
                 buffer.position(pointer)
-                nameParts.add(parseName(buffer).first) // Recursively parse pointed-to name
+                nameParts.add(parseName(buffer, depth + 1).first) 
                 buffer.position(currentPos)
                 nameBuffer.add(length.toByte())
                 nameBuffer.add((pointer and 0xFF).toByte())
@@ -54,26 +56,50 @@ class DnsMessage(private val rawData: ByteArray) {
     }
 
     fun createBlockedResponse(): ByteArray {
-        val responseBuffer = ByteBuffer.allocate(512)
+        // Safe allocation: Header + Question + Answer (standard A record)
+        val responseBuffer = ByteBuffer.allocate(rawData.size + 128)
 
         // Header
         responseBuffer.putShort(transactionId) // Transaction ID
         responseBuffer.putShort(0x8180.toShort()) // Flags: Standard response, no error
-        responseBuffer.putShort(1) // QDCOUNT (Question Count)
-        responseBuffer.putShort(1) // ANCOUNT (Answer Count)
-        responseBuffer.putShort(0) // NSCOUNT
-        responseBuffer.putShort(0) // ARCOUNT
+        responseBuffer.putShort(1) // QDCOUNT
+        responseBuffer.putShort(1) // ANCOUNT
+        responseBuffer.putShort(0)
+        responseBuffer.putShort(0)
 
         // Question section (copy from original)
         responseBuffer.put(questionSection)
 
         // Answer section
-        responseBuffer.putShort(0xC00C.toShort()) // Name pointer to offset 12 (the start of the name in the Question)
-        responseBuffer.putShort(1) // TYPE: A (Host Address)
-        responseBuffer.putShort(1) // CLASS: IN (Internet)
-        responseBuffer.putInt(60) // TTL: 60 seconds
-        responseBuffer.putShort(4) // RDLENGTH: 4 bytes for IPv4
+        responseBuffer.putShort(0xC00C.toShort()) // Pointer to name at offset 12
+        responseBuffer.putShort(1) // TYPE: A
+        responseBuffer.putShort(1) // CLASS: IN
+        responseBuffer.putInt(60) // TTL
+        responseBuffer.putShort(4) // RDLENGTH
         responseBuffer.put(byteArrayOf(0, 0, 0, 0)) // RDATA: 0.0.0.0
+
+        val responseSize = responseBuffer.position()
+        val finalResponse = ByteArray(responseSize)
+        responseBuffer.rewind()
+        responseBuffer.get(finalResponse)
+
+        return finalResponse
+    }
+
+    fun createErrorResponse(): ByteArray {
+        // Safe allocation: Header + Question
+        val responseBuffer = ByteBuffer.allocate(rawData.size + 64)
+
+        // Header
+        responseBuffer.putShort(transactionId) // Transaction ID
+        responseBuffer.putShort(0x8182.toShort()) // Flags: SERVFAIL (RCODE 2)
+        responseBuffer.putShort(1) // QDCOUNT
+        responseBuffer.putShort(0)
+        responseBuffer.putShort(0)
+        responseBuffer.putShort(0)
+
+        // Question section
+        responseBuffer.put(questionSection)
 
         val responseSize = responseBuffer.position()
         val finalResponse = ByteArray(responseSize)

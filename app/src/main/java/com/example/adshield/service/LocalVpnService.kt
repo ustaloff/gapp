@@ -23,6 +23,7 @@ class LocalVpnService : VpnService() {
 
     private var vpnInterface: ParcelFileDescriptor? = null
     private val vpnScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private val outputChannel = kotlinx.coroutines.channels.Channel<ByteBuffer>(capacity = 100)
     private val vpnDnsServer = "10.0.0.3"
 
     companion object {
@@ -53,7 +54,11 @@ class LocalVpnService : VpnService() {
 
         VpnStats.setStatus(true)
         startForegroundWithNotification()
+        
+        // Start Reader and Writer
         vpnScope.launch { runPacketLoop(establishedInterface) }
+        vpnScope.launch { runWriterLoop(establishedInterface) }
+        
         Log.i("LocalVpnService", "VPN has been started.")
     }
 
@@ -68,7 +73,9 @@ class LocalVpnService : VpnService() {
         } catch (e: IOException) {
             Log.e("LocalVpnService", "Error closing VPN interface", e)
         }
-        stopForeground(true)
+        // Re-inject for safe restart
+        vpnScope.launch { vpnScope.cancel() } // Job is already cancelled by cancel() call above
+        stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
 
@@ -79,6 +86,12 @@ class LocalVpnService : VpnService() {
                 addAddress("10.0.0.2", 32)
                 addDnsServer(vpnDnsServer)
                 addRoute(vpnDnsServer, 32)
+                
+                // NEW: Add IPv6 DNS support to prevent leaks
+                val vpnDnsServerV6 = "fd00::3"
+                addAddress("fd00::2", 128)
+                addDnsServer(vpnDnsServerV6)
+                addRoute(vpnDnsServerV6, 128)
                 
                 // 1. Always exclude AdShield itself (Network Loop prevention)
                 addDisallowedApplication(packageName)
@@ -104,55 +117,65 @@ class LocalVpnService : VpnService() {
         }
     }
 
+    private suspend fun runWriterLoop(vpnInterface: ParcelFileDescriptor) = withContext(Dispatchers.IO) {
+        try {
+            FileOutputStream(vpnInterface.fileDescriptor).use { outputStream ->
+                for (buffer in outputChannel) {
+                    try {
+                        outputStream.write(buffer.array(), 0, buffer.limit())
+                    } catch (e: Exception) {
+                        Log.e("LocalVpnService", "Write failed", e)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("LocalVpnService", "Writer loop crashed", e)
+        }
+    }
+
     private suspend fun runPacketLoop(vpnInterface: ParcelFileDescriptor) = withContext(Dispatchers.IO) {
         Log.d("LocalVpnService", "Packet loop starting.")
         try {
             FileInputStream(vpnInterface.fileDescriptor).use { inputStream ->
-                FileOutputStream(vpnInterface.fileDescriptor).use { outputStream ->
-                    // Allocate buffer. MTU is usually 1500, but 32767 is safe for safety.
-                    val packet = ByteBuffer.allocate(32767)
-                    val dnsProxy = DnsProxy(this@LocalVpnService)
+                // Allocate buffer. MTU is usually 1500, but 32767 is safe for safety.
+                val packet = ByteBuffer.allocate(32767)
+                val dnsProxy = DnsProxy(this@LocalVpnService)
+                
+                while (isActive) {
+                    val length = inputStream.read(packet.array())
                     
-                    while (isActive) {
-                        // Read blocking
-                        val length = inputStream.read(packet.array())
+                    if (length > 0) {
+                        packet.limit(length)
                         
-                        if (length > 0) {
-                            packet.limit(length)
-                            
-                            // Check for IPv4 UDP packet to avoid wasting threads on garbage
-                            // (Though we only route proper traffic, it's good safety)
-                             val firstByte = packet.get(0).toInt()
-                             // Basic check: Version 4
-                             if ((firstByte shr 4) == 4) {
-                                 // Check Protocol (Byte 9)
-                                 val protocol = packet.get(9).toInt()
-                                 if (protocol == 17) { // UDP
-                                     // 1. Copy data
-                                    val packetData = ByteArray(length)
-                                    System.arraycopy(packet.array(), 0, packetData, 0, length)
-                                    val packetCopy = ByteBuffer.wrap(packetData)
-                                    
-                                    // 2. Launch coroutine
-                                    launch {
-                                        try {
-                                            val response = dnsProxy.handleDnsRequest(packetCopy)
-                                            if (response != null) {
-                                                synchronized(outputStream) {
-                                                    outputStream.write(response.array(), 0, response.limit())
-                                                }
-                                            } else {
-                                                Log.w("LocalVpnService", "DNS Proxy returned null")
-                                            }
-                                        } catch (e: Exception) {
-                                             Log.e("LocalVpnService", "Error processing packet", e)
-                                        }
-                                    }
-                                 }
-                             }
-                            
-                            packet.clear()
+                        val firstByte = packet.get(0).toInt()
+                        val version = (firstByte shr 4) and 0x0F
+                        var protocol: Int = -1
+                        
+                        if (version == 4) {
+                            protocol = packet.get(9).toInt() and 0xFF
+                        } else if (version == 6) {
+                            // IPv6 Next Header is at offset 6
+                            protocol = packet.get(6).toInt() and 0xFF
                         }
+
+                        if (protocol == 17) { // UDP
+                            val packetData = ByteArray(length)
+                            System.arraycopy(packet.array(), 0, packetData, 0, length)
+                            val packetCopy = ByteBuffer.wrap(packetData)
+                            
+                            launch {
+                                try {
+                                    val response = dnsProxy.handleDnsRequest(packetCopy)
+                                    if (response != null) {
+                                        outputChannel.send(response)
+                                    }
+                                } catch (e: Exception) {
+                                     Log.e("LocalVpnService", "Error processing packet", e)
+                                }
+                            }
+                        }
+                        
+                        packet.clear()
                     }
                 }
             }
@@ -161,6 +184,7 @@ class LocalVpnService : VpnService() {
         } catch (e: Exception) {
             Log.e("LocalVpnService", "Packet loop critical error", e)
         }
+        outputChannel.close()
         Log.d("LocalVpnService", "Packet loop finished.")
     }
 
