@@ -1,0 +1,225 @@
+package com.example.adshield
+
+import android.app.Activity
+import android.content.Intent
+import android.net.VpnService
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.adshield.data.VpnStats
+import com.example.adshield.service.LocalVpnService
+import com.example.adshield.ui.theme.AdShieldTheme
+
+class MainActivity : ComponentActivity() {
+
+    private val vpnPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            startVpnService()
+        }
+    }
+
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {
+        requestVpnPermission()
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            AdShieldTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    DashboardScreen(
+                        onStartClick = { checkPermissionsAndStart() },
+                        onStopClick = { stopVpnService() }
+                    )
+                }
+            }
+        }
+    }
+
+    private fun checkPermissionsAndStart() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU &&
+            checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            requestVpnPermission()
+        }
+    }
+
+    private fun requestVpnPermission() {
+        val intent = VpnService.prepare(this)
+        if (intent != null) {
+            vpnPermissionLauncher.launch(intent)
+        } else {
+            startVpnService()
+        }
+    }
+
+    private fun startVpnService() {
+        val intent = Intent(this, LocalVpnService::class.java).apply {
+            action = LocalVpnService.ACTION_START
+        }
+        startService(intent)
+    }
+
+    private fun stopVpnService() {
+        val intent = Intent(this, LocalVpnService::class.java).apply {
+            action = LocalVpnService.ACTION_STOP
+        }
+        startService(intent)
+    }
+}
+
+@Composable
+fun DashboardScreen(
+    onStartClick: () -> Unit,
+    onStopClick: () -> Unit
+) {
+    val isRunning by VpnStats.isRunning.collectAsState()
+    val blockedCount by VpnStats.blockedCount.collectAsState()
+    val totalCount by VpnStats.totalRequests.collectAsState()
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Spacer(modifier = Modifier.height(32.dp))
+        Text(
+            text = "AdShield",
+            style = MaterialTheme.typography.displayMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Text(
+            text = "Protecting your privacy",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(modifier = Modifier.height(48.dp))
+
+        StatusIndicator(isRunning)
+
+        Spacer(modifier = Modifier.height(48.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            StatCard(
+                title = "Blocked Ads",
+                value = blockedCount.toString(),
+                color = Color(0xFFEF5350), // Red
+                modifier = Modifier.weight(1f)
+            )
+            StatCard(
+                title = "Total Requests",
+                value = totalCount.toString(),
+                color = Color(0xFF42A5F5), // Blue
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        Button(
+            onClick = {
+                if (isRunning) onStopClick() else onStartClick()
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = if (isRunning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+            ),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Text(
+                text = if (isRunning) "STOP PROTECTION" else "ACTIVATE SHIELD",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+@Composable
+fun StatCard(title: String, value: String, color: Color, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
+                color = color
+            )
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+        }
+    }
+}
+
+@Composable
+fun StatusIndicator(isRunning: Boolean) {
+    Box(
+        modifier = Modifier
+            .size(160.dp)
+            .background(
+                brush = Brush.radialGradient(
+                    colors = if (isRunning)
+                        listOf(Color(0xFF66BB6A).copy(alpha = 0.2f), Color.Transparent)
+                    else
+                        listOf(Color(0xFFBDBDBD).copy(alpha = 0.2f), Color.Transparent)
+                )
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            // Using placeholder icons for now
+            painter = androidx.compose.ui.res.painterResource(id = if (isRunning) android.R.drawable.ic_secure else android.R.drawable.ic_lock_idle_lock),
+            contentDescription = null,
+            tint = if (isRunning) Color(0xFF43A047) else Color.Gray,
+            modifier = Modifier.size(64.dp)
+        )
+        Text(
+            text = if (isRunning) "ACTIVE" else "OFFLINE",
+            color = if (isRunning) Color(0xFF43A047) else Color.Gray,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(top = 90.dp)
+        )
+    }
+}
