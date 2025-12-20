@@ -9,6 +9,7 @@ class AppPreferences(context: Context) {
 
     companion object {
         private const val KEY_EXCLUDED_APPS = "excluded_apps"
+        private const val KEY_USER_ALLOWLIST = "user_allowlist"
     }
 
     fun getExcludedApps(): Set<String> {
@@ -29,5 +30,23 @@ class AppPreferences(context: Context) {
     
     fun isAppExcluded(packageName: String): Boolean {
         return getExcludedApps().contains(packageName)
+    }
+
+    // --- User-Defined Domain Allowlist ---
+
+    fun getUserAllowlist(): Set<String> {
+        return prefs.getStringSet(KEY_USER_ALLOWLIST, emptySet()) ?: emptySet()
+    }
+
+    fun addToUserAllowlist(domain: String) {
+        val current = getUserAllowlist().toMutableSet()
+        current.add(domain.lowercase())
+        prefs.edit().putStringSet(KEY_USER_ALLOWLIST, current).apply()
+    }
+
+    fun removeFromUserAllowlist(domain: String) {
+        val current = getUserAllowlist().toMutableSet()
+        current.remove(domain.lowercase())
+        prefs.edit().putStringSet(KEY_USER_ALLOWLIST, current).apply()
     }
 }

@@ -10,9 +10,10 @@ object FilterEngine {
     private var root = TrieNode()
     private var ruleCount = 0
     private val regexRules = mutableListOf<Regex>()
+    private val userAllowlist = mutableSetOf<String>()
     
     // Safety Allowlist - Simple set is fine for small count
-    private val allowlist = setOf(
+    private val allowlist = mutableSetOf(
         "facebook.com", "www.facebook.com", "twitch.tv", "www.twitch.tv", "ttvnw.net",
         "youtube.com", "www.youtube.com", "googlevideo.com",
         "hdrezka.ac", "hdrezka.ag", "hdrezka.me", "hdrezka.co", "hdrezka.re", "hdrezka-home.tv",
@@ -23,6 +24,20 @@ object FilterEngine {
         "gvt1.com", "gvt2.com", "gvt3.com",
         "ss.lv", "m.ss.lv", "www.ss.lv", "inbox.lv"
     )
+
+    fun initialize(context: android.content.Context) {
+        val prefs = com.example.adshield.data.AppPreferences(context)
+        userAllowlist.clear()
+        userAllowlist.addAll(prefs.getUserAllowlist())
+    }
+
+    fun addToAllowlist(context: android.content.Context, domain: String) {
+        val cleanDomain = domain.trim().lowercase()
+        if (cleanDomain.isNotEmpty()) {
+            userAllowlist.add(cleanDomain)
+            com.example.adshield.data.AppPreferences(context).addToUserAllowlist(cleanDomain)
+        }
+    }
 
     init {
         // Load fallback rules into the Trie
@@ -91,10 +106,10 @@ object FilterEngine {
 
         val currentDomain = domain.lowercase()
         
-        // 1. Safety Check: Allowlist
+        // 1. Safety Check: Allowlist & User Allowlist
         var tempDomain = currentDomain
         while (tempDomain.isNotEmpty()) {
-            if (allowlist.contains(tempDomain)) return false
+            if (allowlist.contains(tempDomain) || userAllowlist.contains(tempDomain)) return false
             val dotIndex = tempDomain.indexOf('.')
             if (dotIndex == -1) break
             tempDomain = tempDomain.substring(dotIndex + 1)

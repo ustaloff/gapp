@@ -8,6 +8,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -44,6 +45,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        com.example.adshield.filter.FilterEngine.initialize(this)
         setContent {
             AdShieldTheme {
                 Surface(
@@ -134,6 +136,31 @@ fun DashboardScreen(
 
     val scrollState = rememberScrollState()
 
+    var showWhitelistDialog by remember { mutableStateOf(false) }
+    var domainToWhitelist by remember { mutableStateOf("") }
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    if (showWhitelistDialog) {
+        AlertDialog(
+            onDismissRequest = { showWhitelistDialog = false },
+            title = { Text("Whitelist Domain?") },
+            text = { Text("Do you want to always allow traffic for $domainToWhitelist?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    com.example.adshield.filter.FilterEngine.addToAllowlist(context, domainToWhitelist)
+                    showWhitelistDialog = false
+                }) {
+                    Text("ALLOW")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showWhitelistDialog = false }) {
+                    Text("CANCEL")
+                }
+            }
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -199,7 +226,7 @@ fun DashboardScreen(
         
         // Real-time Activity Logs
         Text(
-            text = "RECENT ACTIVITY",
+            text = "RECENT ACTIVITY (TAP TO ALLOW)",
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.align(Alignment.Start).padding(start = 4.dp, bottom = 8.dp),
@@ -218,7 +245,10 @@ fun DashboardScreen(
             } else {
                 Column(modifier = Modifier.padding(12.dp).verticalScroll(rememberScrollState())) {
                     recentLogs.forEach { log ->
-                        LogItem(log)
+                        LogItem(log) { domain ->
+                            domainToWhitelist = domain
+                            showWhitelistDialog = true
+                        }
                     }
                 }
             }
@@ -280,29 +310,82 @@ fun DashboardScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        Button(
-            onClick = { if (isRunning) onStopClick() else onStartClick() },
-            modifier = Modifier.fillMaxWidth().height(64.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = if (isRunning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-            ),
-            shape = RoundedCornerShape(20.dp),
-            elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
-        ) {
-            Text(
-                text = if (isRunning) "DEACTIVATE SHIELD" else "ACTIVATE ADSHIELD",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.ExtraBold
-            )
-        }
+    var hasAcceptedDisclosure by remember { mutableStateOf(false) }
+    var showDisclosureDialog by remember { mutableStateOf(false) }
+    
+    // Check if disclosure was previously accepted
+    LaunchedEffect(Unit) {
+        val prefs = context.getSharedPreferences("adshield_prefs", android.content.Context.MODE_PRIVATE)
+        hasAcceptedDisclosure = prefs.getBoolean("disclosure_accepted", false)
+    }
+
+    if (showDisclosureDialog) {
+        AlertDialog(
+            onDismissRequest = { showDisclosureDialog = false },
+            title = { Text("Privacy & Security Disclosure") },
+            text = { 
+                Text("AdShield uses a local VPN service to provide DNS-level protection. \n\n" +
+                     "• We ONLY analyze DNS queries to block ads and trackers.\n" +
+                     "• NO personal data is collected, stored, or shared.\n" +
+                     "• Internal traffic is never sent to remote servers except for DNS resolution.\n" +
+                     "• You can deactivate protection at any time.") 
+            },
+            confirmButton = {
+                Button(onClick = {
+                    hasAcceptedDisclosure = true
+                    context.getSharedPreferences("adshield_prefs", android.content.Context.MODE_PRIVATE)
+                        .edit().putBoolean("disclosure_accepted", true).apply()
+                    showDisclosureDialog = false
+                    onStartClick()
+                }) {
+                    Text("ACCEPT & CONTINUE")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDisclosureDialog = false }) {
+                    Text("CANCEL")
+                }
+            }
+        )
+    }
+
+    // Update ACTIVATE button logic
+    Button(
+        onClick = { 
+            if (isRunning) {
+                onStopClick()
+            } else {
+                if (!hasAcceptedDisclosure) {
+                    showDisclosureDialog = true
+                } else {
+                    onStartClick()
+                }
+            }
+        },
+        modifier = Modifier.fillMaxWidth().height(64.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = if (isRunning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+        ),
+        shape = RoundedCornerShape(20.dp),
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
+    ) {
+        Text(
+            text = if (isRunning) "DEACTIVATE SHIELD" else "ACTIVATE ADSHIELD",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.ExtraBold
+        )
+    }
         Spacer(modifier = Modifier.height(40.dp))
     }
 }
 
 @Composable
-fun LogItem(log: com.example.adshield.data.VpnLogEntry) {
+fun LogItem(log: com.example.adshield.data.VpnLogEntry, onSelect: (String) -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp)
+            .clickable { onSelect(log.domain) },
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
@@ -316,7 +399,8 @@ fun LogItem(log: com.example.adshield.data.VpnLogEntry) {
                 text = log.domain,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
-                maxLines = 1
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
             Text(
                 text = if (log.isBlocked) "Blocked by Shield" else "Allowed by Engine",
