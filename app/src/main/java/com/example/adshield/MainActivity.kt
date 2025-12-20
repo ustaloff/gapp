@@ -311,7 +311,7 @@ fun LogItem(log: com.example.adshield.data.VpnLogEntry) {
                 .background(if (log.isBlocked) Color(0xFFEF5350) else Color(0xFF66BB6A), RoundedCornerShape(4.dp))
         )
         Spacer(Modifier.width(12.dp))
-        Column {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = log.domain,
                 style = MaterialTheme.typography.bodyMedium,
@@ -322,6 +322,14 @@ fun LogItem(log: com.example.adshield.data.VpnLogEntry) {
                 text = if (log.isBlocked) "Blocked by Shield" else "Allowed by Engine",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        if (log.appName != null) {
+            Text(
+                text = log.appName,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary.copy(alpha=0.7f),
+                modifier = Modifier.padding(start = 8.dp)
             )
         }
     }

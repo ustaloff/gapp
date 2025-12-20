@@ -40,20 +40,20 @@ object VpnStats {
         }
     }
 
-    suspend fun incrementBlocked(domain: String) {
+    suspend fun incrementBlocked(domain: String, appName: String? = null) {
         statsLock.withLock {
             blockedCount.value++
             updateHistory()
             _blockedHistory[11]++
-            addLog(domain, true)
+            addLog(domain, true, appName)
         }
     }
 
-    suspend fun incrementTotal(domain: String) {
+    suspend fun incrementTotal(domain: String, appName: String? = null) {
         statsLock.withLock {
             totalCount.value++
             updateHistory()
-            addLog(domain, false)
+            addLog(domain, false, appName)
         }
     }
 
@@ -69,8 +69,8 @@ object VpnStats {
         }
     }
 
-    private fun addLog(domain: String, isBlocked: Boolean) {
-        _recentLogs.add(0, VpnLogEntry(System.currentTimeMillis(), domain, isBlocked))
+    private fun addLog(domain: String, isBlocked: Boolean, appName: String?) {
+        _recentLogs.add(0, VpnLogEntry(System.currentTimeMillis(), domain, isBlocked, appName))
         if (_recentLogs.size > 50) {
             _recentLogs.removeAt(_recentLogs.size - 1)
         }

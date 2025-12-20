@@ -17,6 +17,9 @@ import kotlinx.coroutines.*
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
+import android.net.ConnectivityManager
+import java.net.InetSocketAddress
+import java.net.InetAddress
 import java.nio.ByteBuffer
 
 class LocalVpnService : VpnService() {
@@ -150,22 +153,27 @@ class LocalVpnService : VpnService() {
                         val firstByte = packet.get(0).toInt()
                         val version = (firstByte shr 4) and 0x0F
                         var protocol: Int = -1
+                        var ipHeaderSize = 0
                         
                         if (version == 4) {
                             protocol = packet.get(9).toInt() and 0xFF
+                            ipHeaderSize = (firstByte and 0x0F) * 4
                         } else if (version == 6) {
-                            // IPv6 Next Header is at offset 6
                             protocol = packet.get(6).toInt() and 0xFF
+                            ipHeaderSize = 40
                         }
 
                         if (protocol == 17) { // UDP
+                            val sourcePort = packet.getShort(ipHeaderSize).toInt() and 0xFFFF
+                            val appName = getAppNameForPacket(packet, sourcePort, version)
+                            
                             val packetData = ByteArray(length)
                             System.arraycopy(packet.array(), 0, packetData, 0, length)
                             val packetCopy = ByteBuffer.wrap(packetData)
                             
                             launch {
                                 try {
-                                    val response = dnsProxy.handleDnsRequest(packetCopy)
+                                    val response = dnsProxy.handleDnsRequest(packetCopy, appName)
                                     if (response != null) {
                                         outputChannel.send(response)
                                     }
@@ -186,6 +194,49 @@ class LocalVpnService : VpnService() {
         }
         outputChannel.close()
         Log.d("LocalVpnService", "Packet loop finished.")
+    }
+
+    private fun getAppNameForPacket(packet: ByteBuffer, sourcePort: Int, ipVersion: Int): String? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return null
+        
+        return try {
+            val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            val srcAddr: InetAddress
+            val dstAddr: InetAddress
+            
+            if (ipVersion == 4) {
+                val srcBytes = ByteArray(4)
+                val dstBytes = ByteArray(4)
+                packet.position(12); packet.get(srcBytes)
+                packet.position(16); packet.get(dstBytes)
+                srcAddr = InetAddress.getByAddress(srcBytes)
+                dstAddr = InetAddress.getByAddress(dstBytes)
+            } else {
+                val srcBytes = ByteArray(16)
+                val dstBytes = ByteArray(16)
+                packet.position(8); packet.get(srcBytes)
+                packet.position(24); packet.get(dstBytes)
+                srcAddr = InetAddress.getByAddress(srcBytes)
+                dstAddr = InetAddress.getByAddress(dstBytes)
+            }
+
+            val uid = cm.getConnectionOwnerUid(
+                17, // UDP
+                InetSocketAddress(srcAddr, sourcePort),
+                InetSocketAddress(dstAddr, 53)
+            )
+
+            if (uid != -1) {
+                val pm = packageManager
+                val packages = pm.getPackagesForUid(uid)
+                if (!packages.isNullOrEmpty()) {
+                    val ai = pm.getApplicationInfo(packages[0], 0)
+                    pm.getApplicationLabel(ai).toString()
+                } else null
+            } else null
+        } catch (e: Exception) {
+            null
+        }
     }
 
     private fun startForegroundWithNotification() {

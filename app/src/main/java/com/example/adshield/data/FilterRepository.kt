@@ -66,28 +66,31 @@ object FilterRepository {
 
         // 2. Handle ||domain.com^ (Standard AdBlock blocking rule)
         if (trimmed.startsWith("||")) {
-            // Extract content between || and ^ or /
-            // Example: ||ads.facebook.com^ -> ads.facebook.com
-            // Example: ||google-analytics.com/ -> google-analytics.com
+            // If it contains wildcards or weird chars, pass the whole pattern to FilterEngine for Regex handling
+            if (trimmed.contains("*") || trimmed.contains("^")) {
+                 return trimmed 
+            }
             
             var domain = trimmed.substring(2)
-            
             val separatorIndex = domain.indexOfAny(charArrayOf('^', '/'))
             if (separatorIndex != -1) {
                 domain = domain.substring(0, separatorIndex)
             }
             
             domain = domain.lowercase()
-
-            // Validate: Must look like a domain (have a dot, no weird chars)
-            if (domain.contains('.') && !domain.contains('*') && !domain.contains('=')) {
+            if (domain.contains('.')) {
                 return domain
             }
         }
 
-        // 3. Handle Hosts format (0.0.0.0 example.com)
+        // 3. Handle Raw Regex /.../
+        if (trimmed.startsWith("/") && trimmed.endsWith("/") && trimmed.length > 2) {
+            return trimmed
+        }
+
+        // 4. Handle Hosts format (0.0.0.0 example.com)
         if (trimmed.startsWith("0.0.0.0 ") || trimmed.startsWith("127.0.0.1 ")) {
-            val parts = trimmed.split(" ")
+            val parts = trimmed.split(" ").filter { it.isNotBlank() }
             if (parts.size >= 2) {
                 val domain = parts[1].trim().lowercase()
                  if (domain.contains('.') && domain != "localhost") {
@@ -96,8 +99,10 @@ object FilterRepository {
             }
         }
 
-        // 4. Ignore Cosmetic Rules (element hiding)
-        // (Rules with ## or #@# are cosmetic CSS selectors, not DNS blocks)
+        // 5. Simple Domain list (adserver.com)
+        if (!trimmed.contains(" ") && !trimmed.contains("#") && trimmed.contains(".")) {
+            return trimmed.lowercase()
+        }
         
         return null
     }

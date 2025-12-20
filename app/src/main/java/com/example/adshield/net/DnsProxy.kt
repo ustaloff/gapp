@@ -45,7 +45,10 @@ class DnsProxy(private val vpnService: VpnService) {
         }
     }
 
-    suspend fun handleDnsRequest(requestPacket: ByteBuffer): ByteBuffer? {
+    // Privacy Feature: DoH is enabled by default
+    var useDoh = true
+
+    suspend fun handleDnsRequest(requestPacket: ByteBuffer, appName: String? = null): ByteBuffer? {
         try {
             val ipHeaderSize = PacketUtils.getIpHeaderLength(requestPacket)
             if (ipHeaderSize < 20) return null
@@ -58,46 +61,50 @@ class DnsProxy(private val vpnService: VpnService) {
             requestPacket.position(payloadOffset)
             requestPacket.get(dnsQuery)
 
-            val dnsMessage = try {
-                 DnsMessage(dnsQuery)
-            } catch (e: Exception) {
-                return null
-            }
-            
+            val dnsMessage = DnsMessage(dnsQuery)
             val domain = dnsMessage.questionName
 
             var dnsResponse: ByteArray? = null
+            
             if (FilterEngine.shouldBlock(domain)) {
-                VpnStats.incrementBlocked(domain)
+                VpnStats.incrementBlocked(domain, appName)
                 dnsResponse = dnsMessage.createBlockedResponse()
             } else {
-                VpnStats.incrementTotal(domain)
+                VpnStats.incrementTotal(domain, appName)
                 
-                val socket = getPooledSocket()
-                try {
-                    val upstreamAddr = InetAddress.getByName(upstreamDns)
-                    val outPacket = DatagramPacket(dnsQuery, dnsQuery.size, upstreamAddr, upstreamPort)
-                    
-                    // Non-blocking approach within coroutine
-                    withContext(Dispatchers.IO) {
-                        socket.send(outPacket)
-                        socket.soTimeout = 2000
+                // 1. Attempt DNS-over-HTTPS (if enabled)
+                if (useDoh) {
+                    dnsResponse = DohClient.resolve(dnsQuery)
+                }
+                
+                // 2. Fallback or use standard UDP Pooling
+                if (dnsResponse == null) {
+                    val socket = getPooledSocket()
+                    try {
+                        val upstreamAddr = InetAddress.getByName(upstreamDns)
+                        val outPacket = DatagramPacket(dnsQuery, dnsQuery.size, upstreamAddr, upstreamPort)
                         
-                        val responseBuffer = ByteArray(1500)
-                        val inPacket = DatagramPacket(responseBuffer, responseBuffer.size)
-                        socket.receive(inPacket)
-                        
-                        if (inPacket.length > 0) {
-                            dnsResponse = inPacket.data.sliceArray(0 until inPacket.length)
-                        } else {
-                            throw IOException("Empty DNS response")
+                        // Non-blocking approach within coroutine
+                        withContext(Dispatchers.IO) {
+                            socket.send(outPacket)
+                            socket.soTimeout = 2000
+                            
+                            val responseBuffer = ByteArray(1500)
+                            val inPacket = DatagramPacket(responseBuffer, responseBuffer.size)
+                            socket.receive(inPacket)
+                            
+                            if (inPacket.length > 0) {
+                                dnsResponse = inPacket.data.sliceArray(0 until inPacket.length)
+                            } else {
+                                throw IOException("Empty DNS response")
+                            }
                         }
+                    } catch (e: Exception) {
+                        Log.w("DnsProxy", "Upstream error for $domain: ${e.message}")
+                        dnsResponse = dnsMessage.createErrorResponse() 
+                    } finally {
+                        returnToPool(socket)
                     }
-                } catch (e: Exception) {
-                    Log.w("DnsProxy", "Upstream error for $domain: ${e.message}")
-                    dnsResponse = dnsMessage.createErrorResponse() 
-                } finally {
-                    returnToPool(socket)
                 }
             }
 
