@@ -6,7 +6,10 @@ class DnsMessage(private val rawData: ByteArray) {
 
     val questionName: String
     private val questionSection: ByteArray
-    private val transactionId: Short
+    val transactionId: Short
+
+    private val qType: Int
+    private val qClass: Int
 
     init {
         val buffer = ByteBuffer.wrap(rawData)
@@ -16,7 +19,10 @@ class DnsMessage(private val rawData: ByteArray) {
         val nameData = parseName(buffer)
         questionName = nameData.first
 
-        val questionEndPos = buffer.position() + 4 // after name, there is QTYPE and QCLASS (2+2=4 bytes)
+        qType = buffer.short.toInt() and 0xFFFF
+        qClass = buffer.short.toInt() and 0xFFFF
+
+        val questionEndPos = buffer.position()
         questionSection = rawData.sliceArray(12 until questionEndPos)
     }
 
@@ -63,20 +69,32 @@ class DnsMessage(private val rawData: ByteArray) {
         responseBuffer.putShort(transactionId) // Transaction ID
         responseBuffer.putShort(0x8180.toShort()) // Flags: Standard response, no error
         responseBuffer.putShort(1) // QDCOUNT
-        responseBuffer.putShort(1) // ANCOUNT
+        
+        // Only provide an answer for A (1) or AAAA (28) records.
+        // For others (HTTPS, SVCB, etc.), return 0 answers (Standard block)
+        val hasAddressAnswer = qType == 1 || qType == 28
+        responseBuffer.putShort(if (hasAddressAnswer) 1 else 0) // ANCOUNT
         responseBuffer.putShort(0)
         responseBuffer.putShort(0)
 
         // Question section (copy from original)
         responseBuffer.put(questionSection)
 
-        // Answer section
-        responseBuffer.putShort(0xC00C.toShort()) // Pointer to name at offset 12
-        responseBuffer.putShort(1) // TYPE: A
-        responseBuffer.putShort(1) // CLASS: IN
-        responseBuffer.putInt(60) // TTL
-        responseBuffer.putShort(4) // RDLENGTH
-        responseBuffer.put(byteArrayOf(0, 0, 0, 0)) // RDATA: 0.0.0.0
+        if (hasAddressAnswer) {
+            // Answer section
+            responseBuffer.putShort(0xC00C.toShort()) // Pointer to name at offset 12
+            responseBuffer.putShort(qType.toShort())  // Preserve original type (A or AAAA)
+            responseBuffer.putShort(qClass.toShort()) // Preserve original class (IN)
+            responseBuffer.putInt(60) // TTL
+            
+            if (qType == 28) { // AAAA
+                responseBuffer.putShort(16) // RDLENGTH for IPv6
+                responseBuffer.put(ByteArray(16)) // RDATA: ::
+            } else { // TYPE A
+                responseBuffer.putShort(4) // RDLENGTH for IPv4
+                responseBuffer.put(byteArrayOf(0, 0, 0, 0)) // RDATA: 0.0.0.0
+            }
+        }
 
         val responseSize = responseBuffer.position()
         val finalResponse = ByteArray(responseSize)
@@ -92,7 +110,7 @@ class DnsMessage(private val rawData: ByteArray) {
 
         // Header
         responseBuffer.putShort(transactionId) // Transaction ID
-        responseBuffer.putShort(0x8182.toShort()) // Flags: SERVFAIL (RCODE 2)
+        responseBuffer.putShort(0x8183.toShort()) // Flags: NXDOMAIN (RCODE 3) instead of SERVFAIL
         responseBuffer.putShort(1) // QDCOUNT
         responseBuffer.putShort(0)
         responseBuffer.putShort(0)
@@ -107,5 +125,23 @@ class DnsMessage(private val rawData: ByteArray) {
         responseBuffer.get(finalResponse)
 
         return finalResponse
+    }
+
+    fun getQTypeName(): String {
+        return when (qType) {
+            1 -> "A"
+            2 -> "NS"
+            5 -> "CNAME"
+            6 -> "SOA"
+            12 -> "PTR"
+            15 -> "MX"
+            16 -> "TXT"
+            28 -> "AAAA"
+            33 -> "SRV"
+            64 -> "SVCB"
+            65 -> "HTTPS"
+            255 -> "ANY"
+            else -> "TYPE_$qType"
+        }
     }
 }

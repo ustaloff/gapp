@@ -6,6 +6,11 @@ import kotlinx.coroutines.withContext
 import java.net.URL
 
 object FilterRepository {
+    
+    data class FilterData(
+        val blockRules: Set<String>,
+        val exceptionRules: Set<String>
+    )
 
     private const val TAG = "FilterRepository"
     
@@ -13,35 +18,37 @@ object FilterRepository {
     private const val RU_ADLIST_URL = "https://easylist-downloads.adblockplus.org/ruadlist+easylist.txt"
     private const val EASYLIST_URL = "https://easylist.to/easylist/easylist.txt"
 
-    suspend fun downloadAndParseFilters(): Set<String> = withContext(Dispatchers.IO) {
-        val rules = mutableSetOf<String>()
+    suspend fun downloadAndParseFilters(): FilterData = withContext(Dispatchers.IO) {
+        val blockRules = mutableSetOf<String>()
+        val exceptionRules = mutableSetOf<String>()
         val start = System.currentTimeMillis()
         
         Log.i(TAG, "Starting filter download...")
 
         try {
-            // We can download multiple lists. For now, let's start with RuAdList/EasyList
-            // Note: This might be large (megabytes).
             val url = URL(RU_ADLIST_URL)
             val content = url.readText()
             
             Log.i(TAG, "Download complete. Size: ${content.length} chars. Parsing...")
             
             content.lineSequence().forEach { line ->
-                val domain = parseLine(line)
-                if (domain != null) {
-                    rules.add(domain)
+                val result = parseLine(line)
+                if (result != null) {
+                    val (rule, isException) = result
+                    if (isException) {
+                        exceptionRules.add(rule)
+                    } else {
+                        blockRules.add(rule)
+                    }
                 }
             }
             
         } catch (e: Exception) {
             Log.e(TAG, "Failed to download filters", e)
-             // Return empty set on failure so we don't clear existing hardcoded rules if we rely on them?
-             // Or maybe we returns what we have.
         }
 
-        Log.i(TAG, "Loaded ${rules.size} rules in ${System.currentTimeMillis() - start}ms")
-        return@withContext rules
+        Log.i(TAG, "Loaded ${blockRules.size} block rules and ${exceptionRules.size} exception rules in ${System.currentTimeMillis() - start}ms")
+        return@withContext FilterData(blockRules, exceptionRules)
     }
 
     /**
@@ -56,52 +63,75 @@ object FilterRepository {
      * - [Adblock Plus 2.0] headers
      * - cosmetic rules (##, #@#)
      */
-    private fun parseLine(line: String): String? {
-        val trimmed = line.trim()
+    private fun parseLine(line: String): Pair<String, Boolean>? {
+        var trimmed = line.trim()
         
-        // 1. Ignore Comments (!), Metadata ([), and Exception Rules (@@)
-        if (trimmed.isEmpty() || trimmed.startsWith("!") || trimmed.startsWith("[") || trimmed.startsWith("@@")) {
+        // 1. Identify Exception Rules (@@)
+        val isException = trimmed.startsWith("@@")
+        if (isException) {
+            trimmed = trimmed.substring(2)
+        }
+        
+        // 2. Ignore Comments (!), Metadata ([), Cosmetic rules (#), and Empty lines
+        if (trimmed.isEmpty() || trimmed.startsWith("!") || trimmed.startsWith("[") || trimmed.contains("#")) {
             return null
         }
 
-        // 2. Handle ||domain.com^ (Standard AdBlock blocking rule)
+        // 3. Strip AdBlock Options ($)
+        // DNS filtering cannot handle specific resource types ($script, $image, etc.)
+        // We strip them and keep the core domain rule.
+        if (trimmed.contains("$")) {
+            val parts = trimmed.split("$")
+            val options = parts.getOrNull(1) ?: ""
+            
+            // For exceptions, if it's too specific and NOT a site-wide whitelist, skip it
+            if (isException) {
+                val hasGenericException = options.contains("document") || options.split(",").all { it.isEmpty() }
+                val hasSpecificRestriction = options.contains("script") || options.contains("image") || 
+                                             options.contains("subdocument") || options.contains("xmlhttprequest") ||
+                                             options.contains("domain")
+                
+                if (hasSpecificRestriction && !hasGenericException) {
+                    return null // Too specific for DNS
+                }
+            }
+            trimmed = parts[0]
+        }
+
+        // 4. Handle ||domain.com^ (Standard AdBlock blocking rule)
+        // We strip || and ^ to turn it into a clean domain rule for the Trie
         if (trimmed.startsWith("||")) {
-            // If it contains wildcards or weird chars, pass the whole pattern to FilterEngine for Regex handling
-            if (trimmed.contains("*") || trimmed.contains("^")) {
-                 return trimmed 
-            }
-            
-            var domain = trimmed.substring(2)
-            val separatorIndex = domain.indexOfAny(charArrayOf('^', '/'))
-            if (separatorIndex != -1) {
-                domain = domain.substring(0, separatorIndex)
-            }
-            
-            domain = domain.lowercase()
-            if (domain.contains('.')) {
-                return domain
-            }
+            trimmed = trimmed.substring(2)
+        } else {
+            // DNS SAFETY: If a rule doesn't start with || and contains a '/', 
+            // it's likely a path-specific rule (e.g. example.com/ads/)
+            // We MUST NOT block the whole domain for such rules at the DNS level.
+            if (trimmed.contains("/")) return null
+        }
+        
+        // Remove trailing ^ or /
+        val separatorIndex = trimmed.indexOfAny(charArrayOf('^', '/'))
+        if (separatorIndex != -1) {
+            trimmed = trimmed.substring(0, separatorIndex)
         }
 
-        // 3. Handle Raw Regex /.../
-        if (trimmed.startsWith("/") && trimmed.endsWith("/") && trimmed.length > 2) {
-            return trimmed
-        }
+        trimmed = trimmed.lowercase().trim()
+        if (trimmed.isEmpty() || trimmed.length < 3) return null
 
-        // 4. Handle Hosts format (0.0.0.0 example.com)
+        // 5. Handle Hosts format (0.0.0.0 example.com)
         if (trimmed.startsWith("0.0.0.0 ") || trimmed.startsWith("127.0.0.1 ")) {
             val parts = trimmed.split(" ").filter { it.isNotBlank() }
             if (parts.size >= 2) {
-                val domain = parts[1].trim().lowercase()
+                val domain = parts[1].trim()
                  if (domain.contains('.') && domain != "localhost") {
-                     return domain
+                     return Pair(domain, isException)
                  }
             }
         }
 
-        // 5. Simple Domain list (adserver.com)
-        if (!trimmed.contains(" ") && !trimmed.contains("#") && trimmed.contains(".")) {
-            return trimmed.lowercase()
+        // 6. Simple Domain list (adserver.com or cleaned AdBlock rule)
+        if (trimmed.contains(".")) {
+            return Pair(trimmed, isException)
         }
         
         return null

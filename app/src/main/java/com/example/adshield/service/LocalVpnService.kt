@@ -17,6 +17,7 @@ import kotlinx.coroutines.*
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
+import java.io.InterruptedIOException
 import android.net.ConnectivityManager
 import java.net.InetSocketAddress
 import java.net.InetAddress
@@ -69,15 +70,17 @@ class LocalVpnService : VpnService() {
         if (!VpnStats.isRunning.value) return
         Log.i("LocalVpnService", "Stopping VPN...")
         VpnStats.setStatus(false)
+        
+        // Cancel scope first to notify loops
         vpnScope.cancel()
+        
         try {
             vpnInterface?.close()
             vpnInterface = null
         } catch (e: IOException) {
             Log.e("LocalVpnService", "Error closing VPN interface", e)
         }
-        // Re-inject for safe restart
-        vpnScope.launch { vpnScope.cancel() } // Job is already cancelled by cancel() call above
+        
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
@@ -86,13 +89,15 @@ class LocalVpnService : VpnService() {
         return try {
             Builder().apply {
                 setSession("AdShield")
-                addAddress("10.0.0.2", 32)
+                setMtu(1500)
+                
+                addAddress("10.0.0.2", 24)
                 addDnsServer(vpnDnsServer)
                 addRoute(vpnDnsServer, 32)
                 
-                // NEW: Add IPv6 DNS support to prevent leaks
+                // NEW: Add IPv6 DNS support
                 val vpnDnsServerV6 = "fd00::3"
-                addAddress("fd00::2", 128)
+                addAddress("fd00::2", 64)
                 addDnsServer(vpnDnsServerV6)
                 addRoute(vpnDnsServerV6, 128)
                 
@@ -124,15 +129,18 @@ class LocalVpnService : VpnService() {
         try {
             FileOutputStream(vpnInterface.fileDescriptor).use { outputStream ->
                 for (buffer in outputChannel) {
+                    if (!isActive) break
                     try {
                         outputStream.write(buffer.array(), 0, buffer.limit())
                     } catch (e: Exception) {
-                        Log.e("LocalVpnService", "Write failed", e)
+                        if (isActive) Log.e("LocalVpnService", "Write failed", e)
                     }
                 }
             }
+        } catch (e: CancellationException) {
+            Log.i("LocalVpnService", "Writer loop cancelled normally")
         } catch (e: Exception) {
-            Log.e("LocalVpnService", "Writer loop crashed", e)
+            if (isActive) Log.e("LocalVpnService", "Writer loop crashed", e)
         }
     }
 
@@ -165,20 +173,24 @@ class LocalVpnService : VpnService() {
 
                         if (protocol == 17) { // UDP
                             val sourcePort = packet.getShort(ipHeaderSize).toInt() and 0xFFFF
-                            val appName = getAppNameForPacket(packet, sourcePort, version)
+                            val destPort = packet.getShort(ipHeaderSize + 2).toInt() and 0xFFFF
                             
-                            val packetData = ByteArray(length)
-                            System.arraycopy(packet.array(), 0, packetData, 0, length)
-                            val packetCopy = ByteBuffer.wrap(packetData)
-                            
-                            launch {
-                                try {
-                                    val response = dnsProxy.handleDnsRequest(packetCopy, appName)
-                                    if (response != null) {
-                                        outputChannel.send(response)
+                            if (destPort == 53) {
+                                val appName = getAppNameForPacket(packet, sourcePort, version)
+                                
+                                val packetData = ByteArray(length)
+                                System.arraycopy(packet.array(), 0, packetData, 0, length)
+                                val packetCopy = ByteBuffer.wrap(packetData)
+                                
+                                launch {
+                                    try {
+                                        val response = dnsProxy.handleDnsRequest(packetCopy, appName)
+                                        if (response != null) {
+                                            outputChannel.send(response)
+                                        }
+                                    } catch (e: Exception) {
+                                         Log.e("LocalVpnService", "Error processing packet", e)
                                     }
-                                } catch (e: Exception) {
-                                     Log.e("LocalVpnService", "Error processing packet", e)
                                 }
                             }
                         }
@@ -187,10 +199,14 @@ class LocalVpnService : VpnService() {
                     }
                 }
             }
+        } catch (e: InterruptedIOException) {
+            Log.i("LocalVpnService", "Packet loop interrupted (normal shutdown)")
+        } catch (e: CancellationException) {
+            Log.i("LocalVpnService", "Packet loop cancelled (normal shutdown)")
         } catch (e: IOException) {
-            Log.w("LocalVpnService", "Packet loop closed.", e)
+            if (isActive) Log.w("LocalVpnService", "Packet loop closed unexpected.", e)
         } catch (e: Exception) {
-            Log.e("LocalVpnService", "Packet loop critical error", e)
+            if (isActive) Log.e("LocalVpnService", "Packet loop critical error", e)
         }
         outputChannel.close()
         Log.d("LocalVpnService", "Packet loop finished.")

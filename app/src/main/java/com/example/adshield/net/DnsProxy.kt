@@ -16,7 +16,8 @@ import java.nio.ByteBuffer
 
 class DnsProxy(private val vpnService: VpnService) {
 
-    private val upstreamDns = "8.8.8.8"
+    private val primaryDns = "8.8.8.8"
+    private val secondaryDns = "1.1.1.1"
     private val upstreamPort = 53
     
     // Socket Pool for high-performance reuse
@@ -48,6 +49,47 @@ class DnsProxy(private val vpnService: VpnService) {
     // Privacy Feature: DoH is enabled by default
     var useDoh = true
 
+    private suspend fun resolveViaUdp(dnsQuery: ByteArray, domain: String, transactionId: Short): ByteArray? {
+        // Try Primary then Secondary
+        return resolveViaSingleUdp(dnsQuery, domain, transactionId, primaryDns) 
+            ?: resolveViaSingleUdp(dnsQuery, domain, transactionId, secondaryDns)
+    }
+
+    private suspend fun resolveViaSingleUdp(dnsQuery: ByteArray, domain: String, transactionId: Short, upstreamDns: String): ByteArray? {
+        val socket = getPooledSocket()
+        return try {
+            val upstreamAddr = InetAddress.getByName(upstreamDns)
+            val outPacket = DatagramPacket(dnsQuery, dnsQuery.size, upstreamAddr, upstreamPort)
+            
+            withContext(Dispatchers.IO) {
+                socket.send(outPacket)
+                socket.soTimeout = 2000
+                
+                val responseBuffer = ByteArray(1500)
+                val inPacket = DatagramPacket(responseBuffer, responseBuffer.size)
+                
+                // Read until we get the matching transaction ID or timeout
+                while (true) {
+                    socket.receive(inPacket)
+                    if (inPacket.length >= 2) {
+                        val responseId = ((inPacket.data[0].toInt() and 0xFF) shl 8 or (inPacket.data[1].toInt() and 0xFF)).toShort()
+                        if (responseId == transactionId) {
+                            val response = inPacket.data.sliceArray(0 until inPacket.length)
+                            Log.i("DnsProxy", "Resolved (UDP $upstreamDns): $domain")
+                            return@withContext response
+                        }
+                    }
+                }
+                null
+            }
+        } catch (e: Exception) {
+            Log.v("DnsProxy", "UDP $upstreamDns error for $domain: ${e.message}")
+            null
+        } finally {
+            returnToPool(socket)
+        }
+    }
+
     suspend fun handleDnsRequest(requestPacket: ByteBuffer, appName: String? = null): ByteBuffer? {
         try {
             val ipHeaderSize = PacketUtils.getIpHeaderLength(requestPacket)
@@ -63,56 +105,45 @@ class DnsProxy(private val vpnService: VpnService) {
 
             val dnsMessage = DnsMessage(dnsQuery)
             val domain = dnsMessage.questionName
-
-            var dnsResponse: ByteArray? = null
             
-            if (FilterEngine.shouldBlock(domain)) {
-                VpnStats.incrementBlocked(domain, appName)
-                dnsResponse = dnsMessage.createBlockedResponse()
-            } else {
-                VpnStats.incrementTotal(domain, appName)
-                
-                // 1. Attempt DNS-over-HTTPS (if enabled)
-                if (useDoh) {
-                    dnsResponse = DohClient.resolve(dnsQuery)
+            var (dnsResponse, status) = when {
+                FilterEngine.isDohBypass(domain) -> {
+                    Log.i("DnsProxy", "BLOCKING (DoH Bypass): $domain")
+                    // Use NXDOMAIN for DoH bypass so browsers fall back faster
+                    Pair(dnsMessage.createErrorResponse(), "BLOCKED_DOH")
                 }
-                
-                // 2. Fallback or use standard UDP Pooling
-                if (dnsResponse == null) {
-                    val socket = getPooledSocket()
-                    try {
-                        val upstreamAddr = InetAddress.getByName(upstreamDns)
-                        val outPacket = DatagramPacket(dnsQuery, dnsQuery.size, upstreamAddr, upstreamPort)
-                        
-                        // Non-blocking approach within coroutine
-                        withContext(Dispatchers.IO) {
-                            socket.send(outPacket)
-                            socket.soTimeout = 2000
-                            
-                            val responseBuffer = ByteArray(1500)
-                            val inPacket = DatagramPacket(responseBuffer, responseBuffer.size)
-                            socket.receive(inPacket)
-                            
-                            if (inPacket.length > 0) {
-                                dnsResponse = inPacket.data.sliceArray(0 until inPacket.length)
-                            } else {
-                                throw IOException("Empty DNS response")
-                            }
-                        }
-                    } catch (e: Exception) {
-                        Log.w("DnsProxy", "Upstream error for $domain: ${e.message}")
-                        dnsResponse = dnsMessage.createErrorResponse() 
-                    } finally {
-                        returnToPool(socket)
+                FilterEngine.shouldBlock(domain) -> {
+                    VpnStats.incrementBlocked(domain, appName)
+                    Log.i("DnsProxy", "BLOCKED: $domain from $appName")
+                    Pair(dnsMessage.createBlockedResponse(), "BLOCKED")
+                }
+                else -> {
+                    VpnStats.incrementTotal(domain, appName)
+                    Log.i("DnsProxy", "ALLOWING: $domain from $appName (Type: ${dnsMessage.getQTypeName()})")
+                    
+                    var response: ByteArray? = null
+                    
+                    // 1. Attempt DNS-over-HTTPS (if enabled)
+                    if (useDoh) {
+                        response = DohClient.resolve(dnsQuery)
                     }
+                    
+                    // 2. Fallback or use standard UDP Pooling
+                    if (response == null) {
+                        response = resolveViaUdp(dnsQuery, domain, dnsMessage.transactionId)
+                    }
+                    
+                    Pair(response, if (response != null) "RESOLVED" else "FAILED")
                 }
             }
 
-            if (dnsResponse == null) return null
+            if (dnsResponse == null) {
+                Log.w("DnsProxy", "Resolution failed for $domain")
+                dnsResponse = dnsMessage.createErrorResponse()
+            }
 
             requestPacket.position(0)
             return PacketUtils.createUdpResponse(requestPacket, dnsResponse)
-
         } catch (e: Exception) {
             Log.e("DnsProxy", "Critical DNS Proxy fail", e)
             return null

@@ -146,9 +146,9 @@ fun DashboardScreen(
             isUpdatingFilters = true
             delay(1000)
             withContext(Dispatchers.IO) {
-                val newRules = FilterRepository.downloadAndParseFilters()
-                if (newRules.isNotEmpty()) {
-                    FilterEngine.updateBlocklist(newRules)
+                val filterData = FilterRepository.downloadAndParseFilters()
+                if (filterData.blockRules.isNotEmpty()) {
+                    FilterEngine.updateBlocklist(filterData)
                 }
             }
             filterCount = FilterEngine.getRuleCount()
@@ -331,9 +331,9 @@ fun DashboardScreen(
                         isUpdatingFilters = true
                         scope.launch {
                              withContext(Dispatchers.IO) {
-                                val newRules = FilterRepository.downloadAndParseFilters()
-                                if (newRules.isNotEmpty()) {
-                                    FilterEngine.updateBlocklist(newRules)
+                                val filterData = FilterRepository.downloadAndParseFilters()
+                                if (filterData.blockRules.isNotEmpty()) {
+                                    FilterEngine.updateBlocklist(filterData)
                                 }
                              }
                              filterCount = FilterEngine.getRuleCount()
