@@ -38,9 +38,11 @@ import com.example.adshield.ui.theme.AdShieldTheme
 import com.example.adshield.ui.components.* // Import CyberComponents
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.animation.core.*
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.border
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
@@ -396,40 +398,134 @@ fun DashboardScreen(
 
 @Composable
 fun CyberGraphSection(data: List<Int>, bpm: Int) {
+     val primaryColor = MaterialTheme.colorScheme.primary
+     val infiniteTransition = rememberInfiniteTransition(label = "monitoring_pulse")
+     val pulseAlpha by infiniteTransition.animateFloat(
+         initialValue = 0.4f,
+         targetValue = 1f,
+         animationSpec = infiniteRepeatable(
+             animation = tween(1000, easing = LinearEasing),
+             repeatMode = RepeatMode.Reverse
+         ),
+         label = "pulse_alpha"
+     )
+
      Column(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), RoundedCornerShape(4.dp))
+            .border(1.dp, primaryColor.copy(alpha = 0.2f), RoundedCornerShape(4.dp))
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
             .padding(16.dp)
      ) {
-         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-             Text("LIVE THREAT ANALYSIS", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+         // HUD Header
+         Row(
+             modifier = Modifier.fillMaxWidth(), 
+             horizontalArrangement = Arrangement.SpaceBetween,
+             verticalAlignment = Alignment.CenterVertically
+         ) {
+             // Left: Title
              Row(verticalAlignment = Alignment.CenterVertically) {
-                 Text("BPM: $bpm", color = if (bpm > 5) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, fontSize = 12.sp)
+                 Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .background(primaryColor.copy(alpha = pulseAlpha), CircleShape)
+                 )
                  Spacer(Modifier.width(8.dp))
-                 Text("MONITORING", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                 Spacer(Modifier.width(8.dp))
-                 Box(Modifier.size(8.dp).background(MaterialTheme.colorScheme.primary, CircleShape))
+                 Text(
+                     text = "NET_TRAFFIC // LIVE", 
+                     style = MaterialTheme.typography.labelSmall, 
+                     fontWeight = FontWeight.Bold, 
+                     color = primaryColor,
+                     fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                     letterSpacing = 1.sp
+                 )
              }
+
+             // Right: BPM
+             Text(
+                 text = "ACT :: $bpm/MIN", 
+                 color = if (bpm > 5) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant, 
+                 fontWeight = FontWeight.Bold, 
+                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, 
+                 fontSize = 12.sp,
+                 letterSpacing = 1.sp
+             )
          }
          Spacer(Modifier.height(16.dp))
-         // Simple visual representation of graph
-         Row(
-             modifier = Modifier.fillMaxWidth().height(60.dp),
-             horizontalArrangement = Arrangement.spacedBy(2.dp),
-             verticalAlignment = Alignment.Bottom
+         
+         // Canvas Graph
+         Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(120.dp) // Taller graph
+                .background(Color.Black.copy(alpha = 0.3f), RoundedCornerShape(2.dp))
+                .border(1.dp, primaryColor.copy(alpha = 0.1f), RoundedCornerShape(2.dp))
          ) {
-             val graphData = if (data.isEmpty()) List(20) { kotlin.random.Random.nextInt(5, 50) } else data.takeLast(20)
-             val max = graphData.maxOrNull() ?: 1
-             
-             graphData.forEach { 
-                 Box(
-                     modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight((it.toFloat() / max).coerceAtLeast(0.1f))
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
-                 )
+             Canvas(modifier = Modifier.fillMaxSize().padding(4.dp)) {
+                 val width = size.width
+                 val height = size.height
+                 val graphData = if (data.isEmpty()) List(20) { 0 } else data.takeLast(20)
+                 val max = (graphData.maxOrNull() ?: 5).coerceAtLeast(5).toFloat()
+                 
+                 // Draw Grid
+                 val verticalLines = 10
+                 val horizontalLines = 4
+                 
+                 for (i in 1 until verticalLines) {
+                     val x = (width / verticalLines) * i
+                     drawLine(
+                         color = primaryColor.copy(alpha = 0.1f),
+                         start = Offset(x, 0f),
+                         end = Offset(x, height),
+                         strokeWidth = 1f
+                     )
+                 }
+                 
+                 for (i in 1 until horizontalLines) {
+                     val y = (height / horizontalLines) * i
+                     drawLine(
+                         color = primaryColor.copy(alpha = 0.1f),
+                         start = Offset(0f, y),
+                         end = Offset(width, y),
+                         strokeWidth = 1f
+                     )
+                 }
+
+                 // Draw Path
+                 if (graphData.isNotEmpty() && graphData.any { it > 0 }) {
+                     val path = Path()
+                     val stepX = width / (graphData.size - 1).coerceAtLeast(1)
+                     
+                     graphData.forEachIndexed { index, value ->
+                         val x = index * stepX
+                         val y = height - ((value / max) * height)
+                         if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                     }
+                     
+                     // Draw Line
+                     drawPath(
+                         path = path,
+                         color = primaryColor,
+                         style = Stroke(width = 3.dp.toPx())
+                     )
+                     
+                     // Draw Gradient Fill
+                     path.lineTo(width, height)
+                     path.lineTo(0f, height)
+                     path.close()
+                     
+                     drawPath(
+                         path = path,
+                         brush = Brush.verticalGradient(
+                             colors = listOf(
+                                 primaryColor.copy(alpha = 0.4f),
+                                 primaryColor.copy(alpha = 0.0f)
+                             ),
+                             startY = 0f,
+                             endY = height
+                         )
+                     )
+                 }
              }
          }
      }
