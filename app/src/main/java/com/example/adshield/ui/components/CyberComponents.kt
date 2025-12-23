@@ -103,7 +103,7 @@ fun PulsatingShield(
     modifier: Modifier = Modifier,
     isSecure: Boolean = true
 ) {
-    val primaryColor = if (isSecure) MaterialTheme.colorScheme.primary else androidx.compose.ui.graphics.Color.Gray.copy(alpha = 0.3f)
+    val primaryColor = if (isSecure) MaterialTheme.colorScheme.primary else androidx.compose.ui.graphics.Color.White.copy(alpha = 0.3f)
     val infiniteTransition = rememberInfiniteTransition()
     
     // Animations (Active only if secure)
@@ -112,17 +112,17 @@ fun PulsatingShield(
             initialValue = 0f,
             targetValue = 360f,
             animationSpec = infiniteRepeatable(
-                animation = tween(10000, easing = LinearEasing)
+                animation = tween(20000, easing = LinearEasing)
             )
         )
     } else { remember { mutableFloatStateOf(0f) } }
 
     val pulseAlpha by if (isSecure) {
         infiniteTransition.animateFloat(
-            initialValue = 0.5f,
+            initialValue = 0.6f,
             targetValue = 0f,
             animationSpec = infiniteRepeatable(
-                animation = tween(2000),
+                animation = tween(3000, easing = EaseOutCubic),
                 repeatMode = RepeatMode.Restart
             )
         )
@@ -130,61 +130,132 @@ fun PulsatingShield(
     
     val pulseScale by if (isSecure) {
         infiniteTransition.animateFloat(
-            initialValue = 1f,
+            initialValue = 0.8f,
             targetValue = 1.4f,
             animationSpec = infiniteRepeatable(
-                animation = tween(2000),
+                animation = tween(3000, easing = EaseOutCubic),
                 repeatMode = RepeatMode.Restart
             )
         )
     } else { remember { mutableFloatStateOf(1f) } }
+
+    val floatOffset by if (isSecure) {
+        infiniteTransition.animateFloat(
+            initialValue = -5f,
+            targetValue = 5f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(3000, easing = EaseInOutSine),
+                repeatMode = RepeatMode.Reverse
+            )
+        )
+    } else { remember { mutableFloatStateOf(0f) } }
     
-    val shieldShape = CutCornerShape(16.dp)
+    val shieldShape = CircleShape
 
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        // Outer decorative ring (rotating)
-        if (isSecure) {
-            Box(
-                 modifier = Modifier
-                     .size(160.dp) // Adjusted size
-                     .graphicsLayer { rotationZ = rotation }
-                     .border(1.dp, primaryColor.copy(alpha = 0.1f), shieldShape)
-            )
-        }
-        
-        // Static ring
-        Box(
-            modifier = Modifier
-                .size(120.dp) // Adjusted size
-                .border(1.dp, primaryColor.copy(alpha = if (isSecure) 0.3f else 0.1f), shieldShape)
-        )
-        
-        // Pulsing echo (Only if secure)
+        // 1. External Pulse Ring (Ethereal ripple)
         if (isSecure) {
             Box(
                 modifier = Modifier
-                    .size(90.dp) // Adjusted size
+                    .size(140.dp)
                     .scale(pulseScale)
-                    .border(2.dp, primaryColor.copy(alpha = pulseAlpha), shieldShape)
+                    .border(1.dp, primaryColor.copy(alpha = pulseAlpha), CircleShape)
             )
         }
 
-        // Center visual
+        // 2. Rotating Dash Rings (Circuit Lines)
+        if (isSecure) {
+            Canvas(modifier = Modifier.size(160.dp).graphicsLayer { rotationZ = rotation }) {
+                drawCircle(
+                    color = primaryColor.copy(alpha = 0.3f),
+                    radius = size.minDimension / 2,
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(
+                        width = 2f,
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(20f, 40f), 0f)
+                    )
+                )
+                drawCircle(
+                    color = primaryColor.copy(alpha = 0.15f),
+                    radius = (size.minDimension / 2) - 30f,
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(
+                        width = 1f,
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 20f), 10f)
+                    )
+                )
+            }
+        }
+        
+        // 3. Main Container (Glassmorphism base)
         Box(
             modifier = Modifier
-                .size(90.dp) // Adjusted size
-                .border(1.dp, primaryColor.copy(alpha = 0.5f), shieldShape),
+                .size(110.dp)
+                .background(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            primaryColor.copy(alpha = if (isSecure) 0.15f else 0.05f),
+                            Color.Transparent
+                        )
+                    ),
+                    shape = CircleShape
+                )
+                .border(1.dp, primaryColor.copy(alpha = if (isSecure) 0.5f else 0.1f), CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = if (isSecure) Icons.Default.Lock else Icons.Default.Close, 
-                contentDescription = null,
-                tint = primaryColor,
-                modifier = Modifier.size(32.dp)
-            )
+             // Inner Gradient Glow
+             Box(
+                 modifier = Modifier
+                     .fillMaxSize()
+                     .background(
+                         brush = Brush.linearGradient(
+                             colors = listOf(
+                                 primaryColor.copy(alpha = if (isSecure) 0.2f else 0f),
+                                 Color.Transparent
+                             )
+                         ),
+                         shape = CircleShape
+                     )
+             )
+        }
+
+        // 4. Floating Icon
+        Box(
+            modifier = Modifier
+                .graphicsLayer { translationY = floatOffset }
+                .size(60.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            // Custom Power Icon "Circle with Stick"
+            Canvas(modifier = Modifier.size(42.dp)) {
+                val strokeWidth = 8f
+                val radius = size.minDimension / 2 - strokeWidth
+                val center = Offset(size.width / 2, size.height / 2)
+                
+                // 1. The Arc (Circle with top gap)
+                // Start angle -90 is top. We want a gap at top.
+                // Let's start at -60 and sweep 300 degrees.
+                drawArc(
+                    color = primaryColor,
+                    startAngle = -60f,
+                    sweepAngle = 300f,
+                    useCenter = false,
+                    topLeft = Offset(center.x - radius, center.y - radius),
+                    size = androidx.compose.ui.geometry.Size(radius * 2, radius * 2),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = strokeWidth, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                )
+                
+                // 2. The Stick (Vertical line at top)
+                drawLine(
+                    color = primaryColor,
+                    start = Offset(center.x, center.y - radius - strokeWidth/2), // Slightly above center logic
+                    end = Offset(center.x, center.y - radius * 0.2f),
+                    strokeWidth = strokeWidth,
+                    cap = androidx.compose.ui.graphics.StrokeCap.Round
+                )
+            }
         }
     }
 }
+
 
 // Workaround for scale modifier missing import or needing graphicsLayer
 fun Modifier.scale(scale: Float) = this.then(Modifier.graphicsLayer {
@@ -263,7 +334,7 @@ fun CyberUnifiedControl(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val primaryColor = if (isRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+    val primaryColor = if (isRunning) MaterialTheme.colorScheme.primary else androidx.compose.ui.graphics.Color.White
     val infiniteTransition = rememberInfiniteTransition(label = "unified_pulse")
     
     val borderAlpha by infiniteTransition.animateFloat(
@@ -320,24 +391,7 @@ fun CyberUnifiedControl(
                     )
                 }
                 
-                Spacer(modifier = Modifier.height(12.dp))
-                
-                // Action Prompt
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = if (isRunning) Icons.Default.Lock else Icons.Default.Close,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(12.dp)
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = if (isRunning) "TAP TO DEACTIVATE" else "TAP TO ACTIVATE",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 10.sp
-                    )
-                }
+
             }
             
             // RIGHT COLUMN: Animated Indicator (Mini Shield)
