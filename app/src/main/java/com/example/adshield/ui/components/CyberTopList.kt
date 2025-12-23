@@ -22,7 +22,7 @@ fun CyberTopList(title: String, data: Map<String, Int>, onAllowClick: (String) -
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), RoundedCornerShape(4.dp))
+            .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), RoundedCornerShape(5.dp))
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
             .padding(12.dp)
     ) {
@@ -74,7 +74,7 @@ fun CyberTopList(title: String, data: Map<String, Int>, onAllowClick: (String) -
                         Icon(Icons.Default.CheckCircle, contentDescription = "Allow", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(12.dp))
                     }
                 }
-                Divider(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f), thickness = 0.5.dp)
+                HorizontalDivider(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f), thickness = 0.5.dp)
             }
         }
     }

@@ -248,8 +248,8 @@ fun DashboardScreen(
                 Box(
                     modifier = Modifier
                         .size(40.dp)
-                        .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), RoundedCornerShape(4.dp))
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(4.dp)),
+                        .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), RoundedCornerShape(5.dp))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(5.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -279,43 +279,39 @@ fun DashboardScreen(
                 }
             }
 
-            // HERO SECTION
+            // HERO SECTION (Unified Control)
             Spacer(modifier = Modifier.height(32.dp))
-            PulsatingShield(isSecure = isRunning)
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            Text(
-                text = if (isRunning) "SYSTEM SECURE" else "SYSTEM VULNERABLE",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp,
-                color = if (isRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-            )
-            
-            Box(
-                modifier = Modifier
-                    .padding(top = 8.dp)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(4.dp))
-                    .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), RoundedCornerShape(4.dp))
-                    .padding(horizontal = 12.dp, vertical = 4.dp)
-            ) {
-                Text(
-                    text = if (isRunning) "TUNNELING ACTIVE // IP MASKED" else "PROTECTION OFFLINE",
-                    style = MaterialTheme.typography.bodySmall,
-                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            // ACTION BUTTON
-            Spacer(modifier = Modifier.height(32.dp))
-            CyberActionButton(
+            CyberUnifiedControl(
+                isRunning = isRunning,
                 onClick = {
                      if (isRunning) onStopClick() 
                      else if (!hasAcceptedDisclosure) showDisclosureDialog = true 
                      else onStartClick()
-                },
-                isRunning = isRunning
+                }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // PROTECTION ENGINE CARD
+            CyberFilterCard(
+                ruleCount = filterCount,
+                isUpdating = isUpdatingFilters,
+                onReload = {
+                     if (!isUpdatingFilters) {
+                         isUpdatingFilters = true
+                         scope.launch {
+                             withContext(Dispatchers.IO) {
+                                 val filterData = FilterRepository.downloadAndParseFilters()
+                                 if (filterData.blockRules.isNotEmpty()) {
+                                     FilterEngine.updateBlocklist(filterData)
+                                 }
+                             }
+                             val newCount = FilterEngine.getRuleCount()
+                             filterCount = newCount
+                             isUpdatingFilters = false
+                         }
+                     }
+                }
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -413,7 +409,7 @@ fun CyberGraphSection(data: List<Int>, bpm: Int) {
      Column(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, primaryColor.copy(alpha = 0.2f), RoundedCornerShape(4.dp))
+            .border(1.dp, primaryColor.copy(alpha = 0.2f), RoundedCornerShape(5.dp))
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
             .padding(16.dp)
      ) {
@@ -458,8 +454,8 @@ fun CyberGraphSection(data: List<Int>, bpm: Int) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(120.dp) // Taller graph
-                .background(Color.Black.copy(alpha = 0.3f), RoundedCornerShape(2.dp))
-                .border(1.dp, primaryColor.copy(alpha = 0.1f), RoundedCornerShape(2.dp))
+                .background(Color.Black.copy(alpha = 0.3f), RoundedCornerShape(5.dp))
+                .border(1.dp, primaryColor.copy(alpha = 0.1f), RoundedCornerShape(5.dp))
          ) {
              Canvas(modifier = Modifier.fillMaxSize().padding(4.dp)) {
                  val width = size.width
@@ -544,7 +540,7 @@ fun CyberTerminal(logs: List<VpnLogEntry>, onLogClick: (String) -> Unit) {
                 .fillMaxWidth()
                 .height(140.dp)
                 .background(MaterialTheme.colorScheme.surfaceVariant) // Terminal BG
-                .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), RoundedCornerShape(4.dp))
+                .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), RoundedCornerShape(5.dp))
                 .padding(8.dp)
         ) {
              // Basic list

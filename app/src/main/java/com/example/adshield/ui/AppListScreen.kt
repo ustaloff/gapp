@@ -72,8 +72,8 @@ fun AppListScreen(
                     onClick = onBackClick,
                     modifier = Modifier
                         .size(40.dp)
-                        .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), RoundedCornerShape(4.dp))
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(4.dp))
+                        .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), RoundedCornerShape(5.dp))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(5.dp))
                 ) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.primary)
                 }
@@ -114,7 +114,7 @@ fun AppListScreen(
                     focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.1f),
                     unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.1f)
                 ),
-                shape = RoundedCornerShape(4.dp),
+                shape = RoundedCornerShape(5.dp),
                 singleLine = true
             )
 
@@ -177,7 +177,7 @@ fun AppListItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, borderColor, RoundedCornerShape(4.dp))
+            .border(1.dp, borderColor, RoundedCornerShape(5.dp))
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.05f))
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically

@@ -7,7 +7,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.material3.*
+import androidx.compose.foundation.clickable
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -101,80 +103,84 @@ fun PulsatingShield(
     modifier: Modifier = Modifier,
     isSecure: Boolean = true
 ) {
-    val primaryColor = MaterialTheme.colorScheme.primary
+    val primaryColor = if (isSecure) MaterialTheme.colorScheme.primary else androidx.compose.ui.graphics.Color.Gray.copy(alpha = 0.3f)
     val infiniteTransition = rememberInfiniteTransition()
     
-    // Rotating outer ring
-    val rotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(10000, easing = LinearEasing)
+    // Animations (Active only if secure)
+    val rotation by if (isSecure) {
+        infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(10000, easing = LinearEasing)
+            )
         )
-    )
+    } else { remember { mutableFloatStateOf(0f) } }
 
-    // Pulsing inner ring
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.5f,
-        targetValue = 0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2000),
-            repeatMode = RepeatMode.Restart
+    val pulseAlpha by if (isSecure) {
+        infiniteTransition.animateFloat(
+            initialValue = 0.5f,
+            targetValue = 0f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(2000),
+                repeatMode = RepeatMode.Restart
+            )
         )
-    )
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.4f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2000),
-            repeatMode = RepeatMode.Restart
+    } else { remember { mutableFloatStateOf(0f) } }
+    
+    val pulseScale by if (isSecure) {
+        infiniteTransition.animateFloat(
+            initialValue = 1f,
+            targetValue = 1.4f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(2000),
+                repeatMode = RepeatMode.Restart
+            )
         )
-    )
+    } else { remember { mutableFloatStateOf(1f) } }
+    
+    val shieldShape = CutCornerShape(16.dp)
 
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         // Outer decorative ring (rotating)
-        Canvas(modifier = Modifier.size(220.dp)) {
-            rotate(rotation) {
-                drawCircle(
-                    color = primaryColor.copy(alpha = 0.1f),
-                    style = Stroke(width = 2.dp.toPx(), pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(20f, 20f), 0f))
-                )
-            }
+        if (isSecure) {
+            Box(
+                 modifier = Modifier
+                     .size(160.dp) // Adjusted size
+                     .graphicsLayer { rotationZ = rotation }
+                     .border(1.dp, primaryColor.copy(alpha = 0.1f), shieldShape)
+            )
         }
         
         // Static ring
         Box(
             modifier = Modifier
-                .size(160.dp)
-                .border(1.dp, primaryColor.copy(alpha = 0.3f), CircleShape)
+                .size(120.dp) // Adjusted size
+                .border(1.dp, primaryColor.copy(alpha = if (isSecure) 0.3f else 0.1f), shieldShape)
         )
         
-        // Pulsing echo
-        Box(
-            modifier = Modifier
-                .size(120.dp)
-                .scale(pulseScale)
-                .border(2.dp, primaryColor.copy(alpha = pulseAlpha), CircleShape)
-        )
+        // Pulsing echo (Only if secure)
+        if (isSecure) {
+            Box(
+                modifier = Modifier
+                    .size(90.dp) // Adjusted size
+                    .scale(pulseScale)
+                    .border(2.dp, primaryColor.copy(alpha = pulseAlpha), shieldShape)
+            )
+        }
 
         // Center visual
         Box(
             modifier = Modifier
-                .size(120.dp)
-                .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
-                .border(1.dp, primaryColor.copy(alpha = 0.5f), CircleShape)
-                .shadow(
-                    elevation = 15.dp,
-                    shape = CircleShape,
-                    spotColor = primaryColor
-                ),
+                .size(90.dp) // Adjusted size
+                .border(1.dp, primaryColor.copy(alpha = 0.5f), shieldShape),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = if (isSecure) Icons.Default.Lock else Icons.Default.Close, 
                 contentDescription = null,
                 tint = primaryColor,
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(32.dp)
             )
         }
     }
@@ -197,7 +203,7 @@ fun CyberStatCard(
 ) {
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(5.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
@@ -249,4 +255,157 @@ fun androidx.compose.ui.graphics.drawscope.DrawScope.drawGlow(
     size: Float
 ) {
     // Simplified glow implementation
+}
+
+@Composable
+fun CyberUnifiedControl(
+    isRunning: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val primaryColor = if (isRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+    val infiniteTransition = rememberInfiniteTransition(label = "unified_pulse")
+    
+    val borderAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 0.8f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "border_alpha"
+    )
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .border(1.dp, primaryColor.copy(alpha = borderAlpha), RoundedCornerShape(5.dp))
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f), RoundedCornerShape(5.dp))
+            .padding(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // LEFT COLUMN: Status Information
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.Center
+            ) {
+                // Status Header
+                Text(
+                    text = if (isRunning) "SYSTEM SECURE" else "SYSTEM VULNERABLE",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = primaryColor,
+                    letterSpacing = 1.sp
+                )
+                
+                Spacer(modifier = Modifier.height(4.dp))
+                
+                // Status Subtitle (Boxed)
+                Box(
+                    modifier = Modifier
+                        .border(1.dp, primaryColor.copy(alpha = 0.3f), RoundedCornerShape(5.dp))
+                        .background(primaryColor.copy(alpha = 0.1f), RoundedCornerShape(5.dp))
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                ) {
+                     Text(
+                        text = if (isRunning) "TUNNELING ACTIVE // IP MASKED" else "PROTECTION DISABLED // EXPOSED",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = primaryColor,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        fontSize = 10.sp
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                // Action Prompt
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = if (isRunning) Icons.Default.Lock else Icons.Default.Close,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(12.dp)
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        text = if (isRunning) "TAP TO DEACTIVATE" else "TAP TO ACTIVATE",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 10.sp
+                    )
+                }
+            }
+            
+            // RIGHT COLUMN: Animated Indicator (Mini Shield)
+            Box(
+                modifier = Modifier
+                    .padding(start = 16.dp)
+                    .size(150.dp)
+                    .aspectRatio(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                // Native size (approx 160dp internal, scaled slightly to fit 150dp comfortably or let it overflow slightly)
+                PulsatingShield(
+                   modifier = Modifier.scale(0.9f),
+                   isSecure = isRunning
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun CyberFilterCard(
+    ruleCount: Int,
+    isUpdating: Boolean,
+    onReload: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(5.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        ),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = "Protection Engine",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = if (isUpdating) "UPDATING RULES..." else "$ruleCount rules online",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                )
+            }
+            TextButton(
+                onClick = onReload,
+                enabled = !isUpdating
+            ) {
+                Text(
+                    text = if (isUpdating) "SYNCING..." else "RELOAD",
+                    color = if (isUpdating) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                )
+            }
+        }
+    }
 }
