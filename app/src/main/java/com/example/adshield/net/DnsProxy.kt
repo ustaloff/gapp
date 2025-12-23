@@ -113,7 +113,7 @@ class DnsProxy(private val vpnService: VpnService) {
                     Pair(dnsMessage.createErrorResponse(), "BLOCKED_DOH")
                 }
                 FilterEngine.shouldBlock(domain) -> {
-                    VpnStats.incrementBlocked(domain, appName)
+                    VpnStats.incrementBlocked(vpnService, domain, appName)
                     Log.i("DnsProxy", "BLOCKED: $domain from $appName")
                     Pair(dnsMessage.createBlockedResponse(), "BLOCKED")
                 }

@@ -41,6 +41,7 @@ class LocalVpnService : VpnService() {
         } else {
             stopVpn()
         }
+        VpnStats.initialize(this)
         return START_NOT_STICKY
     }
 

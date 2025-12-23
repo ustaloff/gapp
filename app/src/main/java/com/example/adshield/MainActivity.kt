@@ -35,6 +35,20 @@ import com.example.adshield.data.FilterRepository
 import com.example.adshield.filter.FilterEngine
 import com.example.adshield.service.LocalVpnService
 import com.example.adshield.ui.theme.AdShieldTheme
+import com.example.adshield.ui.components.* // Import CyberComponents
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.animation.core.*
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.CheckCircle
 
 class MainActivity : ComponentActivity() {
 
@@ -126,6 +140,8 @@ fun DashboardScreen(
     val blockedCount = VpnStats.blockedCount.value
     val totalCount = VpnStats.totalCount.value
     val recentLogs = VpnStats.recentLogs
+    val dataSaved = VpnStats.dataSavedBytes.value
+    val bpm = VpnStats.blocksPerMinute.value
     
     var filterCount by remember { mutableStateOf(FilterEngine.getRuleCount()) }
     var isUpdatingFilters by remember { mutableStateOf(false) }
@@ -142,6 +158,9 @@ fun DashboardScreen(
         val prefs = context.getSharedPreferences("adshield_prefs", android.content.Context.MODE_PRIVATE)
         hasAcceptedDisclosure = prefs.getBoolean("disclosure_accepted", false)
         
+        // Initialize Persistent Stats
+        VpnStats.initialize(context)
+        
         if (filterCount < 100) {
             isUpdatingFilters = true
             delay(1000)
@@ -156,353 +175,363 @@ fun DashboardScreen(
         }
     }
 
-    // Dialog: Whitelist Confirmation
+    // Dialogs (kept standard for now, but could be stylized)
     if (showWhitelistDialog) {
         AlertDialog(
             onDismissRequest = { showWhitelistDialog = false },
-            title = { Text("Whitelist Domain?") },
-            text = { Text("Do you want to always allow traffic for $domainToWhitelist?") },
+            title = { Text("WHITELIST DOMAIN", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
+            text = { Text("Allow traffic for '$domainToWhitelist'?", color = MaterialTheme.colorScheme.onSurface) },
+            containerColor = MaterialTheme.colorScheme.surface,
             confirmButton = {
                 TextButton(onClick = {
                     FilterEngine.addToAllowlist(context, domainToWhitelist)
                     showWhitelistDialog = false
-                }) {
-                    Text("ALLOW")
-                }
+                }) { Text("ALLOW", color = MaterialTheme.colorScheme.primary) }
             },
             dismissButton = {
-                TextButton(onClick = { showWhitelistDialog = false }) {
-                    Text("CANCEL")
-                }
+                TextButton(onClick = { showWhitelistDialog = false }) { Text("CANCEL", color = MaterialTheme.colorScheme.onSurfaceVariant) }
             }
         )
     }
 
-    // Dialog: Privacy Disclosure
     if (showDisclosureDialog) {
         AlertDialog(
             onDismissRequest = { showDisclosureDialog = false },
-            title = { Text("Privacy & Security Disclosure") },
-            text = { 
-                Text("AdShield uses a local VPN service to provide DNS-level protection. \n\n" +
-                     "• We ONLY analyze DNS queries to block ads and trackers.\n" +
-                     "• NO personal data is collected, stored, or shared.\n" +
-                     "• Internal traffic is never sent to remote servers except for DNS resolution.\n" +
-                     "• You can deactivate protection at any time.") 
-            },
+            title = { Text("SYSTEM DISCLOSURE") },
+            text = { Text("Local VPN required for packet inspection.\nData remains local.\nProceed?") },
+            containerColor = MaterialTheme.colorScheme.surface,
             confirmButton = {
-                Button(onClick = {
-                    hasAcceptedDisclosure = true
-                    context.getSharedPreferences("adshield_prefs", android.content.Context.MODE_PRIVATE)
-                        .edit().putBoolean("disclosure_accepted", true).apply()
-                    showDisclosureDialog = false
-                    onStartClick()
-                }) {
-                    Text("ACCEPT & CONTINUE")
-                }
+                Button(
+                    onClick = {
+                        hasAcceptedDisclosure = true
+                        context.getSharedPreferences("adshield_prefs", android.content.Context.MODE_PRIVATE)
+                            .edit().putBoolean("disclosure_accepted", true).apply()
+                        showDisclosureDialog = false
+                        onStartClick()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) { Text("INITIALIZE", color = MaterialTheme.colorScheme.onPrimary) }
             },
             dismissButton = {
-                TextButton(onClick = { showDisclosureDialog = false }) {
-                    Text("CANCEL")
-                }
+                TextButton(onClick = { showDisclosureDialog = false }) { Text("ABORT", color = MaterialTheme.colorScheme.onSurfaceVariant) }
             }
         )
     }
 
-    Column(
+    // MAIN CYBER UI CONTAINER
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 20.dp)
-            .verticalScroll(scrollState),
-        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(48.dp))
-        
-        Text(
-            text = "AdShield",
-            style = MaterialTheme.typography.headlineLarge,
-            fontWeight = FontWeight.ExtraBold,
-            color = MaterialTheme.colorScheme.primary
-        )
-        Text(
-            text = "Premium Protection Active",
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.secondary
-        )
+        GridBackground()
+        // Optional: Scanline(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.03f))
 
-        Spacer(modifier = Modifier.height(32.dp))
-        StatusIndicator(isRunning)
-        Spacer(modifier = Modifier.height(32.dp))
-        
-        Text(
-            text = "BLOCKS PER MINUTE",
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.align(Alignment.Start).padding(start = 4.dp, bottom = 8.dp),
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        BlockedGraph(VpnStats.blockedHistory)
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp)
+                .verticalScroll(scrollState),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            StatCard(
-                title = "Blocked",
-                value = blockedCount.toString(),
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.weight(1f)
-            )
-            StatCard(
-                title = "Analysed",
-                value = totalCount.toString(),
-                color = MaterialTheme.colorScheme.tertiary,
-                modifier = Modifier.weight(1f)
-            )
-        }
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        Text(
-            text = "RECENT ACTIVITY (TAP TO ALLOW)",
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.align(Alignment.Start).padding(start = 4.dp, bottom = 8.dp),
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        
-        Card(
-            modifier = Modifier.fillMaxWidth().height(260.dp),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha=0.3f))
-        ) {
-            if (recentLogs.isEmpty()) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No activity yet", style = MaterialTheme.typography.bodySmall)
-                }
-            } else {
-                Column(modifier = Modifier.padding(12.dp).verticalScroll(rememberScrollState())) {
-                    recentLogs.forEach { log ->
-                        LogItem(log) { domain ->
-                            domainToWhitelist = domain
-                            showWhitelistDialog = true
-                        }
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        OutlinedButton(
-            onClick = onWhitelistClick,
-            modifier = Modifier.fillMaxWidth().height(52.dp),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Icon(painterResource(android.R.drawable.ic_menu_agenda), contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(8.dp))
-            Text("MANAGE APP WHITELIST")
-        }
-        
-        Spacer(modifier = Modifier.height(12.dp))
-        
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha=0.4f))
-        ) {
+            // TOP BAR
+            Spacer(modifier = Modifier.height(16.dp))
             Row(
-                modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
-                    Text("Protection Engine", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                    Text("$filterCount rules online", style = MaterialTheme.typography.bodySmall)
-                }
-                
-                if (isUpdatingFilters) {
-                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                } else {
-                    TextButton(onClick = {
-                        isUpdatingFilters = true
-                        scope.launch {
-                             withContext(Dispatchers.IO) {
-                                val filterData = FilterRepository.downloadAndParseFilters()
-                                if (filterData.blockRules.isNotEmpty()) {
-                                    FilterEngine.updateBlocklist(filterData)
-                                }
-                             }
-                             filterCount = FilterEngine.getRuleCount()
-                             isUpdatingFilters = false
-                        }
-                    }) {
-                        Text("RELOAD", fontWeight = FontWeight.ExtraBold)
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Button(
-            onClick = { 
-                if (isRunning) {
-                    onStopClick()
-                } else {
-                    if (!hasAcceptedDisclosure) {
-                        showDisclosureDialog = true
-                    } else {
-                        onStartClick()
-                    }
-                }
-            },
-            modifier = Modifier.fillMaxWidth().height(64.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = if (isRunning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-            ),
-            shape = RoundedCornerShape(20.dp),
-            elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
-        ) {
-            Text(
-                text = if (isRunning) "DEACTIVATE SHIELD" else "ACTIVATE ADSHIELD",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.ExtraBold
-            )
-        }
-        Spacer(modifier = Modifier.height(40.dp))
-    }
-}
-
-@Composable
-fun LogItem(log: com.example.adshield.data.VpnLogEntry, onSelect: (String) -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp)
-            .clickable { onSelect(log.domain) },
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(8.dp)
-                .background(if (log.isBlocked) Color(0xFFEF5350) else Color(0xFF66BB6A), RoundedCornerShape(4.dp))
-        )
-        Spacer(Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = log.domain,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = if (log.isBlocked) "Blocked by Shield" else "Allowed by Engine",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        if (log.appName != null) {
-            Text(
-                text = log.appName,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary.copy(alpha=0.7f),
-                modifier = Modifier.padding(start = 8.dp)
-            )
-        }
-    }
-}
-
-
-@Composable
-fun StatCard(title: String, value: String, color: Color, modifier: Modifier = Modifier) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = value,
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold,
-                color = color
-            )
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
-        }
-    }
-}
-
-@Composable
-fun StatusIndicator(isRunning: Boolean) {
-    Box(
-        modifier = Modifier
-            .size(160.dp)
-            .background(
-                brush = Brush.radialGradient(
-                    colors = if (isRunning)
-                        listOf(Color(0xFF66BB6A).copy(alpha = 0.2f), Color.Transparent)
-                    else
-                        listOf(Color(0xFFBDBDBD).copy(alpha = 0.2f), Color.Transparent)
-                )
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            // Using placeholder icons for now
-            painter = painterResource(id = if (isRunning) android.R.drawable.ic_secure else android.R.drawable.ic_lock_idle_lock),
-            contentDescription = null,
-            tint = if (isRunning) Color(0xFF43A047) else Color.Gray,
-            modifier = Modifier.size(64.dp)
-        )
-        Text(
-            text = if (isRunning) "ACTIVE" else "OFFLINE",
-            color = if (isRunning) Color(0xFF43A047) else Color.Gray,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(top = 90.dp)
-        )
-    }
-}
-
-@Composable
-fun BlockedGraph(history: List<Int>) {
-    val maxVal = (history.maxOrNull() ?: 1).coerceAtLeast(5)
-    
-    Card(
-        modifier = Modifier.fillMaxWidth().height(100.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha=0.2f))
-    ) {
-        Row(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalAlignment = Alignment.Bottom
-        ) {
-            history.forEach { value ->
-                val heightFactor = value.toFloat() / maxVal
                 Box(
                     modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight(heightFactor.coerceIn(0.05f, 1f))
-                        .background(
-                            color = if (value > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
-                            shape = RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp)
-                        )
+                        .size(40.dp)
+                        .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), RoundedCornerShape(4.dp))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(4.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "ADSHIELD ACTIVE",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 2.sp,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Box(modifier = Modifier.size(6.dp).background(MaterialTheme.colorScheme.primary, CircleShape))
+                        Text("v.4.0.2 STABLE", style = MaterialTheme.typography.labelSmall, fontSize = 10.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f))
+                    }
+                }
+
+                IconButton(onClick = onWhitelistClick) {
+                    Icon(imageVector = Icons.Default.Settings, contentDescription = "Settings", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+
+            // HERO SECTION
+            Spacer(modifier = Modifier.height(32.dp))
+            PulsatingShield(isSecure = isRunning)
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            Text(
+                text = if (isRunning) "SYSTEM SECURE" else "SYSTEM VULNERABLE",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp,
+                color = if (isRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+            )
+            
+            Box(
+                modifier = Modifier
+                    .padding(top = 8.dp)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(4.dp))
+                    .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), RoundedCornerShape(4.dp))
+                    .padding(horizontal = 12.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    text = if (isRunning) "TUNNELING ACTIVE // IP MASKED" else "PROTECTION OFFLINE",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                    color = MaterialTheme.colorScheme.primary
                 )
+            }
+
+            // ACTION BUTTON
+            Spacer(modifier = Modifier.height(32.dp))
+            CyberActionButton(
+                onClick = {
+                     if (isRunning) onStopClick() 
+                     else if (!hasAcceptedDisclosure) showDisclosureDialog = true 
+                     else onStartClick()
+                },
+                isRunning = isRunning
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+            
+            // BLOCKED REQUESTS HEADER
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = "BLOCKED REQUESTS",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    letterSpacing = 1.sp
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // BLOCKED STATS GRID (Total, Today, 7 Days)
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                 CyberStatCard(
+                    label = "TOTAL",
+                    value = blockedCount.toString(),
+                    subValue = "LIFETIME",
+                    modifier = Modifier.weight(1f)
+                )
+                CyberStatCard(
+                    label = "TODAY",
+                    value = VpnStats.blockedToday.value.toString(),
+                    subValue = "SINCE 00:00",
+                    modifier = Modifier.weight(1f)
+                )
+                CyberStatCard(
+                    label = "7 DAYS",
+                    value = VpnStats.blockedWeekly.value.toString(),
+                    subValue = "WEEKLY",
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            // Saved Data Card (Full Width or part of another row)
+             Row(modifier = Modifier.fillMaxWidth()) {
+                CyberStatCard(
+                    label = "DATA SAVED",
+                    value = formatBytes(dataSaved),
+                    subValue = "ESTIMATED OPTIMIZATION",
+                    modifier = Modifier.fillMaxWidth()
+                )
+             }
+
+
+
+
+            // LIVE TRAFFIC GRAPH (Visual)
+            Spacer(modifier = Modifier.height(24.dp))
+            CyberGraphSection(VpnStats.blockedHistory, bpm)
+
+            // TOP LISTS
+            Spacer(modifier = Modifier.height(24.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(Modifier.weight(1f)) {
+                    CyberTopList("TOP APPS", VpnStats.appBlockedStatsMap, onAllowClick = { /* No-op for now */ })
+                }
+                Box(Modifier.weight(1f)) {
+                    CyberTopList("TOP DOMAINS", VpnStats.domainBlockedStatsMap, onAllowClick = { domainToWhitelist = it; showWhitelistDialog = true })
+                }
+            }
+
+            // TERMINAL LOG
+            Spacer(modifier = Modifier.height(24.dp))
+            CyberTerminal(logs = recentLogs, onLogClick = { domainToWhitelist = it; showWhitelistDialog = true })
+
+
+            
+            Spacer(modifier = Modifier.height(48.dp))
+        }
+    }
+}
+
+@Composable
+fun CyberGraphSection(data: List<Int>, bpm: Int) {
+     Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), RoundedCornerShape(4.dp))
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
+            .padding(16.dp)
+     ) {
+         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+             Text("LIVE THREAT ANALYSIS", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+             Row(verticalAlignment = Alignment.CenterVertically) {
+                 Text("BPM: $bpm", color = if (bpm > 5) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, fontSize = 12.sp)
+                 Spacer(Modifier.width(8.dp))
+                 Text("MONITORING", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                 Spacer(Modifier.width(8.dp))
+                 Box(Modifier.size(8.dp).background(MaterialTheme.colorScheme.primary, CircleShape))
+             }
+         }
+         Spacer(Modifier.height(16.dp))
+         // Simple visual representation of graph
+         Row(
+             modifier = Modifier.fillMaxWidth().height(60.dp),
+             horizontalArrangement = Arrangement.spacedBy(2.dp),
+             verticalAlignment = Alignment.Bottom
+         ) {
+             val graphData = if (data.isEmpty()) List(20) { kotlin.random.Random.nextInt(5, 50) } else data.takeLast(20)
+             val max = graphData.maxOrNull() ?: 1
+             
+             graphData.forEach { 
+                 Box(
+                     modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight((it.toFloat() / max).coerceAtLeast(0.1f))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+                 )
+             }
+         }
+     }
+}
+
+@Composable
+fun CyberTerminal(logs: List<VpnLogEntry>, onLogClick: (String) -> Unit) {
+    Column {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("EVENT LOG", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("AUTO-SCROLL: ON", style = MaterialTheme.typography.labelSmall, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, color = MaterialTheme.colorScheme.primary.copy(alpha=0.7f))
+        }
+        Spacer(Modifier.height(8.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(140.dp)
+                .background(MaterialTheme.colorScheme.surfaceVariant) // Terminal BG
+                .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), RoundedCornerShape(4.dp))
+                .padding(8.dp)
+        ) {
+             // Basic list
+             val listState = rememberScrollState()
+             Column(modifier = Modifier.verticalScroll(listState)) {
+                 if (logs.isEmpty()) {
+                     Text("> Initializing system...", color = MaterialTheme.colorScheme.primary, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, fontSize = 12.sp)
+                     Text("> Waiting for traffic...", color = Color.Gray, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, fontSize = 12.sp)
+                 }
+                 logs.reversed().forEach { log ->
+                     Row(modifier = Modifier.clickable { onLogClick(log.domain) }.padding(vertical = 2.dp)) {
+                         Text("[${java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(java.util.Date(log.timestamp))}] ", color = Color.Gray, fontSize = 10.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
+                         Text(
+                             text = if (log.isBlocked) "BLOCKED: ${log.domain}" else "ALLOWED: ${log.domain}",
+                             color = if (log.isBlocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                             fontSize = 12.sp,
+                             fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                             maxLines = 1,
+                             overflow = TextOverflow.Ellipsis
+                         )
+                     }
+                 }
+                 Box(Modifier.size(8.dp, 14.dp).background(MaterialTheme.colorScheme.primary).animateContentSize())
+             }
+             Scanline(modifier = Modifier.fillMaxSize(), color = Color.White.copy(alpha = 0.02f))
+        }
+    }
+}
+
+@Composable
+fun CyberActionButton(onClick: () -> Unit, isRunning: Boolean) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(64.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        shape = RoundedCornerShape(8.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = if (isRunning) "PROTECTION ACTIVE" else "ACTIVATE SHIELD",
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    letterSpacing = 1.sp
+                )
+                Text(
+                    text = if (isRunning) "TAP TO DEACTIVATE" else "Establish Secure Connection",
+                    color = Color.Gray,
+                    fontSize = 10.sp,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(MaterialTheme.colorScheme.primary, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                 Icon(
+                     imageVector = if (isRunning) Icons.Default.Close else Icons.Default.PlayArrow,
+                     contentDescription = null,
+                     tint = MaterialTheme.colorScheme.background
+                 )
             }
         }
     }
 }
+
+fun formatBytes(bytes: Long): String {
+    if (bytes < 1024) return "$bytes B"
+    val exp = (Math.log(bytes.toDouble()) / Math.log(1024.0)).toInt()
+    val pre = "KMGTPE"[exp - 1]
+    return String.format(java.util.Locale.US, "%.1f %cB", bytes / Math.pow(1024.0, exp.toDouble()), pre)
+}
+
 
