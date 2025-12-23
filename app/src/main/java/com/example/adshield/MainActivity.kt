@@ -254,15 +254,28 @@ fun DashboardScreen(
                 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "ADSHIELD ACTIVE",
+                        text = if (isRunning) "ADSHIELD ACTIVE" else "ADSHIELD PAUSED",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 2.sp,
-                        color = MaterialTheme.colorScheme.onBackground
+                        color = if (isRunning) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                     )
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Box(modifier = Modifier.size(6.dp).background(MaterialTheme.colorScheme.primary, CircleShape))
-                        Text("v.4.0.2 STABLE", style = MaterialTheme.typography.labelSmall, fontSize = 10.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f))
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .background(
+                                    if (isRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f), 
+                                    CircleShape
+                                )
+                        )
+                        Text(
+                            text = if (isRunning) "TUNNELING ACTIVE // IP MASKED" else "PROTECTION DISABLED",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 10.sp, 
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, 
+                            color = if (isRunning) MaterialTheme.colorScheme.primary.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                        )
                     }
                 }
 
@@ -272,17 +285,22 @@ fun DashboardScreen(
             }
 
             // HERO SECTION (Unified Control)
-            Spacer(modifier = Modifier.height(32.dp))
-            CyberUnifiedControl(
-                isRunning = isRunning,
-                onClick = {
-                     if (isRunning) onStopClick() 
-                     else if (!hasAcceptedDisclosure) showDisclosureDialog = true 
-                     else onStartClick()
-                }
-            )
+            Spacer(modifier = Modifier.height(1.dp))
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                CyberPowerButton(
+                    isRunning = isRunning,
+                    onClick = {
+                         if (isRunning) onStopClick() 
+                         else if (!hasAcceptedDisclosure) showDisclosureDialog = true 
+                         else onStartClick()
+                    }
+                )
+            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             // PROTECTION ENGINE CARD
             CyberFilterCard(

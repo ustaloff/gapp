@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.material3.*
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -107,15 +108,14 @@ fun PulsatingShield(
     val infiniteTransition = rememberInfiniteTransition()
     
     // Animations (Active only if secure)
-    val rotation by if (isSecure) {
-        infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 360f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(20000, easing = LinearEasing)
-            )
+    // Rotation Animation (Always Active)
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(20000, easing = LinearEasing)
         )
-    } else { remember { mutableFloatStateOf(0f) } }
+    )
 
     val pulseAlpha by if (isSecure) {
         infiniteTransition.animateFloat(
@@ -139,16 +139,15 @@ fun PulsatingShield(
         )
     } else { remember { mutableFloatStateOf(1f) } }
 
-    val floatOffset by if (isSecure) {
-        infiniteTransition.animateFloat(
-            initialValue = -5f,
-            targetValue = 5f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(3000, easing = EaseInOutSine),
-                repeatMode = RepeatMode.Reverse
-            )
+    // Floating Icon Animation (Always Active)
+    val floatOffset by infiniteTransition.animateFloat(
+        initialValue = -5f,
+        targetValue = 5f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(3000, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse
         )
-    } else { remember { mutableFloatStateOf(0f) } }
+    )
     
     val shieldShape = CircleShape
 
@@ -164,25 +163,23 @@ fun PulsatingShield(
         }
 
         // 2. Rotating Dash Rings (Circuit Lines)
-        if (isSecure) {
-            Canvas(modifier = Modifier.size(160.dp).graphicsLayer { rotationZ = rotation }) {
-                drawCircle(
-                    color = primaryColor.copy(alpha = 0.3f),
-                    radius = size.minDimension / 2,
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(
-                        width = 2f,
-                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(20f, 40f), 0f)
-                    )
+        Canvas(modifier = Modifier.size(160.dp).graphicsLayer { rotationZ = rotation }) {
+            drawCircle(
+                color = primaryColor.copy(alpha = 0.3f),
+                radius = size.minDimension / 2,
+                style = androidx.compose.ui.graphics.drawscope.Stroke(
+                    width = 2f,
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(20f, 40f), 0f)
                 )
-                drawCircle(
-                    color = primaryColor.copy(alpha = 0.15f),
-                    radius = (size.minDimension / 2) - 30f,
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(
-                        width = 1f,
-                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 20f), 10f)
-                    )
+            )
+            drawCircle(
+                color = primaryColor.copy(alpha = 0.15f),
+                radius = (size.minDimension / 2) - 30f,
+                style = androidx.compose.ui.graphics.drawscope.Stroke(
+                    width = 1f,
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 20f), 10f)
                 )
-            }
+            )
         }
         
         // 3. Main Container (Glassmorphism base)
@@ -461,5 +458,28 @@ fun CyberFilterCard(
                 )
             }
         }
+    }
+}
+
+@Composable
+fun CyberPowerButton(
+    isRunning: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .size(240.dp) // Adjusted large touch target
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null, // Disable default ripple
+                onClick = onClick
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        PulsatingShield(
+            modifier = Modifier.fillMaxSize(),
+            isSecure = isRunning
+        )
     }
 }
