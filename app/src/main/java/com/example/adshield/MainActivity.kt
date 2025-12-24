@@ -6,6 +6,7 @@ import android.net.VpnService
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.lifecycle.lifecycleScope
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -97,11 +98,11 @@ class MainActivity : ComponentActivity() {
                                     android.widget.Toast.makeText(this@MainActivity, "Whitelisted: $packageName", android.widget.Toast.LENGTH_SHORT).show()
                                     if (VpnStats.isRunning.value) { // Use State directly or track locally? VpnStats is global object
                                          stopVpnService()
-                                         // Restart with delay
-                                         kotlinx.coroutines.GlobalScope.launch { // Or use lifecycle scope if available
-                                             kotlinx.coroutines.delay(500)
-                                             startVpnService()
-                                         }
+                                    // Restart with delay
+                                     lifecycleScope.launch {
+                                         kotlinx.coroutines.delay(500)
+                                         startVpnService()
+                                     }
                                     }
                                 }
                             }
