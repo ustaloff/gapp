@@ -247,8 +247,7 @@ class LocalVpnService : VpnService() {
                 val pm = packageManager
                 val packages = pm.getPackagesForUid(uid)
                 if (!packages.isNullOrEmpty()) {
-                    val ai = pm.getApplicationInfo(packages[0], 0)
-                    pm.getApplicationLabel(ai).toString()
+packages[0]
                 } else null
             } else null
         } catch (e: Exception) {

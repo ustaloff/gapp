@@ -5,6 +5,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CutCornerShape
@@ -17,8 +19,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -33,6 +41,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.adshield.ui.theme.NeonGreen
+import com.example.adshield.data.VpnLogEntry
+import androidx.compose.ui.text.style.TextOverflow
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlin.math.roundToInt
 
 @Composable
@@ -463,3 +476,520 @@ fun CyberPowerButton(
 }
 
 
+@Composable
+fun CyberMiniPowerButton(
+    isRunning: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val primaryColor = if (isRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f) // Gray when off
+    val infiniteTransition = rememberInfiniteTransition()
+    
+    // Animations
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(10000, easing = LinearEasing)
+        )
+    )
+
+    val pulseScale by if (isRunning) {
+        infiniteTransition.animateFloat(
+            initialValue = 1f,
+            targetValue = 1.2f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(2000, easing = EaseOutCubic),
+                repeatMode = RepeatMode.Restart
+            )
+        )
+    } else { remember { mutableFloatStateOf(1f) } }
+
+    val pulseAlpha by if (isRunning) {
+        infiniteTransition.animateFloat(
+            initialValue = 0.5f,
+            targetValue = 0f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(2000, easing = EaseOutCubic),
+                repeatMode = RepeatMode.Restart
+            )
+        )
+    } else { remember { mutableFloatStateOf(0f) } }
+
+    Box(
+        modifier = modifier
+            .size(64.dp) // Base size
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null, 
+                onClick = onClick
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        // 1. External Pulse Ring (Mini)
+        if (isRunning) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .scale(pulseScale)
+                    .border(1.dp, primaryColor.copy(alpha = pulseAlpha), CircleShape)
+            )
+        }
+
+        // 2. Rotating Dash Rings (Mini)
+        Canvas(modifier = Modifier.fillMaxSize().graphicsLayer { rotationZ = rotation }) {
+            drawCircle(
+                color = primaryColor.copy(alpha = 0.3f),
+                radius = size.minDimension / 2,
+                style = androidx.compose.ui.graphics.drawscope.Stroke(
+                    width = 1.5f,
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+                )
+            )
+        }
+        
+        // 3. Main Container (Glassmorphism base)
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .background(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            primaryColor.copy(alpha = if (isRunning) 0.3f else 0.1f),
+                            Color.Transparent
+                        )
+                    ),
+                    shape = CircleShape
+                )
+                .border(1.dp, primaryColor.copy(alpha = if (isRunning) 0.8f else 0.3f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+             // Inner Icon (Custom Power Symbol)
+            Canvas(modifier = Modifier.size(20.dp)) {
+                val strokeWidth = 3.dp.toPx()
+                val radius = size.minDimension / 2 - strokeWidth
+                val center = Offset(size.width / 2, size.height / 2)
+                
+                // Arc
+                drawArc(
+                    color = primaryColor,
+                    startAngle = -60f,
+                    sweepAngle = 300f,
+                    useCenter = false,
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                )
+                
+                // Stick
+                drawLine(
+                    color = primaryColor,
+                    start = Offset(center.x, 0f + strokeWidth),
+                    end = Offset(center.x, center.y),
+                    strokeWidth = strokeWidth,
+                    cap = StrokeCap.Round
+                )
+            }
+        }
+    }
+}
+
+
+@Composable
+fun CyberNavBar(
+    isRunning: Boolean,
+    onPowerClick: () -> Unit,
+    currentScreen: String,
+    onNavigate: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(bottom = 24.dp, start = 16.dp, end = 16.dp),
+        contentAlignment = Alignment.Center // Center content in the box
+    ) {
+        // Floating Pill Container
+        Surface(
+            modifier = Modifier
+                .height(72.dp) // Height for the bar
+                .fillMaxWidth(),
+            shape = RoundedCornerShape(percent = 50), // Fully rounded pill
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f),
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)),
+            shadowElevation = 12.dp
+        ) {
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // 1. HOME
+                NavBarItem(
+                    icon = Icons.Default.Home,
+                    label = "Home",
+                    isSelected = currentScreen == "HOME",
+                    onClick = { onNavigate("HOME") }
+                )
+
+                // 2. LOGS
+                NavBarItem(
+                    icon = Icons.Default.List,
+                    label = "Logs",
+                    isSelected = currentScreen == "LOGS",
+                    onClick = { onNavigate("LOGS") }
+                )
+
+                // 3. CENTRAL SPACER (Hidden/Transparent to hold space)
+                Spacer(modifier = Modifier.width(64.dp))
+
+                // 4. STATS
+                NavBarItem(
+                    icon = androidx.compose.material.icons.Icons.Default.Info, 
+                    label = "Stats",
+                    isSelected = currentScreen == "STATS",
+                    onClick = { onNavigate("STATS") }
+                )
+
+                // 5. SETTINGS
+                NavBarItem(
+                    icon = Icons.Default.Settings,
+                    label = "Config",
+                    isSelected = currentScreen == "SETTINGS",
+                    onClick = { onNavigate("SETTINGS") }
+                )
+            }
+        }
+
+        // CENTER FLOATING POWER BUTTON (No Offset = Vertically Centered)
+        CyberMiniPowerButton(
+            isRunning = isRunning,
+            onClick = onPowerClick,
+            modifier = Modifier.align(Alignment.Center) 
+        )
+    }
+}
+
+@Composable
+fun NavBarItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clickable(onClick = onClick)
+            .padding(8.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(24.dp)
+        )
+    }
+}
+
+
+@Composable
+fun CyberGraphSection(data: List<Int>, bpm: Int, isRunning: Boolean) {
+     val primaryColor = MaterialTheme.colorScheme.primary
+     val offlineColor = MaterialTheme.colorScheme.error // Or Gray
+     
+     // Animation state for pulse
+     val infiniteTransition = rememberInfiniteTransition(label = "monitoring_pulse")
+     val pulseAlpha by if (isRunning) {
+         infiniteTransition.animateFloat(
+             initialValue = 0.4f,
+             targetValue = 1f,
+             animationSpec = infiniteRepeatable(
+                 animation = tween(1000, easing = LinearEasing),
+                 repeatMode = RepeatMode.Reverse
+             ),
+             label = "pulse_alpha"
+         )
+     } else { remember { mutableFloatStateOf(1f) } } // Static when offline
+
+     // Threat Logic
+     val (level, threatColor) = when {
+        !isRunning -> "OFFLINE" to offlineColor.copy(alpha=0.5f)
+        bpm > 20 -> "HIGH" to Color(0xFFFF5252) // Red
+        bpm > 5 -> "MED" to Color(0xFFFFAB40) // Orange
+        else -> "LOW" to primaryColor // Green/Primary
+    }
+    val progress = if (!isRunning) 0f else when {
+        bpm > 30 -> 1f
+        else -> (bpm / 30f).coerceIn(0.05f, 1f)
+    }
+
+     Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, (if (isRunning) primaryColor else offlineColor).copy(alpha = 0.2f), RoundedCornerShape(5.dp))
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
+            .padding(16.dp)
+     ) {
+         // HUD Header
+         Row(
+             modifier = Modifier.fillMaxWidth(), 
+             horizontalArrangement = Arrangement.SpaceBetween,
+             verticalAlignment = Alignment.CenterVertically
+         ) {
+             // Left: Title
+             Row(verticalAlignment = Alignment.CenterVertically) {
+                 Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .background(if (isRunning) threatColor.copy(alpha = pulseAlpha) else offlineColor, CircleShape)
+                 )
+                 Spacer(Modifier.width(8.dp))
+                 Text(
+                     text = if (isRunning) "TRAFFIC ANALYSIS // LIVE" else "TRAFFIC ANALYSIS // OFFLINE", 
+                     style = MaterialTheme.typography.labelSmall, 
+                     fontWeight = FontWeight.Bold, 
+                     color = if (isRunning) primaryColor else offlineColor,
+                     fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                     letterSpacing = 1.sp
+                 )
+             }
+         }
+         Spacer(Modifier.height(16.dp))
+         
+         // Canvas Graph
+         Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(120.dp) // Taller graph
+                .background(Color.Black.copy(alpha = 0.3f), RoundedCornerShape(5.dp))
+                .border(1.dp, (if (isRunning) primaryColor else offlineColor).copy(alpha = 0.1f), RoundedCornerShape(5.dp))
+         ) {
+             Canvas(modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp, vertical = 8.dp)) {
+                 val width = size.width
+                 val height = size.height
+                 // Use all 60 points or whatever is available, but limit if needed
+                 val graphData = if (data.isEmpty()) List(60) { 0 } else data
+                 val max = (graphData.maxOrNull() ?: 5).coerceAtLeast(5).toFloat()
+                 val graphColor = if (isRunning) primaryColor else offlineColor.copy(alpha=0.3f)
+                 
+                 // Draw Grid
+                 val verticalLines = 6 // roughly every 10 mins
+                 val horizontalLines = 4
+                 
+                 for (i in 1 until verticalLines) {
+                     val x = (width / verticalLines) * i
+                     drawLine(
+                         color = graphColor.copy(alpha = 0.05f),
+                         start = Offset(x, 0f),
+                         end = Offset(x, height),
+                         strokeWidth = 1f
+                     )
+                 }
+                 
+                 for (i in 1 until horizontalLines) {
+                     val y = (height / horizontalLines) * i
+                     drawLine(
+                         color = graphColor.copy(alpha = 0.05f),
+                         start = Offset(0f, y),
+                         end = Offset(width, y),
+                         strokeWidth = 1f
+                     )
+                 }
+
+                 // Draw Path (Smooth Bezier) -- ONLY IF RUNNING OR DATA EXISTS
+                 if (isRunning && graphData.isNotEmpty() && graphData.any { it > 0 }) {
+                     val path = Path()
+                     val stepX = width / (graphData.size - 1).coerceAtLeast(1)
+                     
+                     // Move to first point
+                     val firstY = height - ((graphData[0] / max) * height)
+                     path.moveTo(0f, firstY)
+
+                     for (i in 0 until graphData.size - 1) {
+                         val x1 = i * stepX
+                         val y1 = height - ((graphData[i] / max) * height)
+                         val x2 = (i + 1) * stepX
+                         val y2 = height - ((graphData[i + 1] / max) * height)
+
+                         // Control points for smooth curve
+                         val cx1 = (x1 + x2) / 2
+                         val cy1 = y1
+                         val cx2 = (x1 + x2) / 2
+                         val cy2 = y2
+
+                         path.cubicTo(cx1, cy1, cx2, cy2, x2, y2)
+                     }
+                     
+                     // Draw Line
+                     drawPath(
+                         path = path,
+                         color = primaryColor,
+                         style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round)
+                     )
+                     
+                     // Draw Gradient Fill
+                     path.lineTo(width, height)
+                     path.lineTo(0f, height)
+                     path.close()
+                     
+                     drawPath(
+                         path = path,
+                         brush = Brush.verticalGradient(
+                             colors = listOf(
+                                 primaryColor.copy(alpha = 0.3f),
+                                 primaryColor.copy(alpha = 0.0f)
+                             ),
+                             startY = 0f,
+                             endY = height
+                         )
+                     )
+                 } else if (!isRunning) {
+                     // Draw Flat Line or Static Noise if offline?
+                     // Let's just draw a flat line at the bottom
+                     drawLine(
+                         color = offlineColor.copy(alpha = 0.3f),
+                         start = Offset(0f, height),
+                         end = Offset(width, height),
+                         strokeWidth = 2.dp.toPx()
+                     )
+                 }
+             }
+             // Scanline Overlay
+             //if (isRunning) {
+                 Scanline(
+                     modifier = Modifier.fillMaxSize(),
+                     color = primaryColor.copy(alpha = 0.01f)
+                 )
+             //}
+         }
+         
+         // Time Labels
+         Spacer(Modifier.height(8.dp))
+         Row(
+             modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+             horizontalArrangement = Arrangement.SpaceBetween
+         ) {
+              Text("-60m", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f), fontSize = 10.sp)
+              Text("-45m", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f), fontSize = 10.sp)
+              Text("-30m", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f), fontSize = 10.sp)
+              Text("-15m", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f), fontSize = 10.sp)
+              Text("NOW", style = MaterialTheme.typography.labelSmall, color = if (isRunning) primaryColor else offlineColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+         }
+
+         Spacer(Modifier.height(12.dp))
+         
+         // Threat Indicator Bar
+         Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(4.dp)
+                .background(threatColor.copy(alpha = 0.2f), RoundedCornerShape(2.dp))
+         ) {
+             Box(
+                modifier = Modifier
+                    .fillMaxWidth(progress)
+                    .fillMaxHeight()
+                    .background(threatColor, RoundedCornerShape(2.dp))
+             )
+         }
+         
+         Spacer(Modifier.height(8.dp))
+
+         // Footer: Threat Level & BPM
+         Row(
+             modifier = Modifier.fillMaxWidth(),
+             horizontalArrangement = Arrangement.SpaceBetween,
+             verticalAlignment = Alignment.CenterVertically
+         ) {
+             // Bottom Left: Threat Logic
+             Text(
+                 text = if (isRunning) "THREAT: $level" else "SYSTEM: STANDBY", 
+                 color = threatColor, 
+                 fontWeight = FontWeight.Bold, 
+                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, 
+                 fontSize = 12.sp,
+                 letterSpacing = 1.sp
+             )
+             
+             // Bottom Right: BPM
+             Text(
+                 text = if (isRunning) "ACT :: $bpm/MIN" else "ACT :: ---", 
+                 color = MaterialTheme.colorScheme.onSurfaceVariant, 
+                 fontWeight = FontWeight.Bold, 
+                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, 
+                 fontSize = 12.sp,
+                 letterSpacing = 1.sp
+             )
+         }
+     }
+}
+
+@Composable
+fun CyberTerminal(logs: List<VpnLogEntry>, onLogClick: (String) -> Unit) {
+    val infiniteTransition = rememberInfiniteTransition(label = "cursor_blink")
+    val cursorAlpha by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 0.2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(800, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "cursor_alpha"
+    )
+
+    // Auto-scroll state
+    var autoScrollEnabled by remember { mutableStateOf(true) }
+    val listState = rememberScrollState()
+
+    // Auto-scroll logic
+    LaunchedEffect(logs.firstOrNull(), autoScrollEnabled) {
+        if (autoScrollEnabled && logs.isNotEmpty()) {
+            listState.animateScrollTo(listState.maxValue)
+        }
+    }
+
+    Column {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text("EVENT LOG", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                text = "AUTO-SCROLL: ${if(autoScrollEnabled) "ON" else "OFF"}",
+                style = MaterialTheme.typography.labelSmall,
+                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                color = if(autoScrollEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.clickable { autoScrollEnabled = !autoScrollEnabled }
+            )
+        }
+        Spacer(Modifier.height(8.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(140.dp)
+                .background(MaterialTheme.colorScheme.surfaceVariant) // Terminal BG
+                .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), RoundedCornerShape(5.dp))
+                //.padding(8.dp)
+        ) {
+             // Basic list
+             Column(modifier = Modifier.verticalScroll(listState).padding(8.dp)) {
+                 if (logs.isEmpty()) {
+                     Text("> Initializing system...", color = MaterialTheme.colorScheme.primary, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, fontSize = 12.sp)
+                     Text("> Waiting for traffic...", color = Color.Gray, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, fontSize = 12.sp)
+                 }
+                 logs.reversed().forEach { log ->
+                     Row(modifier = Modifier.clickable { onLogClick(log.domain) }.padding(vertical = 2.dp)) {
+                         Text("[${SimpleDateFormat("HH:mm:ss", Locale.US).format(Date(log.timestamp))}] ", color = Color.Gray, fontSize = 10.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
+                         Text(
+                             text = if (log.isBlocked) "BLOCKED: ${log.domain}" else "ALLOWED: ${log.domain}",
+                             color = if (log.isBlocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                             fontSize = 12.sp,
+                             fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                             maxLines = 1,
+                             overflow = TextOverflow.Ellipsis
+                         )
+                     }
+                 }
+                 // Blinking Cursor
+                 Box(Modifier.size(8.dp, 14.dp).background(MaterialTheme.colorScheme.primary.copy(alpha = cursorAlpha)))
+             }
+             Scanline(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.primary.copy(alpha = 0.02f))
+        }
+    }
+}
