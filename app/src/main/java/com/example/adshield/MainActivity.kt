@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -38,9 +39,11 @@ import com.example.adshield.service.LocalVpnService
 import com.example.adshield.ui.theme.AdShieldTheme
 import com.example.adshield.ui.components.* // Import CyberComponents
 import androidx.compose.ui.graphics.Path
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.animation.core.*
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.border
 import androidx.compose.foundation.Canvas
@@ -300,9 +303,96 @@ fun DashboardScreen(
                 )
             }
 
+            // PRIORITY 2: DATA & TIME SAVED (Rewards)
+            Spacer(modifier = Modifier.height(24.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Max), // Force equal height
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                CyberStatCard(
+                    label = "DATA SAVED",
+                    value = formatBytes(dataSaved),
+                    progress = (dataSaved / (100 * 1024 * 1024f)).coerceIn(0.01f, 1f), // Goal: 100 MB
+                    iconVector = null,
+                    modifier = Modifier.weight(1f).fillMaxHeight()
+                )
+                
+                val timeMs = VpnStats.timeSavedMs.value
+                val timeString = when {
+                    timeMs < 1000 -> "${timeMs}ms"
+                    timeMs < 60000 -> String.format("%.1fs", timeMs / 1000f)
+                    else -> "${timeMs / 60000}m"
+                }
+
+                CyberStatCard(
+                    label = "FASTER LOAD",
+                    value = timeString,
+                    progress = (timeMs / (5 * 60 * 1000f)).coerceIn(0.01f, 1f), // Goal: 5 Minutes
+                    progressSegments = 3,
+                    iconVector = androidx.compose.material.icons.Icons.Default.Refresh, 
+                    modifier = Modifier.weight(1f).fillMaxHeight()
+                )
+            }
+
+            // PRIORITY 3: LIVE TRAFFIC GRAPH (Trust)
+            Spacer(modifier = Modifier.height(24.dp))
+            CyberGraphSection(VpnStats.blockedHistory, bpm, isRunning)
+
+            Spacer(modifier = Modifier.height(32.dp))
+            
+            // PRIORITY 4: BLOCKED STATS (History) 
+            // BLOCKED REQUESTS HEADER
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = "BLOCKED REQUESTS",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    letterSpacing = 1.sp
+                )
+            }
             Spacer(modifier = Modifier.height(12.dp))
 
-            // PROTECTION ENGINE CARD
+            // BLOCKED STATS GRID (Total, Today, 7 Days)
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                 CyberStatCard(
+                    label = "TOTAL",
+                    value = blockedCount.toString(),
+                    modifier = Modifier.weight(1f)
+                )
+                CyberStatCard(
+                    label = "TODAY",
+                    value = VpnStats.blockedToday.value.toString(),
+                    modifier = Modifier.weight(1f)
+                )
+                CyberStatCard(
+                    label = "7 DAYS",
+                    value = VpnStats.blockedWeekly.value.toString(),
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            
+            // PRIORITY 5: TOP LISTS (Details)
+            Spacer(modifier = Modifier.height(24.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(Modifier.weight(1f)) {
+                    CyberTopList("TOP APPS", VpnStats.appBlockedStatsMap, onAllowClick = { /* No-op for now */ })
+                }
+                Box(Modifier.weight(1f)) {
+                    CyberTopList("TOP DOMAINS", VpnStats.domainBlockedStatsMap, onAllowClick = { domainToWhitelist = it; showWhitelistDialog = true })
+                }
+            }
+
+            // PRORITY 6: TERMINAL LOG (Deep Details)
+            Spacer(modifier = Modifier.height(24.dp))
+            CyberTerminal(logs = recentLogs, onLogClick = { domainToWhitelist = it; showWhitelistDialog = true })
+
+            // PRIORITY 7: PROTECTION ENGINE (Technical Footer)
+            Spacer(modifier = Modifier.height(24.dp))
             CyberFilterCard(
                 ruleCount = filterCount,
                 isUpdating = isUpdatingFilters,
@@ -324,77 +414,6 @@ fun DashboardScreen(
                 }
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
-            
-            // BLOCKED REQUESTS HEADER
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    text = "BLOCKED REQUESTS",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    letterSpacing = 1.sp
-                )
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // BLOCKED STATS GRID (Total, Today, 7 Days)
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                 CyberStatCard(
-                    label = "TOTAL",
-                    value = blockedCount.toString(),
-                    subValue = "LIFETIME",
-                    modifier = Modifier.weight(1f)
-                )
-                CyberStatCard(
-                    label = "TODAY",
-                    value = VpnStats.blockedToday.value.toString(),
-                    subValue = "SINCE 00:00",
-                    modifier = Modifier.weight(1f)
-                )
-                CyberStatCard(
-                    label = "7 DAYS",
-                    value = VpnStats.blockedWeekly.value.toString(),
-                    subValue = "WEEKLY",
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            // Saved Data Card (Full Width or part of another row)
-             Row(modifier = Modifier.fillMaxWidth()) {
-                CyberStatCard(
-                    label = "DATA SAVED",
-                    value = formatBytes(dataSaved),
-                    subValue = "ESTIMATED OPTIMIZATION",
-                    modifier = Modifier.fillMaxWidth()
-                )
-             }
-
-
-
-
-            // LIVE TRAFFIC GRAPH (Visual)
-            Spacer(modifier = Modifier.height(24.dp))
-            CyberGraphSection(VpnStats.blockedHistory, bpm)
-
-            // TOP LISTS
-            Spacer(modifier = Modifier.height(24.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Box(Modifier.weight(1f)) {
-                    CyberTopList("TOP APPS", VpnStats.appBlockedStatsMap, onAllowClick = { /* No-op for now */ })
-                }
-                Box(Modifier.weight(1f)) {
-                    CyberTopList("TOP DOMAINS", VpnStats.domainBlockedStatsMap, onAllowClick = { domainToWhitelist = it; showWhitelistDialog = true })
-                }
-            }
-
-            // TERMINAL LOG
-            Spacer(modifier = Modifier.height(24.dp))
-            CyberTerminal(logs = recentLogs, onLogClick = { domainToWhitelist = it; showWhitelistDialog = true })
-
 
             
             Spacer(modifier = Modifier.height(48.dp))
@@ -403,23 +422,39 @@ fun DashboardScreen(
 }
 
 @Composable
-fun CyberGraphSection(data: List<Int>, bpm: Int) {
+fun CyberGraphSection(data: List<Int>, bpm: Int, isRunning: Boolean) {
      val primaryColor = MaterialTheme.colorScheme.primary
+     val offlineColor = MaterialTheme.colorScheme.error // Or Gray
+     
      val infiniteTransition = rememberInfiniteTransition(label = "monitoring_pulse")
-     val pulseAlpha by infiniteTransition.animateFloat(
-         initialValue = 0.4f,
-         targetValue = 1f,
-         animationSpec = infiniteRepeatable(
-             animation = tween(1000, easing = LinearEasing),
-             repeatMode = RepeatMode.Reverse
-         ),
-         label = "pulse_alpha"
-     )
+     val pulseAlpha by if (isRunning) {
+         infiniteTransition.animateFloat(
+             initialValue = 0.4f,
+             targetValue = 1f,
+             animationSpec = infiniteRepeatable(
+                 animation = tween(1000, easing = LinearEasing),
+                 repeatMode = RepeatMode.Reverse
+             ),
+             label = "pulse_alpha"
+         )
+     } else { remember { mutableFloatStateOf(1f) } } // Static when offline
+
+     // Threat Logic (Force Low/Gray if offline)
+     val (level, threatColor) = when {
+        !isRunning -> "OFFLINE" to offlineColor.copy(alpha=0.5f)
+        bpm > 20 -> "HIGH" to Color(0xFFFF5252) // Red
+        bpm > 5 -> "MED" to Color(0xFFFFAB40) // Orange
+        else -> "LOW" to primaryColor // Green/Primary
+    }
+    val progress = if (!isRunning) 0f else when {
+        bpm > 30 -> 1f
+        else -> (bpm / 30f).coerceIn(0.05f, 1f)
+    }
 
      Column(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, primaryColor.copy(alpha = 0.2f), RoundedCornerShape(5.dp))
+            .border(1.dp, (if (isRunning) primaryColor else offlineColor).copy(alpha = 0.2f), RoundedCornerShape(5.dp))
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
             .padding(16.dp)
      ) {
@@ -434,28 +469,18 @@ fun CyberGraphSection(data: List<Int>, bpm: Int) {
                  Box(
                     modifier = Modifier
                         .size(8.dp)
-                        .background(primaryColor.copy(alpha = pulseAlpha), CircleShape)
+                        .background(if (isRunning) threatColor.copy(alpha = pulseAlpha) else offlineColor, CircleShape)
                  )
                  Spacer(Modifier.width(8.dp))
                  Text(
-                     text = "NET_TRAFFIC // LIVE", 
+                     text = if (isRunning) "TRAFFIC ANALYSIS // LIVE" else "TRAFFIC ANALYSIS // OFFLINE", 
                      style = MaterialTheme.typography.labelSmall, 
                      fontWeight = FontWeight.Bold, 
-                     color = primaryColor,
+                     color = if (isRunning) primaryColor else offlineColor,
                      fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                      letterSpacing = 1.sp
                  )
              }
-
-             // Right: BPM
-             Text(
-                 text = "ACT :: $bpm/MIN", 
-                 color = if (bpm > 5) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant, 
-                 fontWeight = FontWeight.Bold, 
-                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, 
-                 fontSize = 12.sp,
-                 letterSpacing = 1.sp
-             )
          }
          Spacer(Modifier.height(16.dp))
          
@@ -465,22 +490,24 @@ fun CyberGraphSection(data: List<Int>, bpm: Int) {
                 .fillMaxWidth()
                 .height(120.dp) // Taller graph
                 .background(Color.Black.copy(alpha = 0.3f), RoundedCornerShape(5.dp))
-                .border(1.dp, primaryColor.copy(alpha = 0.1f), RoundedCornerShape(5.dp))
+                .border(1.dp, (if (isRunning) primaryColor else offlineColor).copy(alpha = 0.1f), RoundedCornerShape(5.dp))
          ) {
-             Canvas(modifier = Modifier.fillMaxSize().padding(4.dp)) {
+             Canvas(modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp, vertical = 8.dp)) {
                  val width = size.width
                  val height = size.height
-                 val graphData = if (data.isEmpty()) List(20) { 0 } else data.takeLast(20)
+                 // Use all 60 points or whatever is available, but limit if needed
+                 val graphData = if (data.isEmpty()) List(60) { 0 } else data
                  val max = (graphData.maxOrNull() ?: 5).coerceAtLeast(5).toFloat()
+                 val graphColor = if (isRunning) primaryColor else offlineColor.copy(alpha=0.3f)
                  
                  // Draw Grid
-                 val verticalLines = 10
+                 val verticalLines = 6 // roughly every 10 mins
                  val horizontalLines = 4
                  
                  for (i in 1 until verticalLines) {
                      val x = (width / verticalLines) * i
                      drawLine(
-                         color = primaryColor.copy(alpha = 0.1f),
+                         color = graphColor.copy(alpha = 0.05f),
                          start = Offset(x, 0f),
                          end = Offset(x, height),
                          strokeWidth = 1f
@@ -490,29 +517,42 @@ fun CyberGraphSection(data: List<Int>, bpm: Int) {
                  for (i in 1 until horizontalLines) {
                      val y = (height / horizontalLines) * i
                      drawLine(
-                         color = primaryColor.copy(alpha = 0.1f),
+                         color = graphColor.copy(alpha = 0.05f),
                          start = Offset(0f, y),
                          end = Offset(width, y),
                          strokeWidth = 1f
                      )
                  }
 
-                 // Draw Path
-                 if (graphData.isNotEmpty() && graphData.any { it > 0 }) {
+                 // Draw Path (Smooth Bezier) -- ONLY IF RUNNING OR DATA EXISTS
+                 if (isRunning && graphData.isNotEmpty() && graphData.any { it > 0 }) {
                      val path = Path()
                      val stepX = width / (graphData.size - 1).coerceAtLeast(1)
                      
-                     graphData.forEachIndexed { index, value ->
-                         val x = index * stepX
-                         val y = height - ((value / max) * height)
-                         if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                     // Move to first point
+                     val firstY = height - ((graphData[0] / max) * height)
+                     path.moveTo(0f, firstY)
+
+                     for (i in 0 until graphData.size - 1) {
+                         val x1 = i * stepX
+                         val y1 = height - ((graphData[i] / max) * height)
+                         val x2 = (i + 1) * stepX
+                         val y2 = height - ((graphData[i + 1] / max) * height)
+
+                         // Control points for smooth curve
+                         val cx1 = (x1 + x2) / 2
+                         val cy1 = y1
+                         val cx2 = (x1 + x2) / 2
+                         val cy2 = y2
+
+                         path.cubicTo(cx1, cy1, cx2, cy2, x2, y2)
                      }
                      
                      // Draw Line
                      drawPath(
                          path = path,
                          color = primaryColor,
-                         style = Stroke(width = 3.dp.toPx())
+                         style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round)
                      )
                      
                      // Draw Gradient Fill
@@ -524,25 +564,128 @@ fun CyberGraphSection(data: List<Int>, bpm: Int) {
                          path = path,
                          brush = Brush.verticalGradient(
                              colors = listOf(
-                                 primaryColor.copy(alpha = 0.4f),
+                                 primaryColor.copy(alpha = 0.3f),
                                  primaryColor.copy(alpha = 0.0f)
                              ),
                              startY = 0f,
                              endY = height
                          )
                      )
+                 } else if (!isRunning) {
+                     // Draw Flat Line or Static Noise if offline?
+                     // Let's just draw a flat line at the bottom
+                     drawLine(
+                         color = offlineColor.copy(alpha = 0.3f),
+                         start = Offset(0f, height),
+                         end = Offset(width, height),
+                         strokeWidth = 2.dp.toPx()
+                     )
                  }
              }
+             // Scanline Overlay
+             //if (isRunning) {
+                 Scanline(
+                     modifier = Modifier.fillMaxSize(),
+                     color = primaryColor.copy(alpha = 0.01f)
+                 )
+             //}
+         }
+         
+         // Time Labels
+         Spacer(Modifier.height(8.dp))
+         Row(
+             modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+             horizontalArrangement = Arrangement.SpaceBetween
+         ) {
+              Text("-60m", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f), fontSize = 10.sp)
+              Text("-45m", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f), fontSize = 10.sp)
+              Text("-30m", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f), fontSize = 10.sp)
+              Text("-15m", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f), fontSize = 10.sp)
+              Text("NOW", style = MaterialTheme.typography.labelSmall, color = if (isRunning) primaryColor else offlineColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+         }
+
+         Spacer(Modifier.height(12.dp))
+         
+         // Threat Indicator Bar
+         Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(4.dp)
+                .background(threatColor.copy(alpha = 0.2f), RoundedCornerShape(2.dp))
+         ) {
+             Box(
+                modifier = Modifier
+                    .fillMaxWidth(progress)
+                    .fillMaxHeight()
+                    .background(threatColor, RoundedCornerShape(2.dp))
+             )
+         }
+         
+         Spacer(Modifier.height(8.dp))
+
+         // Footer: Threat Level & BPM
+         Row(
+             modifier = Modifier.fillMaxWidth(),
+             horizontalArrangement = Arrangement.SpaceBetween,
+             verticalAlignment = Alignment.CenterVertically
+         ) {
+             // Bottom Left: Threat Logic
+             Text(
+                 text = if (isRunning) "THREAT: $level" else "SYSTEM: STANDBY", 
+                 color = threatColor, 
+                 fontWeight = FontWeight.Bold, 
+                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, 
+                 fontSize = 12.sp,
+                 letterSpacing = 1.sp
+             )
+             
+             // Bottom Right: BPM
+             Text(
+                 text = if (isRunning) "ACT :: $bpm/MIN" else "ACT :: ---", 
+                 color = MaterialTheme.colorScheme.onSurfaceVariant, 
+                 fontWeight = FontWeight.Bold, 
+                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, 
+                 fontSize = 12.sp,
+                 letterSpacing = 1.sp
+             )
          }
      }
 }
 
 @Composable
 fun CyberTerminal(logs: List<VpnLogEntry>, onLogClick: (String) -> Unit) {
+    val infiniteTransition = rememberInfiniteTransition(label = "cursor_blink")
+    val cursorAlpha by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 0.2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(800, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "cursor_alpha"
+    )
+
+    // Auto-scroll state
+    var autoScrollEnabled by remember { mutableStateOf(true) }
+    val listState = rememberScrollState()
+
+    // Auto-scroll logic
+    LaunchedEffect(logs.firstOrNull(), autoScrollEnabled) {
+        if (autoScrollEnabled && logs.isNotEmpty()) {
+            listState.animateScrollTo(listState.maxValue)
+        }
+    }
+
     Column {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Text("EVENT LOG", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text("AUTO-SCROLL: ON", style = MaterialTheme.typography.labelSmall, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, color = MaterialTheme.colorScheme.primary.copy(alpha=0.7f))
+            Text(
+                text = "AUTO-SCROLL: ${if(autoScrollEnabled) "ON" else "OFF"}",
+                style = MaterialTheme.typography.labelSmall,
+                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                color = if(autoScrollEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.clickable { autoScrollEnabled = !autoScrollEnabled }
+            )
         }
         Spacer(Modifier.height(8.dp))
         Box(
@@ -551,11 +694,10 @@ fun CyberTerminal(logs: List<VpnLogEntry>, onLogClick: (String) -> Unit) {
                 .height(140.dp)
                 .background(MaterialTheme.colorScheme.surfaceVariant) // Terminal BG
                 .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), RoundedCornerShape(5.dp))
-                .padding(8.dp)
+                //.padding(8.dp)
         ) {
              // Basic list
-             val listState = rememberScrollState()
-             Column(modifier = Modifier.verticalScroll(listState)) {
+             Column(modifier = Modifier.verticalScroll(listState).padding(8.dp)) {
                  if (logs.isEmpty()) {
                      Text("> Initializing system...", color = MaterialTheme.colorScheme.primary, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, fontSize = 12.sp)
                      Text("> Waiting for traffic...", color = Color.Gray, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, fontSize = 12.sp)
@@ -573,61 +715,15 @@ fun CyberTerminal(logs: List<VpnLogEntry>, onLogClick: (String) -> Unit) {
                          )
                      }
                  }
-                 Box(Modifier.size(8.dp, 14.dp).background(MaterialTheme.colorScheme.primary).animateContentSize())
+                 // Blinking Cursor
+                 Box(Modifier.size(8.dp, 14.dp).background(MaterialTheme.colorScheme.primary.copy(alpha = cursorAlpha)))
              }
-             Scanline(modifier = Modifier.fillMaxSize(), color = Color.White.copy(alpha = 0.02f))
+             Scanline(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.primary.copy(alpha = 0.02f))
         }
     }
 }
 
-@Composable
-fun CyberActionButton(onClick: () -> Unit, isRunning: Boolean) {
-    Button(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(64.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        shape = RoundedCornerShape(8.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text = if (isRunning) "PROTECTION ACTIVE" else "ACTIVATE SHIELD",
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    letterSpacing = 1.sp
-                )
-                Text(
-                    text = if (isRunning) "TAP TO DEACTIVATE" else "Establish Secure Connection",
-                    color = Color.Gray,
-                    fontSize = 10.sp,
-                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(MaterialTheme.colorScheme.primary, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                 Icon(
-                     imageVector = if (isRunning) Icons.Default.Close else Icons.Default.PlayArrow,
-                     contentDescription = null,
-                     tint = MaterialTheme.colorScheme.background
-                 )
-            }
-        }
-    }
-}
+
 
 fun formatBytes(bytes: Long): String {
     if (bytes < 1024) return "$bytes B"

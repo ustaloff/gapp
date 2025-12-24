@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.adshield.ui.theme.NeonGreen
+import kotlin.math.roundToInt
 
 @Composable
 fun GridBackground(
@@ -265,6 +266,9 @@ fun CyberStatCard(
     label: String,
     value: String,
     subValue: String? = null,
+    growth: Int? = null,
+    progress: Float? = null,
+    progressSegments: Int = 1,
     iconVector: androidx.compose.ui.graphics.vector.ImageVector? = null,
     valueColor: Color = MaterialTheme.colorScheme.onSurface,
     modifier: Modifier = Modifier
@@ -302,14 +306,71 @@ fun CyberStatCard(
                 fontWeight = FontWeight.Bold,
                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
             )
-            if (subValue != null) {
+            
+            // Growth Indicator
+            if (growth != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = if (growth > 0) "↗" else if (growth < 0) "↘" else "−",
+                        color = if (growth >= 0) com.example.adshield.ui.theme.NeonGreen else Color(0xFFFF5252),
+                        fontSize = 12.sp
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        text = "${if(growth > 0) "+" else ""}$growth% Today",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (growth >= 0) com.example.adshield.ui.theme.NeonGreen else Color(0xFFFF5252),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            } else if (subValue != null) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = subValue,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontSize = 10.sp
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
                 )
+            }
+
+            // Progress Bar
+            if (progress != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                if (progressSegments == 1) {
+                    // Smooth Continuous Bar for Data Saved
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(4.dp)
+                            .background(com.example.adshield.ui.theme.NeonGreen.copy(alpha = 0.1f), RoundedCornerShape(2.dp))
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(progress)
+                                .fillMaxHeight()
+                                .background(com.example.adshield.ui.theme.NeonGreen, RoundedCornerShape(2.dp))
+                        )
+                    }
+                } else {
+                    // Segmented Bar for Time Saved
+                    Row(modifier = Modifier.fillMaxWidth().height(4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        val filledSegments = (progress * progressSegments).roundToInt().coerceIn(0, progressSegments)
+                        for (i in 0 until progressSegments) {
+                             Box(
+                                 modifier = Modifier
+                                     .weight(1f)
+                                     .fillMaxHeight()
+                                     .background(
+                                         color = if (i < filledSegments) com.example.adshield.ui.theme.NeonGreen else com.example.adshield.ui.theme.NeonGreen.copy(alpha = 0.1f),
+                                         shape = RoundedCornerShape(2.dp)
+                                     )
+                             )
+                        }
+                    }
+                }
             }
         }
     }
@@ -323,90 +384,6 @@ fun androidx.compose.ui.graphics.drawscope.DrawScope.drawGlow(
     size: Float
 ) {
     // Simplified glow implementation
-}
-
-@Composable
-fun CyberUnifiedControl(
-    isRunning: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val primaryColor = if (isRunning) MaterialTheme.colorScheme.primary else androidx.compose.ui.graphics.Color.White
-    val infiniteTransition = rememberInfiniteTransition(label = "unified_pulse")
-    
-    val borderAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 0.8f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "border_alpha"
-    )
-
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .border(1.dp, primaryColor.copy(alpha = borderAlpha), RoundedCornerShape(5.dp))
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f), RoundedCornerShape(5.dp))
-            .padding(16.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // LEFT COLUMN: Status Information
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.Center
-            ) {
-                // Status Header
-                Text(
-                    text = if (isRunning) "SYSTEM SECURE" else "SYSTEM VULNERABLE",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = primaryColor,
-                    letterSpacing = 1.sp
-                )
-                
-                Spacer(modifier = Modifier.height(4.dp))
-                
-                // Status Subtitle (Boxed)
-                Box(
-                    modifier = Modifier
-                        .border(1.dp, primaryColor.copy(alpha = 0.3f), RoundedCornerShape(5.dp))
-                        .background(primaryColor.copy(alpha = 0.1f), RoundedCornerShape(5.dp))
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                ) {
-                     Text(
-                        text = if (isRunning) "TUNNELING ACTIVE // IP MASKED" else "PROTECTION DISABLED // EXPOSED",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = primaryColor,
-                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                        fontSize = 10.sp
-                    )
-                }
-                
-
-            }
-            
-            // RIGHT COLUMN: Animated Indicator (Mini Shield)
-            Box(
-                modifier = Modifier
-                    .padding(start = 16.dp)
-                    .size(150.dp)
-                    .aspectRatio(1f),
-                contentAlignment = Alignment.Center
-            ) {
-                // Native size (approx 160dp internal, scaled slightly to fit 150dp comfortably or let it overflow slightly)
-                PulsatingShield(
-                   modifier = Modifier.scale(0.9f),
-                   isSecure = isRunning
-                )
-            }
-        }
-    }
 }
 
 @Composable
@@ -481,5 +458,8 @@ fun CyberPowerButton(
             modifier = Modifier.fillMaxSize(),
             isSecure = isRunning
         )
+
     }
 }
+
+

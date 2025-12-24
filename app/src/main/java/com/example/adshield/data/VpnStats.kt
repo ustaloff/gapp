@@ -24,6 +24,9 @@ object VpnStats {
 
     // Professional Metrics
     val blocksPerMinute = mutableStateOf(0)
+    val growthToday = mutableStateOf(0) // Percentage vs yesterday
+    val timeSavedMs = mutableStateOf(0L) // Estimated time saved in ms
+
     val appBlockedStats = mutableStateListOf<Pair<String, Int>>() // Simplified for sorting: actually let's use map and convert in UI, or stateMap
     val appBlockedStatsMap = mutableStateMapOf<String, Int>()
     val domainBlockedStatsMap = mutableStateMapOf<String, Int>()
@@ -34,9 +37,31 @@ object VpnStats {
     private const val KEY_DAILY_COUNTS = "daily_counts_csv" // "10,5,0,0,0,0,0"
     private const val KEY_LAST_DAY = "last_day_index"
     private const val KEY_DATA_SAVED = "data_saved"
+    private const val KEY_TIME_SAVED = "time_saved"
 
     // Daily buckets: index 0 is today, 1 is yesterday, etc.
     private val dailyBuckets = IntArray(7)
+
+
+
+    // ...
+
+    private fun updatePublicMetrics() {
+        blockedToday.value = dailyBuckets[0]
+        blockedWeekly.value = dailyBuckets.sum()
+        
+        // Calculate Growth (Today vs Yesterday)
+        val today = dailyBuckets[0]
+        val yesterday = dailyBuckets[1]
+        
+        if (yesterday > 0) {
+            growthToday.value = ((today - yesterday).toFloat() / yesterday.toFloat() * 100).toInt()
+        } else {
+            // If yesterday was 0, growth is technically infinite, but let's cap it or just show 100% if today > 0
+            growthToday.value = if (today > 0) 100 else 0
+        }
+    }
+
 
     // Mutex to protect concurrent updates from multiple threads
     private val statsLock = Mutex()
@@ -45,9 +70,9 @@ object VpnStats {
     private val _recentLogs = mutableStateListOf<VpnLogEntry>()
     val recentLogs: List<VpnLogEntry> get() = _recentLogs
 
-    // History for the graph (last 12 buckets, 1 minute each)
+    // History for the graph (last 60 buckets, 1 minute each)
     private val _blockedHistory = mutableStateListOf<Int>().apply { 
-        repeat(12) { add(0) } 
+        repeat(60) { add(0) } 
     }
     val blockedHistory: List<Int> get() = _blockedHistory
 
@@ -57,7 +82,7 @@ object VpnStats {
         isRunning.value = running
         if (!running) {
             _recentLogs.clear()
-            repeat(12) { _blockedHistory[it] = 0 }
+            repeat(60) { _blockedHistory[it] = 0 }
             blocksPerMinute.value = 0
         }
     }
@@ -66,6 +91,7 @@ object VpnStats {
         val prefs = context.getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE)
         blockedCount.value = prefs.getInt(KEY_TOTAL, 0)
         dataSavedBytes.value = prefs.getLong(KEY_DATA_SAVED, 0L)
+        timeSavedMs.value = prefs.getLong(KEY_TIME_SAVED, 0L)
         
         val savedCounts = prefs.getString(KEY_DAILY_COUNTS, "") ?: ""
         if (savedCounts.isNotEmpty()) {
@@ -108,20 +134,20 @@ object VpnStats {
          prefs.edit()
              .putInt(KEY_TOTAL, blockedCount.value)
              .putLong(KEY_DATA_SAVED, dataSavedBytes.value)
+             .putLong(KEY_TIME_SAVED, timeSavedMs.value)
              .putString(KEY_DAILY_COUNTS, csv)
              .apply()
     }
 
-    private fun updatePublicMetrics() {
-        blockedToday.value = dailyBuckets[0]
-        blockedWeekly.value = dailyBuckets.sum()
-    }
+
 
     suspend fun incrementBlocked(context: android.content.Context, domain: String, appName: String? = null) {
         statsLock.withLock {
             blockedCount.value++
             // Industry standard: 30KB saved per blocked ad
             dataSavedBytes.value += 30 * 1024 
+            // Estimated time saved: 300ms per blocked resource
+            timeSavedMs.value += 300
             
             checkDayReset(context)
             dailyBuckets[0]++
@@ -129,8 +155,8 @@ object VpnStats {
             updatePublicMetrics() 
             
             updateHistory()
-            _blockedHistory[11]++
-            blocksPerMinute.value = _blockedHistory[11] // Live BPM update
+            _blockedHistory[59]++
+            blocksPerMinute.value = _blockedHistory[59] // Live BPM update
 
             // Update Domain Stats
             domainBlockedStatsMap[domain] = (domainBlockedStatsMap[domain] ?: 0) + 1
