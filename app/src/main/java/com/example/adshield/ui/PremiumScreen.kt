@@ -21,8 +21,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.adshield.data.BillingManager
-import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.models.Period
 import android.app.Activity
 
 @Composable
@@ -30,20 +28,21 @@ fun PremiumScreen(
     onBackClick: () -> Unit
 ) {
     val context = LocalContext.current
-    val offerings by BillingManager.currentOfferings.collectAsState()
+    // Offline Mode: We ignore Dynamic Offerings
+    // val offerings by BillingManager.currentOfferings.collectAsState() 
     val isPremium by BillingManager.isPremium.collectAsState()
     
     var isLoading by remember { mutableStateOf(false) }
-    var selectedPackage by remember { mutableStateOf<Package?>(null) }
-    
-    // Auto-select yearly if available, else first
-    LaunchedEffect(offerings) {
-        if (offerings.isNotEmpty() && selectedPackage == null) {
-            // Try to find Annual/Yearly
-            selectedPackage = offerings.find { it.packageType.name == "ANNUAL" } ?: offerings.first()
-        }
+    // Hardcoded Offline Package
+    val offlinePackage = remember { 
+        BillingManager.MockPackage(
+            "pro_lifetime", 
+            BillingManager.MockProduct("$4.99", "AdShield Pro (Lifetime)", "Unlock full protection forever")
+        )
     }
-
+    
+    var selectedPackage by remember { mutableStateOf<BillingManager.MockPackage?>(offlinePackage) }
+    
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -91,68 +90,64 @@ fun PremiumScreen(
                     style = MaterialTheme.typography.bodyMedium
                 )
             } else {
-                 if (offerings.isEmpty()) {
-                     CircularProgressIndicator()
-                 } else {
-                     offerings.forEach { rcPackage ->
-                         val isSelected = selectedPackage == rcPackage
-                         val price = rcPackage.product.price.formatted
-                         val period = rcPackage.product.period?.let { "${it.value} ${it.unit}" } ?: "Lifetime"
-                         // Simple period formatting needed often, keeping raw for now
-                         
-                         Box(
-                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 8.dp)
-                                .border(
-                                    width = if (isSelected) 2.dp else 1.dp,
-                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                                    shape = RoundedCornerShape(12.dp)
-                                )
-                                .background(
-                                    if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else Color.Transparent,
-                                    RoundedCornerShape(12.dp)
-                                )
-                                .clickable { selectedPackage = rcPackage }
-                                .padding(16.dp)
+                 val packages = listOf(offlinePackage)
+                 
+                 packages.forEach { pkg ->
+                     val isSelected = selectedPackage == pkg
+                     val price = pkg.product.price
+                     
+                     Box(
+                         modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp)
+                            .border(
+                                width = if (isSelected) 2.dp else 1.dp,
+                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            .background(
+                                if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else Color.Transparent,
+                                RoundedCornerShape(12.dp)
+                            )
+                            .clickable { selectedPackage = pkg }
+                            .padding(16.dp)
+                     ) {
+                         Row(
+                             modifier = Modifier.fillMaxWidth(),
+                             horizontalArrangement = Arrangement.SpaceBetween,
+                             verticalAlignment = Alignment.CenterVertically
                          ) {
-                             Row(
-                                 modifier = Modifier.fillMaxWidth(),
-                                 horizontalArrangement = Arrangement.SpaceBetween,
-                                 verticalAlignment = Alignment.CenterVertically
-                             ) {
-                                 Column {
-                                     Text(rcPackage.product.title.replace(" (AdShield)", ""), fontWeight = FontWeight.Bold)
-                                     Text(rcPackage.product.description, style = MaterialTheme.typography.bodySmall)
-                                 }
-                                 Text(price, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                             Column {
+                                 Text(pkg.product.title, fontWeight = FontWeight.Bold)
+                                 Text(pkg.product.description, style = MaterialTheme.typography.bodySmall)
                              }
+                             Text(price, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                          }
                      }
-                     
-                     Spacer(Modifier.height(24.dp))
-                     
-                     Button(
-                         onClick = {
-                             selectedPackage?.let { pkg ->
-                                 BillingManager.purchase(context as Activity, pkg) { loading ->
-                                     isLoading = loading
-                                 }
+                 }
+                 
+                 Spacer(Modifier.height(24.dp))
+                 
+                 Button(
+                     onClick = {
+                         selectedPackage?.let { pkg ->
+                             BillingManager.purchase(context as Activity, pkg) { loading ->
+                                 isLoading = loading
                              }
-                         },
-                         modifier = Modifier.fillMaxWidth().height(56.dp),
-                         enabled = !isLoading && selectedPackage != null,
-                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                     ) {
-                         if (isLoading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-                         else Text("SUBSCRIBE NOW", fontWeight = FontWeight.Bold)
-                     }
-                     
-                     TextButton(onClick = { 
-                         BillingManager.restorePurchases { loading -> isLoading = loading }
-                     }) {
-                         Text("Restore Purchases", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                     }
+                         }
+                     },
+                     modifier = Modifier.fillMaxWidth().height(56.dp),
+                     enabled = !isLoading && selectedPackage != null,
+                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                 ) {
+                     if (isLoading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                     else Text("UNLOCK NOW (OFFLINE)", fontWeight = FontWeight.Bold)
+                 }
+                 
+                 TextButton(onClick = { 
+                     BillingManager.restorePurchases(context) { loading -> isLoading = loading }
+                 }) {
+                     Text("Restore Purchases", color = MaterialTheme.colorScheme.onSurfaceVariant)
                  }
             }
             

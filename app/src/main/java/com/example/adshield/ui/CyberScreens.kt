@@ -233,16 +233,12 @@ fun HomeView(
             }
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
-
-
-
         // PRORITY 6: TERMINAL LOG (Deep Details)
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
         CyberTerminal(logs = recentLogs, onLogClick = { onLogClick(it) })
 
         // PRIORITY 7: PROTECTION ENGINE (Technical Footer)
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(12.dp))
         CyberFilterCard(
             ruleCount = filterCount,
             isUpdating = isUpdatingFilters,
