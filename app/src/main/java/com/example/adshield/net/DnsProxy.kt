@@ -106,20 +106,24 @@ class DnsProxy(private val vpnService: VpnService) {
             val dnsMessage = DnsMessage(dnsQuery)
             val domain = dnsMessage.questionName
             
-            var (dnsResponse, status) = when {
+            val status = FilterEngine.checkDomain(domain)
+            
+            var (dnsResponse, statusString) = when {
                 FilterEngine.isDohBypass(domain) -> {
+                    // Treat DoH bypass as BLOCKED for now, or create new status
+                    VpnStats.increment(vpnService, domain, FilterEngine.FilterStatus.BLOCKED, appName) 
                     Log.i("DnsProxy", "BLOCKING (DoH Bypass): $domain")
-                    // Use NXDOMAIN for DoH bypass so browsers fall back faster
                     Pair(dnsMessage.createErrorResponse(), "BLOCKED_DOH")
                 }
-                FilterEngine.shouldBlock(domain) -> {
-                    VpnStats.incrementBlocked(vpnService, domain, appName)
+                status == FilterEngine.FilterStatus.BLOCKED -> {
+                    VpnStats.increment(vpnService, domain, FilterEngine.FilterStatus.BLOCKED, appName)
                     Log.i("DnsProxy", "BLOCKED: $domain from $appName")
                     Pair(dnsMessage.createBlockedResponse(), "BLOCKED")
                 }
                 else -> {
-                    VpnStats.incrementTotal(domain, appName)
-                    Log.i("DnsProxy", "ALLOWING: $domain from $appName (Type: ${dnsMessage.getQTypeName()})")
+                    // ALLOWED_USER, ALLOWED_SYSTEM, or ALLOWED_DEFAULT
+                    VpnStats.increment(vpnService, domain, status, appName)
+                    Log.i("DnsProxy", "ALLOWING ($status): $domain from $appName")
                     
                     var response: ByteArray? = null
                     

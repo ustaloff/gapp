@@ -18,26 +18,34 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.ThumbUp
-import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Bolt // Replaced Speed
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
 import com.example.adshield.data.VpnStats
 import com.example.adshield.data.VpnLogEntry
-import com.example.adshield.data.AppPreferences
 import androidx.compose.ui.platform.LocalContext
+import com.example.adshield.data.AppPreferences
+import com.example.adshield.filter.FilterEngine
 import com.example.adshield.ui.components.*
 import com.example.adshield.data.UserRepository
 import kotlinx.coroutines.launch
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount
+import com.google.android.gms.common.api.ApiException
 import com.google.firebase.auth.FirebaseUser
-import androidx.compose.material.icons.filled.CheckCircle
+import android.widget.Toast
 
 @Composable
 fun HomeView(
@@ -47,6 +55,8 @@ fun HomeView(
     filterCount: Int,
     dataSaved: Long,
     recentLogs: List<VpnLogEntry>,
+    excludedApps: Set<String>, // Added state
+    filterUpdateTrigger: Long, // Added trigger for Domain/Filter UI refresh
     isUpdatingFilters: Boolean,
     onStartClick: () -> Unit,
     onStopClick: () -> Unit,
@@ -57,13 +67,19 @@ fun HomeView(
 ) {
     val scrollState = rememberScrollState()
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 24.dp)
-            .verticalScroll(scrollState),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .background(MaterialTheme.colorScheme.background)
     ) {
+        GridBackground()
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp)
+                .verticalScroll(scrollState),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
         // TOP BAR
         Spacer(modifier = Modifier.height(16.dp))
         // CENTERED HEADER (Logo + Title)
@@ -145,7 +161,7 @@ fun HomeView(
                         value = timeString,
                         progress = (timeMs / (5 * 60 * 1000f)).coerceIn(0.01f, 1f),
                         progressSegments = 3,
-                        iconVector = androidx.compose.material.icons.Icons.Filled.Speed,
+                        iconVector = androidx.compose.material.icons.Icons.Default.Bolt, // Changed from Speed to Bolt
                         modifier = Modifier.weight(1f).fillMaxHeight()
                     )
                 }
@@ -193,15 +209,33 @@ fun HomeView(
         }
         
         // PRIORITY 5: TOP LISTS (Details)
+        val context = LocalContext.current
         Spacer(modifier = Modifier.height(24.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Box(Modifier.weight(1f)) {
-                CyberTopList("TOP APPS", VpnStats.appBlockedStatsMap, onAllowClick = { onAppClick(it) })
+                CyberTopList(
+                    title = "TOP APPS", 
+                    data = VpnStats.appBlockedStatsMap, 
+                    onAllowClick = { onAppClick(it) },
+                    isWhitelisted = { pkg -> excludedApps.contains(pkg) } // Use State
+                )
             }
             Box(Modifier.weight(1f)) {
-                CyberTopList("TOP DOMAINS", VpnStats.domainBlockedStatsMap, onAllowClick = { onLogClick(it) })
+                CyberTopList(
+                    title = "TOP DOMAINS", 
+                    data = VpnStats.domainBlockedStatsMap, 
+                    onAllowClick = { onLogClick(it) },
+                    isWhitelisted = { domain -> 
+                        val tick = filterUpdateTrigger // Force Recomp reading
+                        FilterEngine.checkDomain(domain) == FilterEngine.FilterStatus.ALLOWED_USER 
+                    }
+                )
             }
         }
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+
 
         // PRORITY 6: TERMINAL LOG (Deep Details)
         Spacer(modifier = Modifier.height(24.dp))
@@ -216,6 +250,7 @@ fun HomeView(
         )
         
         Spacer(modifier = Modifier.height(150.dp))
+    }
     }
 }
 
@@ -303,7 +338,10 @@ fun StatsView(
 
 @Composable
 fun SettingsView(
+    onBackClick: () -> Unit,
     onWhitelistClick: () -> Unit,
+    onDomainConfigClick: () -> Unit,
+    onBlockedConfigClick: () -> Unit,
     onPremiumClick: () -> Unit
 ) {
     val context = LocalContext.current
@@ -315,43 +353,42 @@ fun SettingsView(
 
     // -- Google Sign In Setup --
     // We observe the user state to update UI immediately
-    var currentUser by remember { mutableStateOf(UserRepository.getCurrentUser()) }
-    
-    // Refresh user on composition (in case it changed)
-    LaunchedEffect(Unit) {
-        currentUser = UserRepository.getCurrentUser()
-    }
+    val currentUser by UserRepository.user.collectAsState()
+    var isSigningIn by remember { mutableStateOf(false) }
 
-    val webClientId = androidx.compose.ui.res.stringResource(com.example.adshield.R.string.default_web_client_id)
-    val gso = remember {
-         com.google.android.gms.auth.api.signin.GoogleSignInOptions.Builder(com.google.android.gms.auth.api.signin.GoogleSignInOptions.DEFAULT_SIGN_IN)
-             .requestIdToken(webClientId)
+    // Explicitly defining gso and client to assist compiler type inference
+    val gso = remember<GoogleSignInOptions> {
+         GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+             .requestIdToken(context.getString(com.example.adshield.R.string.default_web_client_id))
              .requestEmail()
              .build()
     }
-    val googleSignInClient = remember { com.google.android.gms.auth.api.signin.GoogleSignIn.getClient(context, gso) }
+    val googleSignInClient = remember<GoogleSignInClient> { GoogleSignIn.getClient(context, gso) }
 
     val signInLauncher = rememberLauncherForActivityResult(
          contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
-         val task = com.google.android.gms.auth.api.signin.GoogleSignIn.getSignedInAccountFromIntent(result.data)
+         val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
          try {
-             val account = task.getResult(com.google.android.gms.common.api.ApiException::class.java)
+             val account: GoogleSignInAccount = task.getResult(ApiException::class.java)
              val idToken = account.idToken
              if (idToken != null) {
                  scope.launch {
                       val authResult = UserRepository.signInWithGoogle(idToken)
+                      isSigningIn = false
                       if (authResult.isSuccess) {
-                          currentUser = UserRepository.getCurrentUser()
-                          android.widget.Toast.makeText(context, "Identity Linked!", android.widget.Toast.LENGTH_SHORT).show()
+                          Toast.makeText(context, "Identity Linked!", Toast.LENGTH_SHORT).show()
                       } else {
-                          android.widget.Toast.makeText(context, "Link Failed", android.widget.Toast.LENGTH_SHORT).show()
+                          Toast.makeText(context, "Sign In Failed: ${authResult.exceptionOrNull()?.message}", Toast.LENGTH_LONG).show()
                       }
                  }
+             } else {
+                 isSigningIn = false
+                 Toast.makeText(context, "Error: Google ID Token is missing", Toast.LENGTH_SHORT).show()
              }
-         } catch (e: com.google.android.gms.common.api.ApiException) {
-              android.util.Log.w("Auth", "Google sign in failed", e)
-              android.widget.Toast.makeText(context, "Sign In Error: ${e.statusCode}", android.widget.Toast.LENGTH_SHORT).show()
+         } catch (e: Exception) {
+             isSigningIn = false
+             Toast.makeText(context, "Google Sign In Error", Toast.LENGTH_SHORT).show()
          }
     }
 
@@ -359,22 +396,18 @@ fun SettingsView(
         AlertDialog(
             onDismissRequest = { showUrlDialog = false },
             title = { Text("FILTER SOURCE URL") },
-            text = {
-                Column {
-                    Text("Enter raw text URL for block list:", style = MaterialTheme.typography.bodySmall)
-                    Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = tempUrl,
-                        onValueChange = { tempUrl = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-                }
+            text = { 
+                OutlinedTextField(
+                    value = tempUrl,
+                    onValueChange = { tempUrl = it },
+                    label = { Text("https://...") },
+                    singleLine = true
+                )
             },
             confirmButton = {
                 TextButton(onClick = {
-                    prefs.setFilterSourceUrl(tempUrl)
                     currentUrl = tempUrl
+                    prefs.setFilterSourceUrl(tempUrl)
                     showUrlDialog = false
                 }) { Text("SAVE") }
             },
@@ -384,97 +417,97 @@ fun SettingsView(
         )
     }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 24.dp)
-            .padding(top = 16.dp)
-            .verticalScroll(rememberScrollState())
+            .background(MaterialTheme.colorScheme.background)
     ) {
-         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-            Spacer(Modifier.width(8.dp))
+        GridBackground()
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
+         // Custom Header with Back Button
+        Spacer(modifier = Modifier.height(16.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(
+                onClick = onBackClick,
+                modifier = Modifier
+                    .size(40.dp)
+                    .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), RoundedCornerShape(5.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(5.dp))
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
+                    contentDescription = "Back", 
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
             Text(
-                text = "SYSTEM CONFIGURATION",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                letterSpacing = 2.sp
+                 text = "SYSTEM CONFIG",
+                 style = MaterialTheme.typography.titleMedium,
+                 fontWeight = FontWeight.Bold,
+                 letterSpacing = 1.sp,
+                 color = MaterialTheme.colorScheme.primary,
+                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
             )
         }
-        Spacer(Modifier.height(32.dp))
 
-        // SECTION: ACCOUNT (CYBER IDENTITY)
-        Text(
-            text = "IDENTITY",
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        
+        // Account Status Card
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha=0.3f), RoundedCornerShape(8.dp))
-                .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                .border(1.dp, MaterialTheme.colorScheme.secondary, RoundedCornerShape(8.dp))
                 .padding(16.dp)
         ) {
-             Column {
-                 Row(
-                     verticalAlignment = Alignment.CenterVertically,
-                     modifier = Modifier.fillMaxWidth()
-                 ) {
-                     Icon(
-                         imageVector = if (currentUser != null) Icons.Default.CheckCircle else Icons.Default.Info,
-                         contentDescription = null,
-                         tint = if (currentUser != null) Color.Green else MaterialTheme.colorScheme.onSurfaceVariant
-                     )
-                     Spacer(modifier = Modifier.width(12.dp))
-                     Column {
-                         Text(
-                             text = if (currentUser != null) "LINKED" else "NOT LINKED",
-                             fontWeight = FontWeight.Bold,
-                             color = if (currentUser != null) Color.Green else MaterialTheme.colorScheme.onSurfaceVariant
-                         )
-                         if (currentUser != null) {
-                             Text(
-                                 text = currentUser?.email ?: "Unknown ID",
-                                 style = MaterialTheme.typography.labelSmall,
-                                 color = MaterialTheme.colorScheme.onSurfaceVariant
-                             )
-                         }
-                     }
-                 }
-                 
-                 Spacer(modifier = Modifier.height(16.dp))
-                 
-                 if (currentUser == null) {
+             if (currentUser != null) {
+                 Column {
+                     Text("OPERATOR IDENTIFIED", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
+                     Text(currentUser?.email ?: "Unknown", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                     Spacer(modifier = Modifier.height(8.dp))
                      Button(
-                         onClick = { signInLauncher.launch(googleSignInClient.signInIntent) },
-                         modifier = Modifier.fillMaxWidth(),
-                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                         shape = RoundedCornerShape(4.dp)
-                     ) {
-                         Text("LINK GOOGLE IDENTITY")
-                     }
-                 } else {
-                      OutlinedButton(
                          onClick = { 
-                             UserRepository.signOut()
-                             currentUser = null
+                             com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
                              googleSignInClient.signOut()
                          },
-                         modifier = Modifier.fillMaxWidth(),
-                         shape = RoundedCornerShape(4.dp)
+                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                      ) {
-                         Text("UNLINK IDENTITY")
+                         Text("TERMINATE SESSION")
+                     }
+                 }
+             } else {
+                 Column {
+                     Text("NO IDENTITY", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                     Spacer(modifier = Modifier.height(8.dp))
+                     Button(
+                         onClick = { 
+                            isSigningIn = true
+                            signInLauncher.launch(googleSignInClient.signInIntent) 
+                         },
+                         enabled = !isSigningIn,
+                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                     ) {
+                         if (isSigningIn) {
+                             CircularProgressIndicator(
+                                 modifier = Modifier.size(24.dp),
+                                 color = MaterialTheme.colorScheme.onPrimary,
+                                 strokeWidth = 2.dp
+                             )
+                         } else {
+                             Text("LINK IDENTITY (GOOGLE)")
+                         }
                      }
                  }
              }
         }
-
-        Spacer(Modifier.height(32.dp))
+        
+        Spacer(modifier = Modifier.height(24.dp))
         
         // PREMIUM BANNER
         Box(
@@ -504,7 +537,7 @@ fun SettingsView(
         
         Spacer(Modifier.height(24.dp))
         
-        // Item 1: Whitelist
+        // Item 1: Whitelist (Renamed to APP WHITELIST)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -514,10 +547,48 @@ fun SettingsView(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                 Column {
-                    Text("WHITELIST MANAGEMENT", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                    Text("Manage allowed domains and apps", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("APP WHITELIST", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                    Text("Exclude apps from VPN", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        // Item 2: Domain Config
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                .clickable(onClick = onDomainConfigClick)
+                .padding(16.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                Column {
+                    Text("DOMAIN CONFIG", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                    Text("Manage allowed domains", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Icon(Icons.Default.List, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            }
+        }
+        
+        Spacer(Modifier.height(16.dp))
+
+        // Item 3: Blocked Config (User Banned)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                .clickable(onClick = onBlockedConfigClick)
+                .padding(16.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                Column {
+                    Text("BLOCKED CONFIG", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                    Text("Manage banned domains", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Icon(Icons.Default.Close, contentDescription = null, tint = MaterialTheme.colorScheme.error)
             }
         }
 
@@ -541,5 +612,6 @@ fun SettingsView(
         }
         
          Spacer(modifier = Modifier.height(150.dp))
+    }
     }
 }

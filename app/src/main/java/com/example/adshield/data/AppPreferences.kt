@@ -10,6 +10,7 @@ class AppPreferences(context: Context) {
     companion object {
         private const val KEY_EXCLUDED_APPS = "excluded_apps"
         private const val KEY_USER_ALLOWLIST = "user_allowlist"
+        private const val KEY_USER_BLOCKLIST = "user_blocklist"
         private const val KEY_FILTER_SOURCE = "filter_source_url"
     }
 
@@ -49,6 +50,24 @@ class AppPreferences(context: Context) {
         val current = getUserAllowlist().toMutableSet()
         current.remove(domain.lowercase())
         prefs.edit().putStringSet(KEY_USER_ALLOWLIST, current).apply()
+    }
+
+    // --- User-Defined Domain Blocklist ---
+
+    fun getUserBlocklist(): Set<String> {
+        return prefs.getStringSet(KEY_USER_BLOCKLIST, emptySet()) ?: emptySet()
+    }
+
+    fun addToUserBlocklist(domain: String) {
+        val current = getUserBlocklist().toMutableSet()
+        current.add(domain.lowercase())
+        prefs.edit().putStringSet(KEY_USER_BLOCKLIST, current).apply()
+    }
+
+    fun removeFromUserBlocklist(domain: String) {
+        val current = getUserBlocklist().toMutableSet()
+        current.remove(domain.lowercase())
+        prefs.edit().putStringSet(KEY_USER_BLOCKLIST, current).apply()
     }
 
     // --- Blocklist Source Configuration ---

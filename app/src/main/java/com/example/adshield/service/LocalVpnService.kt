@@ -101,6 +101,17 @@ class LocalVpnService : VpnService() {
                 addAddress("fd00::2", 64)
                 addDnsServer(vpnDnsServerV6)
                 addRoute(vpnDnsServerV6, 128)
+
+                // SWISS QUALITY: Capture Hardcoded DNS (Rogue Apps)
+                // We route these common DNS IPs into the VPN to prevent bypass.
+                val commonDns = listOf("8.8.8.8", "8.8.4.4", "1.1.1.1", "1.0.0.1", "9.9.9.9")
+                commonDns.forEach { dns ->
+                    try {
+                        addRoute(dns, 32)
+                    } catch (e: Exception) {
+                        Log.e("LocalVpnService", "Failed to route common DNS: $dns", e)
+                    }
+                }
                 
                 // 1. Always exclude AdShield itself (Network Loop prevention)
                 addDisallowedApplication(packageName)

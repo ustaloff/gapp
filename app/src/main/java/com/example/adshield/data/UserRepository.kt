@@ -3,12 +3,25 @@ package com.example.adshield.data
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.tasks.await
 import android.util.Log
 
 object UserRepository {
     private val auth by lazy { FirebaseAuth.getInstance() }
     private val db by lazy { FirebaseFirestore.getInstance() }
+
+    // Reactive user state
+    private val _user = kotlinx.coroutines.flow.MutableStateFlow<FirebaseUser?>(null)
+    val user: kotlinx.coroutines.flow.StateFlow<FirebaseUser?> = _user
+
+    init {
+        // Initialize state with current user and listen for changes
+        _user.value = auth.currentUser
+        auth.addAuthStateListener { firebaseAuth ->
+            _user.value = firebaseAuth.currentUser
+        }
+    }
 
     fun getCurrentUser(): FirebaseUser? {
         return auth.currentUser

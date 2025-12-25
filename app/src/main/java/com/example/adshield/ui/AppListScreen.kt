@@ -10,6 +10,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -118,15 +120,65 @@ fun AppListScreen(
                 singleLine = true
             )
 
+            // FILTERS (2 Toggles)
+            var showWhitelistedOnly by remember { mutableStateOf(false) }
+            var showSystemApps by remember { mutableStateOf(false) } // Default hidden
+            
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                 // Left: Whitelist Filter
+                 FilterChip(
+                     selected = showWhitelistedOnly,
+                     onClick = { showWhitelistedOnly = !showWhitelistedOnly },
+                     label = { Text(if (showWhitelistedOnly) "WHITELISTED ONLY" else "SHOW ALL") },
+                     leadingIcon = {
+                         if (showWhitelistedOnly) Icon(Icons.Default.CheckCircle, null, modifier = Modifier.size(16.dp)) 
+                     },
+                     colors = FilterChipDefaults.filterChipColors(
+                         selectedContainerColor = MaterialTheme.colorScheme.primary,
+                         selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                     )
+                 )
+
+                 // Right: System Filter
+                 FilterChip(
+                     selected = showSystemApps,
+                     onClick = { showSystemApps = !showSystemApps },
+                     label = { Text("SYSTEM APPS") },
+                     leadingIcon = {
+                         if (showSystemApps) Icon(Icons.Default.Settings, null, modifier = Modifier.size(16.dp))
+                     },
+                     colors = FilterChipDefaults.filterChipColors(
+                         selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                         selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
+                     )
+                 )
+            }
+
             // LIST
             if (isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             } else {
-                val filteredApps = apps.filter {
-                    it.name.contains(searchQuery, ignoreCase = true) ||
-                    it.packageName.contains(searchQuery, ignoreCase = true)
+                val filteredApps = apps.filter { app ->
+                     // 1. Search Query
+                    val matchesSearch = app.name.contains(searchQuery, ignoreCase = true) ||
+                                      app.packageName.contains(searchQuery, ignoreCase = true)
+                    
+                    // 2. Whitelist Filter
+                    val isExcluded = excludedApps.contains(app.packageName)
+                    val matchesWhitelist = if (showWhitelistedOnly) isExcluded else true
+                    
+                    // 3. System Filter
+                    // If showSystemApps is FALSE, we hide system apps (isSystem=true)
+                    // If showSystemApps is TRUE, we show everything
+                    val matchesSystem = if (showSystemApps) true else !app.isSystem
+                    
+                    matchesSearch && matchesWhitelist && matchesSystem
                 }
 
                 if (filteredApps.isEmpty()) {

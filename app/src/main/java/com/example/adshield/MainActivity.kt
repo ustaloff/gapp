@@ -89,6 +89,11 @@ class MainActivity : ComponentActivity() {
                 ) {
                     var currentScreen by rememberSaveable { mutableStateOf("splash") }
                     val user = com.example.adshield.data.UserRepository.getCurrentUser()
+
+                    // -- TOAST STATE (Lifted to onCreate for access in callbacks) --
+                    var toastVisible by remember { mutableStateOf(false) }
+                    var toastMessage by remember { mutableStateOf("") }
+                    var toastType by remember { mutableStateOf(CyberToastType.INFO) }
                     
                     LaunchedEffect(Unit) {
                         // Always go to dashboard
@@ -101,26 +106,41 @@ class MainActivity : ComponentActivity() {
                         DashboardScreen(
                             onStartClick = { checkPermissionsAndStart() },
                             onStopClick = { stopVpnService() },
-                            onWhitelistClick = { currentScreen = "whitelist" },
                             onWhitelistApp = { packageName ->
                                 val prefs = AppPreferences(this@MainActivity)
-                                if (!prefs.getExcludedApps().contains(packageName)) {
+                                val currentExcluded = prefs.getExcludedApps()
+                                if (currentExcluded.contains(packageName)) {
+                                    // WAS EXCLUDED -> NOW INCLUDE (PROTECT)
+                                    prefs.removeExcludedApp(packageName)
+                                    toastMessage = "APP PROTECTED"
+                                    toastType = CyberToastType.SUCCESS
+                                    toastVisible = true
+                                } else {
+                                    // WAS INCLUDED -> NOW EXCLUDE (WHITELIST)
                                     prefs.addExcludedApp(packageName)
-                                    android.widget.Toast.makeText(this@MainActivity, "Whitelisted: $packageName", android.widget.Toast.LENGTH_SHORT).show()
-                                    if (VpnStats.isRunning.value) { // Use State directly or track locally? VpnStats is global object
-                                         stopVpnService()
-                                    // Restart with delay
+                                    toastMessage = "APP WHITELISTED" // bypassing VPN
+                                    toastType = CyberToastType.INFO // Info/Warning color
+                                    toastVisible = true
+                                }
+                                
+                                // Restart VPN if running to apply changes
+                                if (VpnStats.isRunning.value) { 
+                                     stopVpnService()
                                      lifecycleScope.launch {
                                          kotlinx.coroutines.delay(500)
                                          startVpnService()
                                      }
-                                    }
                                 }
+                            },
+                            // Pass State
+                            toastVisible = toastVisible,
+                            toastMessage = toastMessage,
+                            toastType = toastType,
+                            onToastChange = { v, m, t -> 
+                                toastVisible = v
+                                if (m != null) toastMessage = m
+                                if (t != null) toastType = t
                             }
-                        )
-                    } else if (currentScreen == "whitelist") {
-                        com.example.adshield.ui.AppListScreen(
-                            onBackClick = { currentScreen = "dashboard" }
                         )
                     }
                 }
@@ -166,8 +186,12 @@ class MainActivity : ComponentActivity() {
 fun DashboardScreen(
     onStartClick: () -> Unit,
     onStopClick: () -> Unit,
-    onWhitelistClick: () -> Unit,
-    onWhitelistApp: (String) -> Unit
+    onWhitelistApp: (String) -> Unit,
+    // Toast Props
+    toastVisible: Boolean,
+    toastMessage: String,
+    toastType: CyberToastType,
+    onToastChange: (Boolean, String?, CyberToastType?) -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -181,14 +205,42 @@ fun DashboardScreen(
     
     var filterCount by remember { mutableStateOf(FilterEngine.getRuleCount()) }
     var isUpdatingFilters by remember { mutableStateOf(false) }
-    var showWhitelistDialog by remember { mutableStateOf(false) }
-    var domainToWhitelist by remember { mutableStateOf("") }
+    
+    val preferences = remember { AppPreferences(context) }
     
     var hasAcceptedDisclosure by remember { mutableStateOf(false) }
     var showDisclosureDialog by remember { mutableStateOf(false) }
     
     // State for Navigation
-    var currentScreen by remember { mutableStateOf("HOME") }
+    var currentScreen by rememberSaveable { mutableStateOf("HOME") }
+    // Back navigation stack
+    var backStack by rememberSaveable { mutableStateOf(listOf<String>()) }
+    
+    // State for Whitelist (for UI Refresh)
+    var excludedApps by remember { mutableStateOf(preferences.getExcludedApps()) }
+
+    // State for Domain Filter Refresh
+    var filterUpdateTrigger by remember { mutableLongStateOf(0L) }
+
+    // Helper: Navigate forward (Push to stack)
+    val navigateTo: (String) -> Unit = { target ->
+        if (currentScreen != target) {
+            backStack = backStack + currentScreen
+            currentScreen = target
+        }
+    }
+
+    // Helper: Navigate back (Pop from stack)
+    val navigateBack: () -> Unit = {
+        if (backStack.isNotEmpty()) {
+            currentScreen = backStack.last()
+            backStack = backStack.dropLast(1)
+        } else {
+             if (currentScreen != "HOME") {
+                 currentScreen = "HOME"
+             }
+        }
+    }
     
     val scrollState = rememberScrollState()
 
@@ -215,24 +267,54 @@ fun DashboardScreen(
     }
 
     // Dialogs (kept standard for now, but could be stylized)
-    if (showWhitelistDialog) {
-        AlertDialog(
-            onDismissRequest = { showWhitelistDialog = false },
-            title = { Text("WHITELIST DOMAIN", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
-            text = { Text("Allow traffic for '$domainToWhitelist'?", color = MaterialTheme.colorScheme.onSurface) },
-            containerColor = MaterialTheme.colorScheme.surface,
-            confirmButton = {
-                TextButton(onClick = {
-                    FilterEngine.addToAllowlist(context, domainToWhitelist)
-                    showWhitelistDialog = false
-                }) { Text("ALLOW", color = MaterialTheme.colorScheme.primary) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showWhitelistDialog = false }) { Text("CANCEL", color = MaterialTheme.colorScheme.onSurfaceVariant) }
-            }
-        )
+    // Auto-dismiss toast
+    LaunchedEffect(toastVisible) {
+        if (toastVisible) {
+            delay(2500)
+            onToastChange(false, null, null)
+        }
     }
 
+    val onDomainToggle: (String) -> Unit = { domain ->
+        val status = FilterEngine.checkDomain(domain)
+        when (status) {
+            FilterEngine.FilterStatus.BLOCKED -> {
+                // Was BLOCKED (Ad) -> Allow (User)
+                FilterEngine.addToAllowlist(context, domain)
+                onToastChange(true, "DOMAIN ALLOWED", CyberToastType.SUCCESS)
+            }
+            FilterEngine.FilterStatus.BLOCKED_USER -> {
+                // Was BANNED (User) -> Unban
+                FilterEngine.removeFromBlocklist(context, domain)
+                onToastChange(true, "DOMAIN UNBANNED", CyberToastType.INFO)
+            }
+            FilterEngine.FilterStatus.ALLOWED_USER -> {
+                // Was ALLOWED (User) -> Remove (Restore)
+                FilterEngine.removeFromAllowlist(context, domain)
+                onToastChange(true, "WHITELIST REMOVED", CyberToastType.INFO)
+            }
+            FilterEngine.FilterStatus.SUSPICIOUS -> {
+                // Was SUSPICIOUS -> BAN (User confirm)
+                FilterEngine.addToBlocklist(context, domain)
+                onToastChange(true, "THREAT ELIMINATED", CyberToastType.SUCCESS)
+            }
+            FilterEngine.FilterStatus.ALLOWED_DEFAULT -> {
+                // Was CLEAN -> BAN (User)
+                FilterEngine.addToBlocklist(context, domain)
+                onToastChange(true, "DOMAIN BANNED", CyberToastType.ERROR)
+            }
+            FilterEngine.FilterStatus.ALLOWED_SYSTEM -> {
+                // Safe
+                onToastChange(true, "SYSTEM PROTECTED", CyberToastType.INFO)
+            }
+        }
+        // Force UI update
+        VpnStats.refreshLogStatuses()
+        filterUpdateTrigger++ // Increment to trigger UI refresh
+    }
+
+
+    
     if (showDisclosureDialog) {
         AlertDialog(
             onDismissRequest = { showDisclosureDialog = false },
@@ -261,7 +343,7 @@ fun DashboardScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(Color(0xFF0F172A)) // Dark Background
     ) {
         GridBackground()
         // Optional: Scanline(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.03f))
@@ -274,11 +356,13 @@ fun DashboardScreen(
                 bpm = bpm,
                 filterCount = filterCount,
                 dataSaved = dataSaved,
-                recentLogs = recentLogs, // Takes top 5 anyway? HomeView logic handles display
+                recentLogs = recentLogs,
+                excludedApps = excludedApps, // Pass state
+                filterUpdateTrigger = filterUpdateTrigger, // Pass trigger
                 isUpdatingFilters = isUpdatingFilters,
                 onStartClick = onStartClick,
                 onStopClick = onStopClick,
-                onWhitelistClick = onWhitelistClick,
+                onWhitelistClick = { navigateTo("APP_LIST") },
                 onReloadFilters = { 
                      // Reload logic (moved from inline)
                      if (!isUpdatingFilters) {
@@ -296,53 +380,107 @@ fun DashboardScreen(
                          }
                      }
                 },
-                onLogClick = { domainToWhitelist = it; showWhitelistDialog = true },
-                onAppClick = { packageName -> onWhitelistApp(packageName) }
+                onLogClick = { onDomainToggle(it) },
+                onAppClick = { packageName -> 
+                    onWhitelistApp(packageName)
+                    excludedApps = preferences.getExcludedApps() // Update state to trigger UI refresh
+                }
             )
-            "LOGS" -> LogsView(
-                 logs = recentLogs, // Or full logs if available? reusing recentLogs for now
-                 onLogClick = { domainToWhitelist = it; showWhitelistDialog = true }
-            )
-            "STATS" -> StatsView(
-                 data = VpnStats.blockedHistory,
-                 bpm = bpm,
-                 isRunning = isRunning
-            )
-            "SETTINGS" -> SettingsView(
-                 onWhitelistClick = onWhitelistClick,
-                 onPremiumClick = { currentScreen = "PREMIUM" }
-            )
-            "PREMIUM" -> PremiumScreen(
-                onBackClick = { currentScreen = "SETTINGS" }
-            )
-            else -> HomeView(
+            "LOGS" -> {
+                androidx.activity.compose.BackHandler { navigateBack() }
+                LogsView(
+                     logs = recentLogs,
+                     onLogClick = { onDomainToggle(it) }
+                )
+            }
+            "STATS" -> {
+                androidx.activity.compose.BackHandler { navigateBack() }
+                StatsView(
+                     data = VpnStats.blockedHistory,
+                     bpm = bpm,
+                     isRunning = isRunning
+                )
+            }
+            "SETTINGS" -> {
+                androidx.activity.compose.BackHandler { navigateBack() }
+                SettingsView(
+                     onBackClick = { navigateBack() },
+                     onWhitelistClick = { navigateTo("APP_LIST") },
+                     onDomainConfigClick = { navigateTo("DOMAIN_LIST") },
+                     onBlockedConfigClick = { navigateTo("BLOCKED_LIST") },
+                     onPremiumClick = { navigateTo("PREMIUM") }
+                )
+            }
+            "APP_LIST" -> {
+                androidx.activity.compose.BackHandler { navigateBack() }
+                com.example.adshield.ui.AppListScreen(
+                    onBackClick = { navigateBack() }
+                )
+            }
+            "DOMAIN_LIST" -> {
+                androidx.activity.compose.BackHandler { navigateBack() }
+                DomainListScreen(
+                    onBackClick = { navigateBack() },
+                    isBlocklist = false
+                )
+            }
+            "BLOCKED_LIST" -> {
+                 androidx.activity.compose.BackHandler { navigateBack() }
+                 DomainListScreen(
+                    onBackClick = { navigateBack() },
+                    isBlocklist = true
+                )
+            }
+            "PREMIUM" -> {
+                androidx.activity.compose.BackHandler { navigateBack() }
+                PremiumScreen(
+                    onBackClick = { navigateBack() }
+                )
+            }
+            else -> HomeView( // Fallback
                 isRunning = isRunning,
                 blockedCount = blockedCount,
                 bpm = bpm,
                 filterCount = filterCount,
                 dataSaved = dataSaved,
                 recentLogs = recentLogs,
+                excludedApps = excludedApps, // Pass state
+                filterUpdateTrigger = filterUpdateTrigger, // Pass trigger
                 isUpdatingFilters = isUpdatingFilters,
                 onStartClick = onStartClick,
                 onStopClick = onStopClick,
-                onWhitelistClick = onWhitelistClick,
+                onWhitelistClick = { navigateTo("APP_LIST") },
                 onReloadFilters = {},
-                onLogClick = { domainToWhitelist = it; showWhitelistDialog = true },
-                onAppClick = { packageName -> onWhitelistApp(packageName) }
+                onLogClick = { onDomainToggle(it) },
+                onAppClick = { packageName -> 
+                    onWhitelistApp(packageName)
+                    excludedApps = preferences.getExcludedApps()
+                }
             )
         }
 
         // FLOATING NAV BAR OVERYLAY
-        CyberNavBar(
-            isRunning = isRunning,
-            onPowerClick = {
-                 if (isRunning) onStopClick() 
-                 else if (!hasAcceptedDisclosure) showDisclosureDialog = true 
-                 else onStartClick()
-            },
-            currentScreen = currentScreen,
-            onNavigate = { currentScreen = it },
-            modifier = Modifier.align(Alignment.BottomCenter)
-        )
+        if (currentScreen in listOf("HOME", "LOGS", "STATS")) {
+            CyberNavBar(
+                isRunning = isRunning,
+                onPowerClick = {
+                     if (isRunning) onStopClick() 
+                     else if (!hasAcceptedDisclosure) showDisclosureDialog = true 
+                     else onStartClick()
+                },
+                currentScreen = currentScreen,
+                onNavigate = { navigateTo(it) },
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
+        }
+        
+        // CYBER TOAST OVERLAY
+        Box(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 120.dp), contentAlignment = Alignment.Center) {
+            CyberToast(
+                message = toastMessage,
+                type = toastType,
+                visible = toastVisible
+            )
+        }
     }
 }

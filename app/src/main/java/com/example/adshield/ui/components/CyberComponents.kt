@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.scale
@@ -40,6 +41,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import com.example.adshield.ui.theme.NeonGreen
 import com.example.adshield.data.VpnLogEntry
 import androidx.compose.ui.text.style.TextOverflow
@@ -913,8 +916,24 @@ fun CyberGraphSection(data: List<Int>, bpm: Int, isRunning: Boolean) {
      }
 }
 
+
+
+// ----------------------------------------------------
+// CYBER TOAST
+// ----------------------------------------------------
+
+enum class CyberToastType {
+    SUCCESS,
+    ERROR,
+    INFO
+}
+
 @Composable
-fun CyberTerminal(logs: List<VpnLogEntry>, onLogClick: (String) -> Unit) {
+fun CyberTerminal(
+    logs: List<VpnLogEntry>,
+    onLogClick: (String) -> Unit
+) {
+    // 1. Cursor Animation
     val infiniteTransition = rememberInfiniteTransition(label = "cursor_blink")
     val cursorAlpha by infiniteTransition.animateFloat(
         initialValue = 1f,
@@ -926,60 +945,187 @@ fun CyberTerminal(logs: List<VpnLogEntry>, onLogClick: (String) -> Unit) {
         label = "cursor_alpha"
     )
 
-    // Auto-scroll state
-    var autoScrollEnabled by remember { mutableStateOf(true) }
+    // 2. Auto-scroll
     val listState = rememberScrollState()
-
-    // Auto-scroll logic
-    LaunchedEffect(logs.firstOrNull(), autoScrollEnabled) {
+    var autoScrollEnabled by remember { mutableStateOf(true) }
+    
+    LaunchedEffect(logs.size, autoScrollEnabled) {
         if (autoScrollEnabled && logs.isNotEmpty()) {
             listState.animateScrollTo(listState.maxValue)
         }
     }
 
-    Column {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text("EVENT LOG", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(
-                text = "AUTO-SCROLL: ${if(autoScrollEnabled) "ON" else "OFF"}",
-                style = MaterialTheme.typography.labelSmall,
-                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                color = if(autoScrollEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.clickable { autoScrollEnabled = !autoScrollEnabled }
-            )
-        }
-        Spacer(Modifier.height(8.dp))
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(140.dp)
-                .background(MaterialTheme.colorScheme.surfaceVariant) // Terminal BG
-                .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), RoundedCornerShape(5.dp))
-                //.padding(8.dp)
-        ) {
-             // Basic list
-             Column(modifier = Modifier.verticalScroll(listState).padding(8.dp)) {
-                 if (logs.isEmpty()) {
+    NeonCard(
+        modifier = Modifier.fillMaxWidth().height(400.dp),
+        borderColor = MaterialTheme.colorScheme.primary,
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            // ... Header ...
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(" [ TERMINAL SESSION ACTIVE ] ", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                // Auto-scroll toggle
+                 Text(
+                    text = "AUTO-SCROLL: ${if(autoScrollEnabled) "ON" else "OFF"}",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                    color = if(autoScrollEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.clickable { autoScrollEnabled = !autoScrollEnabled }
+                )
+            }
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.primary.copy(alpha=0.3f))
+            
+            // USE COLUMN WITH VERTICAL SCROLL instead of LazyColumn for simple cursor appending at end
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(listState)
+            ) {
+                if (logs.isEmpty()) {
                      Text("> Initializing system...", color = MaterialTheme.colorScheme.primary, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, fontSize = 12.sp)
                      Text("> Waiting for traffic...", color = Color.Gray, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, fontSize = 12.sp)
-                 }
-                 logs.reversed().forEach { log ->
-                     Row(modifier = Modifier.clickable { onLogClick(log.domain) }.padding(vertical = 2.dp)) {
-                         Text("[${SimpleDateFormat("HH:mm:ss", Locale.US).format(Date(log.timestamp))}] ", color = Color.Gray, fontSize = 10.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
-                         Text(
-                             text = if (log.isBlocked) "BLOCKED: ${log.domain}" else "ALLOWED: ${log.domain}",
-                             color = if (log.isBlocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                             fontSize = 12.sp,
-                             fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                             maxLines = 1,
-                             overflow = TextOverflow.Ellipsis
-                         )
-                     }
-                 }
-                 // Blinking Cursor
-                 Box(Modifier.size(8.dp, 14.dp).background(MaterialTheme.colorScheme.primary.copy(alpha = cursorAlpha)))
-             }
-             Scanline(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.primary.copy(alpha = 0.02f))
+                }
+
+                logs.reversed().forEach { log ->
+                    // Determine Color and Label based on Status
+                    val (color, prefix, isClickable) = when (log.status) {
+                        com.example.adshield.filter.FilterEngine.FilterStatus.BLOCKED -> 
+                            Triple(Color(0xFFFF5252), "BLK", true) // Red
+                        com.example.adshield.filter.FilterEngine.FilterStatus.BLOCKED_USER -> 
+                            Triple(Color(0xFFFFAB40), "BAN", true) // Orange (Manual Ban)
+                        com.example.adshield.filter.FilterEngine.FilterStatus.ALLOWED_USER -> 
+                            Triple(com.example.adshield.ui.theme.NeonGreen, "USR", true) // Green
+                        com.example.adshield.filter.FilterEngine.FilterStatus.ALLOWED_SYSTEM -> 
+                            Triple(Color.Gray, "SYS", false) // Gray, Non-interactive
+                        com.example.adshield.filter.FilterEngine.FilterStatus.SUSPICIOUS -> 
+                            Triple(Color(0xFFFFD600), "WRN", true) // Yellow, Warning, Clickable
+                        com.example.adshield.filter.FilterEngine.FilterStatus.ALLOWED_DEFAULT -> 
+                            Triple(Color.White, "ALW", true) // White, CAN BE BLOCKED
+                    }
+                    
+                    val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.US)
+                    
+                    Row(modifier = Modifier
+                        .padding(vertical = 2.dp)
+                        .clickable(enabled = isClickable) { onLogClick(log.domain) }
+                    ) {
+                        Text(
+                            text = "> ${timeFormat.format(Date(log.timestamp))} ",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.5f),
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                            fontSize = 10.sp
+                        )
+                        Text(
+                            text = "[$prefix] ",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = color,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = log.domain,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (isClickable) MaterialTheme.colorScheme.onSurface else Color.Gray,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                            fontSize = 10.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+                
+                // BLINKING CURSOR
+                Box(
+                    modifier = Modifier
+                        .padding(top = 4.dp)
+                        .size(8.dp, 14.dp)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = cursorAlpha))
+                )
+            }
+        }
+    }
+}
+@Composable
+fun CyberToast(
+    message: String,
+    type: CyberToastType,
+    visible: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val typeColor = when (type) {
+        CyberToastType.SUCCESS -> com.example.adshield.ui.theme.NeonGreen // Green
+        CyberToastType.ERROR -> Color(0xFFFF5252) // Red
+        CyberToastType.INFO -> MaterialTheme.colorScheme.primary // Cyan
+    }
+    
+    val icon = when (type) {
+        CyberToastType.SUCCESS -> androidx.compose.material.icons.Icons.Filled.CheckCircle
+        CyberToastType.ERROR -> androidx.compose.material.icons.Icons.Filled.Close
+        CyberToastType.INFO -> androidx.compose.material.icons.Icons.Filled.Info
+    }
+    
+    val title = when (type) {
+        CyberToastType.SUCCESS -> "ACCESS GRANTED"
+        CyberToastType.ERROR -> "ACCESS DENIED"
+        CyberToastType.INFO -> "SYSTEM NOTICE"
+    }
+
+    androidx.compose.animation.AnimatedVisibility(
+        visible = visible,
+        enter = androidx.compose.animation.slideInVertically(initialOffsetY = { it / 2 }) + androidx.compose.animation.fadeIn(),
+        exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { it / 2 }) + androidx.compose.animation.fadeOut(),
+        modifier = modifier
+            .padding(bottom = 100.dp) // Position above nav bar logic
+            .fillMaxWidth()
+            .padding(horizontal = 32.dp)
+            .height(80.dp) // Fixed height for consistent look
+    ) {
+        NeonCard(
+            modifier = Modifier.fillMaxWidth(),
+            borderColor = typeColor.copy(alpha = 0.8f),
+            shape = CutCornerShape(topStart = 0.dp, bottomEnd = 0.dp, topEnd = 12.dp, bottomStart = 12.dp)
+        ) {
+            // Inner Box for background
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.95f))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .align(Alignment.CenterStart),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = typeColor,
+                        modifier = Modifier.size(28.dp)
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column {
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = typeColor,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = message,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
         }
     }
 }

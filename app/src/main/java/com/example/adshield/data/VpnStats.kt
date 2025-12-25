@@ -9,7 +9,7 @@ import kotlinx.coroutines.sync.withLock
 data class VpnLogEntry(
     val timestamp: Long,
     val domain: String,
-    val isBlocked: Boolean,
+    val status: com.example.adshield.filter.FilterEngine.FilterStatus,
     val appName: String? = null
 )
 
@@ -142,40 +142,43 @@ object VpnStats {
 
 
     suspend fun incrementBlocked(context: android.content.Context, domain: String, appName: String? = null) {
-        statsLock.withLock {
-            blockedCount.value++
-            // Industry standard: 30KB saved per blocked ad
-            dataSavedBytes.value += 30 * 1024 
-            // Estimated time saved: 300ms per blocked resource
-            timeSavedMs.value += 300
-            
-            checkDayReset(context)
-            dailyBuckets[0]++
-            saveStats(context)
-            updatePublicMetrics() 
-            
-            updateHistory()
-            _blockedHistory[59]++
-            blocksPerMinute.value = _blockedHistory[59] // Live BPM update
-
-            // Update Domain Stats
-            domainBlockedStatsMap[domain] = (domainBlockedStatsMap[domain] ?: 0) + 1
-            
-            // Update App Stats
-            if (appName != null) {
-                 appBlockedStatsMap[appName] = (appBlockedStatsMap[appName] ?: 0) + 1
-            }
-
-            addLog(domain, true, appName)
-        }
+        // Technically this is only called for BLOCKED status in legacy, but we'll genericize it or call generic increment
+        increment(context, domain, com.example.adshield.filter.FilterEngine.FilterStatus.BLOCKED, appName)
     }
 
-    suspend fun incrementTotal(domain: String, appName: String? = null) {
+    suspend fun increment(context: android.content.Context, domain: String, status: com.example.adshield.filter.FilterEngine.FilterStatus, appName: String? = null) {
         statsLock.withLock {
-            totalCount.value++
-            updateHistory()
-            addLog(domain, false, appName)
+            if (status == com.example.adshield.filter.FilterEngine.FilterStatus.BLOCKED) {
+                blockedCount.value++
+                dataSavedBytes.value += 30 * 1024 
+                timeSavedMs.value += 300
+                checkDayReset(context)
+                dailyBuckets[0]++
+                saveStats(context)
+                updatePublicMetrics()
+                updateHistory()
+                _blockedHistory[59]++
+                blocksPerMinute.value = _blockedHistory[59]
+            } else {
+                totalCount.value++
+                updateHistory()
+            }
+
+            // Update Domain Stats
+            if (status == com.example.adshield.filter.FilterEngine.FilterStatus.BLOCKED) {
+                 domainBlockedStatsMap[domain] = (domainBlockedStatsMap[domain] ?: 0) + 1
+                 if (appName != null) {
+                      appBlockedStatsMap[appName] = (appBlockedStatsMap[appName] ?: 0) + 1
+                 }
+            }
+
+            addLog(domain, status, appName)
         }
+    }
+    
+    // Deprecated or simplified
+    suspend fun incrementTotal(context: android.content.Context, domain: String, appName: String? = null) {
+        increment(context, domain, com.example.adshield.filter.FilterEngine.FilterStatus.ALLOWED_DEFAULT, appName)
     }
 
     private fun updateHistory() {
@@ -183,17 +186,31 @@ object VpnStats {
         if (currentMinute > lastMinute) {
             val minutesPassed = (currentMinute - lastMinute).toInt()
             repeat(minutesPassed.coerceAtMost(12)) {
-                _blockedHistory.removeAt(0)
-                _blockedHistory.add(0)
+                if (_blockedHistory.isNotEmpty()) {
+                    _blockedHistory.removeAt(0)
+                    _blockedHistory.add(0)
+                }
             }
             lastMinute = currentMinute
         }
     }
 
-    private fun addLog(domain: String, isBlocked: Boolean, appName: String?) {
-        _recentLogs.add(0, VpnLogEntry(System.currentTimeMillis(), domain, isBlocked, appName))
+    private fun addLog(domain: String, status: com.example.adshield.filter.FilterEngine.FilterStatus, appName: String?) {
+        _recentLogs.add(0, VpnLogEntry(System.currentTimeMillis(), domain, status, appName))
         if (_recentLogs.size > 50) {
             _recentLogs.removeAt(_recentLogs.size - 1)
+        }
+    }
+
+    fun refreshLogStatuses() {
+        // Simple update on Main Thread (invoked by UI interaction)
+        // We iterate and update. Since recentLogs is state-backed, it handles notification.
+        // We assume we are on Main thread or it handles it.
+        val currentList = _recentLogs.toList()
+        _recentLogs.clear()
+        currentList.forEach { log ->
+            val newStatus = com.example.adshield.filter.FilterEngine.checkDomain(log.domain)
+            _recentLogs.add(log.copy(status = newStatus))
         }
     }
 }

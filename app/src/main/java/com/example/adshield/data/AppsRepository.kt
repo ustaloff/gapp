@@ -11,7 +11,8 @@ import kotlinx.coroutines.withContext
 data class AppInfo(
     val name: String,
     val packageName: String,
-    val icon: Drawable
+    val icon: Drawable,
+    val isSystem: Boolean
 )
 
 class AppsRepository(private val context: Context) {
@@ -21,10 +22,12 @@ class AppsRepository(private val context: Context) {
         val apps = pm.getInstalledApplications(PackageManager.GET_META_DATA)
         
         apps.map { appInfo ->
+            val isSystem = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
             AppInfo(
                 name = pm.getApplicationLabel(appInfo).toString(),
                 packageName = appInfo.packageName,
-                icon = pm.getApplicationIcon(appInfo)
+                icon = pm.getApplicationIcon(appInfo),
+                isSystem = isSystem
             )
         }.sortedBy { it.name.lowercase() }
     }

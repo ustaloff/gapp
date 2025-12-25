@@ -16,6 +16,7 @@ object FilterEngine {
     private val regexRules = mutableListOf<Regex>()
     private val exceptionRegexRules = mutableListOf<Regex>()
     private val userAllowlist = mutableSetOf<String>()
+    private val userBlocklist = mutableSetOf<String>()
     
     // Safety Allowlist - Critical domains that should NEVER be blocked
     private val allowlist = mutableSetOf(
@@ -46,13 +47,43 @@ object FilterEngine {
         val prefs = com.example.adshield.data.AppPreferences(context)
         userAllowlist.clear()
         userAllowlist.addAll(prefs.getUserAllowlist())
+        userBlocklist.clear()
+        userBlocklist.addAll(prefs.getUserBlocklist())
     }
 
     fun addToAllowlist(context: android.content.Context, domain: String) {
         val cleanDomain = domain.trim().lowercase()
         if (cleanDomain.isNotEmpty()) {
+            // Remove from blocklist if present to avoid conflicts
+            removeFromBlocklist(context, cleanDomain)
             userAllowlist.add(cleanDomain)
             com.example.adshield.data.AppPreferences(context).addToUserAllowlist(cleanDomain)
+        }
+    }
+
+    fun removeFromAllowlist(context: android.content.Context, domain: String) {
+        val cleanDomain = domain.trim().lowercase()
+        if (cleanDomain.isNotEmpty()) {
+            userAllowlist.remove(cleanDomain)
+            com.example.adshield.data.AppPreferences(context).removeFromUserAllowlist(cleanDomain)
+        }
+    }
+
+    fun addToBlocklist(context: android.content.Context, domain: String) {
+        val cleanDomain = domain.trim().lowercase()
+        if (cleanDomain.isNotEmpty()) {
+            // Remove from allowlist if present
+            removeFromAllowlist(context, cleanDomain)
+            userBlocklist.add(cleanDomain)
+            com.example.adshield.data.AppPreferences(context).addToUserBlocklist(cleanDomain)
+        }
+    }
+
+    fun removeFromBlocklist(context: android.content.Context, domain: String) {
+        val cleanDomain = domain.trim().lowercase()
+        if (cleanDomain.isNotEmpty()) {
+            userBlocklist.remove(cleanDomain)
+            com.example.adshield.data.AppPreferences(context).removeFromUserBlocklist(cleanDomain)
         }
     }
 
@@ -137,23 +168,34 @@ object FilterEngine {
 
     fun getRuleCount(): Int = ruleCount
 
-    fun shouldBlock(domain: String?): Boolean {
-        if (domain.isNullOrBlank()) return false
+    enum class FilterStatus {
+        BLOCKED,
+        BLOCKED_USER,
+        ALLOWED_USER,
+        ALLOWED_SYSTEM,
+        SUSPICIOUS, // Allowed but sketchy
+        ALLOWED_DEFAULT
+    }
+
+    fun checkDomain(domain: String?): FilterStatus {
+        if (domain.isNullOrBlank()) return FilterStatus.ALLOWED_DEFAULT
         val currentDomain = domain.lowercase().trim().trimEnd('.')
         
         // 1. Check for Exceptions (Allowlist) - Order: User > Static > Dynamic
         var temp = currentDomain
         while (temp.isNotEmpty()) {
-            if (userAllowlist.contains(temp) || allowlist.contains(temp)) {
-                android.util.Log.i("FilterEngine", "ALLOWED (Static): $domain matched at $temp")
-                return false
+            if (userAllowlist.contains(temp)) {
+                return FilterStatus.ALLOWED_USER
+            }
+            if (allowlist.contains(temp)) {
+                return FilterStatus.ALLOWED_SYSTEM
             }
             
             // Check dynamic exception Trie for this subdomain level
             val matchedException = checkTrie(exceptionRoot, temp)
             if (matchedException != null) {
-                android.util.Log.i("FilterEngine", "ALLOWED (Dynamic Trie): $domain MATCHED EXCEPTION: $matchedException")
-                return false
+                // Dynamic exceptions are usually from filter lists, treating as System for now unless we want a separate type
+                return FilterStatus.ALLOWED_SYSTEM 
             }
             
             val nextDot = temp.indexOf('.')
@@ -164,17 +206,26 @@ object FilterEngine {
         // Dynamic Exception Regex
         val matchedExcRegex = exceptionRegexRules.find { it.containsMatchIn(currentDomain) }
         if (matchedExcRegex != null) {
-            android.util.Log.i("FilterEngine", "ALLOWED (Dynamic Regex): $domain matched ${matchedExcRegex.pattern}")
-            return false
+            return FilterStatus.ALLOWED_SYSTEM
         }
 
-        // 2. Check for Block Rules
+        // 2. Check for User Blocklist (Manual Ban)
+        temp = currentDomain
+        while (temp.isNotEmpty()) {
+            if (userBlocklist.contains(temp)) {
+                return FilterStatus.BLOCKED_USER
+            }
+            val nextDot = temp.indexOf('.')
+            if (nextDot == -1) break
+            temp = temp.substring(nextDot + 1)
+        }
+        
+        // 3. Check for Block Rules
         temp = currentDomain
         while (temp.isNotEmpty()) {
             val matchedRule = checkTrie(root, temp)
             if (matchedRule != null) {
-                android.util.Log.i("FilterEngine", "BLOCKED (Trie): $domain MATCHED RULE: $matchedRule")
-                return true
+                return FilterStatus.BLOCKED
             }
             val nextDot = temp.indexOf('.')
             if (nextDot == -1) break
@@ -184,12 +235,48 @@ object FilterEngine {
         // Block Regex
         val matchedRegex = regexRules.find { it.containsMatchIn(currentDomain) }
         if (matchedRegex != null) {
-            android.util.Log.i("FilterEngine", "BLOCKED (Regex): $domain MATCHED REGEX: ${matchedRegex.pattern}")
-            return true
+            return FilterStatus.BLOCKED
         }
         
-        android.util.Log.v("FilterEngine", "ALLOWED (No match): $domain")
+        // 4. Heuristics Check (Suspicious?)
+        if (analyzeHeuristics(currentDomain)) {
+            return FilterStatus.SUSPICIOUS
+        }
+        
+        return FilterStatus.ALLOWED_DEFAULT
+    }
+
+    private fun analyzeHeuristics(domain: String): Boolean {
+        // 1. Keywords check
+        val keywords = listOf(
+            "tracker", "analytics", "pixel", "telemetry", "stats", "metrics",
+            "adsystem", "adserver", "banner", "campaign"
+        )
+        if (keywords.any { domain.contains(it) }) return true
+
+        // 2. Entropy / Gibberish check (High digit count)
+        // e.g. "a1b2c3d4e5.cdn.com"
+        val parts = domain.split('.')
+        for (part in parts) {
+            // Ignore common parts like "www" or tlds like "com" (simple heuristic)
+            if (part.length < 4) continue 
+            
+            val digitCount = part.count { it.isDigit() }
+            val length = part.length
+            
+            // If more than 30% of a long-ish label are digits -> Suspicious
+            if (length > 5 && (digitCount.toFloat() / length.toFloat() > 0.3)) return true
+            
+            // Or usually long random strings
+            if (length > 35) return true
+        }
+        
         return false
+    }
+
+    fun shouldBlock(domain: String?): Boolean {
+        val status = checkDomain(domain)
+        return status == FilterStatus.BLOCKED || status == FilterStatus.BLOCKED_USER
     }
 
     private fun checkTrie(targetRoot: TrieNode, domain: String): String? {

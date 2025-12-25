@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -18,7 +19,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun CyberTopList(title: String, data: Map<String, Int>, onAllowClick: (String) -> Unit) {
+fun CyberTopList(
+    title: String, 
+    data: Map<String, Int>, 
+    onAllowClick: (String) -> Unit,
+    isWhitelisted: (String) -> Boolean // Logic to check status
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -36,6 +42,12 @@ fun CyberTopList(title: String, data: Map<String, Int>, onAllowClick: (String) -
             val sorted = data.toList().sortedByDescending { (_, value) -> value }.take(5)
             
             sorted.forEach { (name, count) ->
+                val isActive = isWhitelisted(name)
+                val icon = Icons.Filled.Lock // Always Lock. Green = Open/Allowed, Red = Closed/Blocked.
+                // Red for Lock (0xFFFF5252), Green for Allowed
+                val tint = if (isActive) com.example.adshield.ui.theme.NeonGreen else androidx.compose.ui.graphics.Color(0xFFFF5252)
+                val bgBorder = if (isActive) com.example.adshield.ui.theme.NeonGreen.copy(alpha=0.5f) else androidx.compose.ui.graphics.Color(0xFFFF5252).copy(alpha=0.5f)
+
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -48,7 +60,7 @@ fun CyberTopList(title: String, data: Map<String, Int>, onAllowClick: (String) -
                              text = name,
                              style = MaterialTheme.typography.bodySmall,
                              fontWeight = FontWeight.Medium,
-                             color = MaterialTheme.colorScheme.onSurface,
+                             color = if (isActive) com.example.adshield.ui.theme.NeonGreen else MaterialTheme.colorScheme.onSurface,
                              maxLines = 1,
                              overflow = TextOverflow.Ellipsis,
                              fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
@@ -63,15 +75,15 @@ fun CyberTopList(title: String, data: Map<String, Int>, onAllowClick: (String) -
                         fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
                     )
                     Spacer(Modifier.width(8.dp))
-                    // Tiny allow button
+                    // Tiny toggle button
                     Box(
                          modifier = Modifier
-                             .size(20.dp)
+                             .size(24.dp)
                              .clickable { onAllowClick(name) }
-                             .border(1.dp, MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.3f), CircleShape),
+                             .border(1.dp, bgBorder, CircleShape),
                          contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.CheckCircle, contentDescription = "Allow", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(12.dp))
+                        Icon(icon, contentDescription = "Toggle", tint = tint, modifier = Modifier.size(14.dp))
                     }
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f), thickness = 0.5.dp)
