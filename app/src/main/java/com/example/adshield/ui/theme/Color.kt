@@ -3,20 +3,23 @@ package com.example.adshield.ui.theme
 import androidx.compose.ui.graphics.Color
 
 val NeonGreen = Color(0xFF0df259)
-val NeonGreenDark = Color(0xFF08a33b) // For text on light backgrounds if needed
-val NeonGreenLight = Color(0xFF6eff8b) // For hover/glow states
+val NeonGreenDark = Color(0xFF08a33b)
+val NeonGreenLight = Color(0xFF6eff8b)
+
+val NeonCyan = Color(0xFF00E5FF)
+val NeonPurple = Color(0xFFD500F9)
 
 // Dark Theme Colors
-val BackgroundDark = Color(0xFF102216)
-val SurfaceDark = Color(0xFF152b1e)
-val TerminalBgDark = Color(0xFF0a160e)
-val GridLineDark = Color(0xFF0df259).copy(alpha = 0.05f)
+val BackgroundDark = Color(0xFF0D1117) // Slightly bluish black (GitHub Dark Dimmed style)
+val SurfaceDark = Color(0xFF161B22)
+val TerminalBgDark = Color(0xFF0D1117)
+val GridLineDark = NeonCyan.copy(alpha = 0.05f)
 
-// Light Theme Colors
+// Light Theme Colors (Keeping standard for contrast, but user likely prefers dark)
 val BackgroundLight = Color(0xFFf5f8f6)
 val SurfaceLight = Color(0xFFffffff)
-val TerminalBgLight = Color(0xFFe8f5e9) // Very light green for terminal in light mode
-val GridLineLight = Color(0xFF0df259).copy(alpha = 0.1f) // Slightly more visible in light mode
+val TerminalBgLight = Color(0xFFe8f5e9)
+val GridLineLight = Color(0xFF0df259).copy(alpha = 0.1f)
 
-val ErrorRed = Color(0xFFEF5350)
+val ErrorRed = Color(0xFFFF5252) // More vibrant
 val SafeGreen = Color(0xFF66BB6A)

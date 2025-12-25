@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "1058765280408",
+    "project_id": "adshield-86f12",
+    "storage_bucket": "adshield-86f12.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1058765280408:android:f8673f8a33c4cf8590aced",
+        "android_client_info": {
+          "package_name": "com.example.adshield"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1058765280408-4kneu64dbbjvp1caofhs3niuc02iq5be.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.adshield",
+            "certificate_hash": "52c8e77a27c98505eca623bb3e4c304a7f1a8303"
+          }
+        },
+        {
+          "client_id": "1058765280408-8kmpfe235fh9c0m1msdijfhcd22o6ggr.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBgHMYQfc2vpKptR2rXGxLjl5x2IAdFkn8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1058765280408-8kmpfe235fh9c0m1msdijfhcd22o6ggr.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

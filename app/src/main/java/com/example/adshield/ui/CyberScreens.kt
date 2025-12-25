@@ -19,12 +19,17 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.ThumbUp
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
 import com.example.adshield.data.VpnStats
 import com.example.adshield.data.VpnLogEntry
+import com.example.adshield.data.AppPreferences
+import androidx.compose.ui.platform.LocalContext
 import com.example.adshield.ui.components.*
 
 @Composable
@@ -54,84 +59,90 @@ fun HomeView(
     ) {
         // TOP BAR
         Spacer(modifier = Modifier.height(16.dp))
+        // CENTERED HEADER (Logo + Title)
+        Spacer(modifier = Modifier.height(32.dp))
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxWidth()
         ) {
             Image(
                 painter = androidx.compose.ui.res.painterResource(id = com.example.adshield.R.drawable.ic_app_logo_final),
                 contentDescription = "AdShield Logo",
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(64.dp)
             )
-            
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = if (isRunning) "ADSHIELD ACTIVE" else "ADSHIELD PAUSED",
-                    style = MaterialTheme.typography.titleSmall, // Requires Material3
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 2.sp,
-                    color = if (isRunning) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                )
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Spacer(modifier = Modifier.width(16.dp))
+            GlitchText(
+                text = "ADSHIELD",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // STATUS SECTION (Redsigned)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+        ) {
+            Column {
+                // Header (Status Indicator)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically, 
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+                ) {
                     Box(
                         modifier = Modifier
-                            .size(6.dp)
+                            .size(8.dp)
                             .background(
-                                if (isRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f), 
+                                if (isRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error, 
                                 CircleShape
                             )
                     )
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = if (isRunning) "TUNNELING ACTIVE // IP MASKED" else "PROTECTION DISABLED",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontSize = 10.sp, 
-                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, 
-                        color = if (isRunning) MaterialTheme.colorScheme.primary.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                        text = if (isRunning) "TUNNELING ACTIVE // IP MASKED" else "PROTECTION DISABLED // EXPOSED",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        letterSpacing = 1.sp,
+                        color = if (isRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                    )
+                }
+
+                // Stats Row
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(IntrinsicSize.Max),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    CyberStatCard(
+                        label = "DATA SAVED",
+                        value = formatBytes(dataSaved),
+                        progress = (dataSaved / (100 * 1024 * 1024f)).coerceIn(0.01f, 1f),
+                        iconVector = androidx.compose.material.icons.Icons.Default.ThumbUp,
+                        modifier = Modifier.weight(1f).fillMaxHeight()
+                    )
+                    
+                    val timeMs = VpnStats.timeSavedMs.value
+                    val timeString = when {
+                        timeMs < 1000 -> "${timeMs}ms"
+                        timeMs < 60000 -> String.format("%.1fs", timeMs / 1000f)
+                        else -> "${timeMs / 60000}m"
+                    }
+
+                    CyberStatCard(
+                        label = "FASTER LOAD",
+                        value = timeString,
+                        progress = (timeMs / (5 * 60 * 1000f)).coerceIn(0.01f, 1f),
+                        progressSegments = 3,
+                        iconVector = androidx.compose.material.icons.Icons.Filled.Speed,
+                        modifier = Modifier.weight(1f).fillMaxHeight()
                     )
                 }
             }
-
-            IconButton(onClick = onWhitelistClick) {
-                Icon(imageVector = Icons.Default.Settings, contentDescription = "Settings", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // PRIORITY 2: DATA & TIME SAVED (Rewards)
-        Spacer(modifier = Modifier.height(24.dp))
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(IntrinsicSize.Max), // Force equal height
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            CyberStatCard(
-                label = "DATA SAVED",
-                value = formatBytes(dataSaved), // Need formatBytes available or import it
-                progress = (dataSaved / (100 * 1024 * 1024f)).coerceIn(0.01f, 1f), // Goal: 100 MB
-                iconVector = null,
-                modifier = Modifier.weight(1f).fillMaxHeight()
-            )
-            
-            val timeMs = VpnStats.timeSavedMs.value
-            val timeString = when {
-                timeMs < 1000 -> "${timeMs}ms"
-                timeMs < 60000 -> String.format("%.1fs", timeMs / 1000f)
-                else -> "${timeMs / 60000}m"
-            }
-
-            CyberStatCard(
-                label = "FASTER LOAD",
-                value = timeString,
-                progress = (timeMs / (5 * 60 * 1000f)).coerceIn(0.01f, 1f), // Goal: 5 Minutes
-                progressSegments = 3,
-                iconVector = androidx.compose.material.icons.Icons.Default.Refresh, 
-                modifier = Modifier.weight(1f).fillMaxHeight()
-            )
         }
 
         // PRIORITY 3: LIVE TRAFFIC GRAPH (Trust)
@@ -284,13 +295,50 @@ fun StatsView(
 
 @Composable
 fun SettingsView(
-    onWhitelistClick: () -> Unit
+    onWhitelistClick: () -> Unit,
+    onPremiumClick: () -> Unit
 ) {
+    val context = LocalContext.current
+    val prefs = remember { AppPreferences(context) }
+    var showUrlDialog by remember { mutableStateOf(false) }
+    var currentUrl by remember { mutableStateOf(prefs.getFilterSourceUrl()) }
+    var tempUrl by remember { mutableStateOf(currentUrl) }
+
+    if (showUrlDialog) {
+        AlertDialog(
+            onDismissRequest = { showUrlDialog = false },
+            title = { Text("FILTER SOURCE URL") },
+            text = {
+                Column {
+                    Text("Enter raw text URL for block list:", style = MaterialTheme.typography.bodySmall)
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = tempUrl,
+                        onValueChange = { tempUrl = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    prefs.setFilterSourceUrl(tempUrl)
+                    currentUrl = tempUrl
+                    showUrlDialog = false
+                }) { Text("SAVE") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showUrlDialog = false }) { Text("CANCEL") }
+            }
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 24.dp)
             .padding(top = 16.dp)
+            .verticalScroll(rememberScrollState())
     ) {
          Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
@@ -305,7 +353,35 @@ fun SettingsView(
         }
         Spacer(Modifier.height(32.dp))
         
-        // Config Item 1
+        // PREMIUM BANNER
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
+                        colors = listOf(Color(0xFF6200EE), Color(0xFFBB86FC))
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                .clickable(onClick = onPremiumClick)
+                .padding(20.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically, 
+                horizontalArrangement = Arrangement.SpaceBetween, 
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column {
+                    Text("GO PREMIUM", fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("Unlock full power & support devs", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha=0.8f))
+                }
+                Icon(androidx.compose.material.icons.Icons.Filled.Star, contentDescription = null, tint = Color.Yellow)
+            }
+        }
+        
+        Spacer(Modifier.height(24.dp))
+        
+        // Item 1: Whitelist
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -319,6 +395,25 @@ fun SettingsView(
                     Text("Manage allowed domains and apps", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        // Item 2: Filter Source
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                .clickable(onClick = { tempUrl = currentUrl; showUrlDialog = true })
+                .padding(16.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("FILTER SOURCE", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                    Text(currentUrl, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                }
+                Icon(androidx.compose.material.icons.Icons.Default.Refresh, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
             }
         }
         

@@ -10,6 +10,7 @@ class AppPreferences(context: Context) {
     companion object {
         private const val KEY_EXCLUDED_APPS = "excluded_apps"
         private const val KEY_USER_ALLOWLIST = "user_allowlist"
+        private const val KEY_FILTER_SOURCE = "filter_source_url"
     }
 
     fun getExcludedApps(): Set<String> {
@@ -48,5 +49,17 @@ class AppPreferences(context: Context) {
         val current = getUserAllowlist().toMutableSet()
         current.remove(domain.lowercase())
         prefs.edit().putStringSet(KEY_USER_ALLOWLIST, current).apply()
+    }
+
+    // --- Blocklist Source Configuration ---
+    
+    fun getFilterSourceUrl(): String {
+        // Default to AdShield Custom Blocklist if not set
+        return prefs.getString(KEY_FILTER_SOURCE, "https://raw.githubusercontent.com/ustaloff/adshield-lists/refs/heads/master/blocklist.txt") 
+               ?: "https://raw.githubusercontent.com/ustaloff/adshield-lists/refs/heads/master/blocklist.txt"
+    }
+    
+    fun setFilterSourceUrl(url: String) {
+        prefs.edit().putString(KEY_FILTER_SOURCE, url).apply()
     }
 }

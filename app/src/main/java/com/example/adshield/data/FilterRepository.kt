@@ -14,19 +14,22 @@ object FilterRepository {
 
     private const val TAG = "FilterRepository"
     
-    // EasyList + RuAdList (Combined) - Official stable mirror
-    private const val RU_ADLIST_URL = "https://easylist-downloads.adblockplus.org/ruadlist+easylist.txt"
-    private const val EASYLIST_URL = "https://easylist.to/easylist/easylist.txt"
+    // Default fallback (Custom AdShield Blocklist)
+    private const val DEFAULT_URL = "https://raw.githubusercontent.com/ustaloff/adshield-lists/refs/heads/master/blocklist.txt"
 
-    suspend fun downloadAndParseFilters(): FilterData = withContext(Dispatchers.IO) {
+    suspend fun downloadAndParseFilters(context: android.content.Context): FilterData = withContext(Dispatchers.IO) {
         val blockRules = mutableSetOf<String>()
         val exceptionRules = mutableSetOf<String>()
         val start = System.currentTimeMillis()
         
-        Log.i(TAG, "Starting filter download...")
+        // Load URL from Preferences
+        val prefs = AppPreferences(context)
+        val targetUrl = prefs.getFilterSourceUrl()
+        
+        Log.i(TAG, "Starting filter download from: $targetUrl")
 
         try {
-            val url = URL(RU_ADLIST_URL)
+            val url = URL(targetUrl)
             val content = url.readText()
             
             Log.i(TAG, "Download complete. Size: ${content.length} chars. Parsing...")

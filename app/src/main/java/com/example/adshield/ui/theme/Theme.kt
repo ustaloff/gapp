@@ -15,16 +15,17 @@ import androidx.compose.ui.graphics.Color
 private val DarkColorScheme = darkColorScheme(
     primary = NeonGreen,
     onPrimary = BackgroundDark,
-    secondary = NeonGreenLight,
+    secondary = NeonCyan,
     onSecondary = BackgroundDark,
-    tertiary = SafeGreen,
+    tertiary = NeonPurple,
     background = BackgroundDark,
     onBackground = Color.White,
     surface = SurfaceDark,
     onSurface = Color.White,
     surfaceVariant = TerminalBgDark,
     onSurfaceVariant = NeonGreen.copy(alpha = 0.7f),
-    outline = NeonGreen.copy(alpha = 0.3f)
+    outline = NeonCyan.copy(alpha = 0.3f), // Cyan outlines for structure
+    error = ErrorRed
 )
 
 private val LightColorScheme = lightColorScheme(
