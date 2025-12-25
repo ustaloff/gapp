@@ -112,13 +112,13 @@ class MainActivity : ComponentActivity() {
                                 if (currentExcluded.contains(packageName)) {
                                     // WAS EXCLUDED -> NOW INCLUDE (PROTECT)
                                     prefs.removeExcludedApp(packageName)
-                                    toastMessage = "APP PROTECTED"
+                                    toastMessage = "PROTECTED: $packageName"
                                     toastType = CyberToastType.SUCCESS
                                     toastVisible = true
                                 } else {
                                     // WAS INCLUDED -> NOW EXCLUDE (WHITELIST)
                                     prefs.addExcludedApp(packageName)
-                                    toastMessage = "APP WHITELISTED" // bypassing VPN
+                                    toastMessage = "whitelisted: $packageName"
                                     toastType = CyberToastType.INFO // Info/Warning color
                                     toastVisible = true
                                 }
@@ -281,31 +281,31 @@ fun DashboardScreen(
             FilterEngine.FilterStatus.BLOCKED -> {
                 // Was BLOCKED (Ad) -> Allow (User)
                 FilterEngine.addToAllowlist(context, domain)
-                onToastChange(true, "DOMAIN ALLOWED", CyberToastType.SUCCESS)
+                onToastChange(true, "ALLOWED: $domain", CyberToastType.SUCCESS)
             }
             FilterEngine.FilterStatus.BLOCKED_USER -> {
                 // Was BANNED (User) -> Unban
                 FilterEngine.removeFromBlocklist(context, domain)
-                onToastChange(true, "DOMAIN UNBANNED", CyberToastType.INFO)
+                onToastChange(true, "UNBANNED: $domain", CyberToastType.INFO)
             }
             FilterEngine.FilterStatus.ALLOWED_USER -> {
                 // Was ALLOWED (User) -> Remove (Restore)
                 FilterEngine.removeFromAllowlist(context, domain)
-                onToastChange(true, "WHITELIST REMOVED", CyberToastType.INFO)
+                onToastChange(true, "REMOVED: $domain", CyberToastType.INFO)
             }
             FilterEngine.FilterStatus.SUSPICIOUS -> {
                 // Was SUSPICIOUS -> BAN (User confirm)
                 FilterEngine.addToBlocklist(context, domain)
-                onToastChange(true, "THREAT ELIMINATED", CyberToastType.SUCCESS)
+                onToastChange(true, "BANNED: $domain", CyberToastType.SUCCESS)
             }
             FilterEngine.FilterStatus.ALLOWED_DEFAULT -> {
                 // Was CLEAN -> BAN (User)
                 FilterEngine.addToBlocklist(context, domain)
-                onToastChange(true, "DOMAIN BANNED", CyberToastType.ERROR)
+                onToastChange(true, "BANNED: $domain", CyberToastType.ERROR)
             }
             FilterEngine.FilterStatus.ALLOWED_SYSTEM -> {
                 // Safe
-                onToastChange(true, "SYSTEM PROTECTED", CyberToastType.INFO)
+                onToastChange(true, "PROTECTED: $domain", CyberToastType.INFO)
             }
         }
         // Force UI update
@@ -475,7 +475,7 @@ fun DashboardScreen(
         }
         
         // CYBER TOAST OVERLAY
-        Box(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 120.dp), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.align(Alignment.TopCenter).padding(top = 32.dp), contentAlignment = Alignment.Center) {
             CyberToast(
                 message = toastMessage,
                 type = toastType,

@@ -50,19 +50,19 @@ fun GlitchText(
     )
 
     Box(modifier = modifier) {
-        // Ghost text (Cyan offset)
+        // Ghost text (Green offset)
         Text(
             text = text,
             style = style,
-            color = com.example.adshield.ui.theme.NeonCyan.copy(alpha = 0.5f),
+            color = com.example.adshield.ui.theme.NeonGreen.copy(alpha = 0.5f),
             modifier = Modifier.offset(x = (offset * 1.5).dp, y = 0.dp),
             fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
         )
-        // Ghost text (Purple offset)
+        // Ghost text (White/Noise offset)
         Text(
             text = text,
             style = style,
-            color = com.example.adshield.ui.theme.NeonPurple.copy(alpha = 0.5f),
+            color = Color.White.copy(alpha = 0.3f), // White noise instead of purple
             modifier = Modifier.offset(x = (-offset).dp, y = (offset * 0.5).dp),
             fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
         )

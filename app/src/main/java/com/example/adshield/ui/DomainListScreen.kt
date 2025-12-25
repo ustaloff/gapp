@@ -98,7 +98,7 @@ fun DomainListScreen(
                 }
             } else {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
                     contentPadding = PaddingValues(bottom = 80.dp), // Space for FAB
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {

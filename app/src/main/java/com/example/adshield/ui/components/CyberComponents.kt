@@ -55,7 +55,7 @@ import kotlin.math.roundToInt
 fun GridBackground(
     modifier: Modifier = Modifier,
     gridSize: Dp = 20.dp,
-    gridColor: Color = com.example.adshield.ui.theme.NeonCyan.copy(alpha = 0.05f)
+    gridColor: Color = com.example.adshield.ui.theme.NeonGreen.copy(alpha = 0.05f)
 ) {
     Canvas(modifier = modifier.fillMaxSize()) {
         val canvasWidth = size.width
@@ -1078,7 +1078,7 @@ fun CyberToast(
         enter = androidx.compose.animation.slideInVertically(initialOffsetY = { it / 2 }) + androidx.compose.animation.fadeIn(),
         exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { it / 2 }) + androidx.compose.animation.fadeOut(),
         modifier = modifier
-            .padding(bottom = 100.dp) // Position above nav bar logic
+            //.padding(bottom = 100.dp) // Removed for flexible positioning
             .fillMaxWidth()
             .padding(horizontal = 32.dp)
             .height(80.dp) // Fixed height for consistent look

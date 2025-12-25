@@ -20,14 +20,14 @@ object FilterEngine {
     
     // Safety Allowlist - Critical domains that should NEVER be blocked
     private val allowlist = mutableSetOf(
-        "google.com", "googleapis.com", "gstatic.com", "googleusercontent.com", "ads.google.com",
-        "facebook.com", "www.facebook.com", "fbcdn.net",
-        "twitch.tv", "www.twitch.tv", "ttvnw.net",
-        "youtube.com", "www.youtube.com", "googlevideo.com", "ytimg.com",
+        "googleapis.com", "gstatic.com", "googleusercontent.com",
+        "fbcdn.net",
+        "twitch.tv", "ttvnw.net",
+        "googlevideo.com", "ytimg.com", // YouTube CDNs
         "hdrezka.ac", "hdrezka.ag", "hdrezka.me", "hdrezka.co", "hdrezka.re", "hdrezka-home.tv",
         "rezka.ag", "rezka.me", "static.hdrezka.ac", "hls.hdrezka.ac",
         "voidboost.net", "voidboost.cc",
-        "amazon.com", "amazonaws.com", "cloudfront.net", "cdn.net", "cloudflare.com", "microsoft.com", "apple.com", "icloud.com",
+        "cloudfront.net", "cdn.net", "cloudflare.com", "icloud.com",
         "gvt1.com", "gvt2.com", "gvt3.com",
         "ss.lv", "m.ss.lv", "www.ss.lv", "inbox.lv"
     )
@@ -102,6 +102,8 @@ object FilterEngine {
             "videoroll.net", "marketgid.com", "mgid.com", "googleadservices.com"
         )
         finalBlockRules.addAll(fallback)
+        android.util.Log.i("FilterEngine", "Merging ${fallback.size} fallback rules.")
+
 
         // 2. Update Block Rules
         val (newBlockRoot, newBlockRegex, blockCount) = parseRules(finalBlockRules)
@@ -181,20 +183,26 @@ object FilterEngine {
         if (domain.isNullOrBlank()) return FilterStatus.ALLOWED_DEFAULT
         val currentDomain = domain.lowercase().trim().trimEnd('.')
         
-        // 1. Check for Exceptions (Allowlist) - Order: User > Static > Dynamic
+        // 1. Check for Explicit Overrides (User Rules > System Exceptions)
+        // Order: User Allow > User Block > System/Dynamic Exceptions
         var temp = currentDomain
         while (temp.isNotEmpty()) {
             if (userAllowlist.contains(temp)) {
                 return FilterStatus.ALLOWED_USER
             }
+            // User Blocklist (Moved Up: User Ban overrides System Allow)
+            if (userBlocklist.contains(temp)) {
+                return FilterStatus.BLOCKED_USER
+            }
+            
+            // System/Dynamic Exceptions
             if (allowlist.contains(temp)) {
                 return FilterStatus.ALLOWED_SYSTEM
             }
             
-            // Check dynamic exception Trie for this subdomain level
+            // Dynamic exception Trie
             val matchedException = checkTrie(exceptionRoot, temp)
             if (matchedException != null) {
-                // Dynamic exceptions are usually from filter lists, treating as System for now unless we want a separate type
                 return FilterStatus.ALLOWED_SYSTEM 
             }
             
@@ -209,18 +217,9 @@ object FilterEngine {
             return FilterStatus.ALLOWED_SYSTEM
         }
 
-        // 2. Check for User Blocklist (Manual Ban)
-        temp = currentDomain
-        while (temp.isNotEmpty()) {
-            if (userBlocklist.contains(temp)) {
-                return FilterStatus.BLOCKED_USER
-            }
-            val nextDot = temp.indexOf('.')
-            if (nextDot == -1) break
-            temp = temp.substring(nextDot + 1)
-        }
+        // 2. Check for Block Rules (if not allowed/banned explicitly above)
+        // (User Blocklist check was moved up)
         
-        // 3. Check for Block Rules
         temp = currentDomain
         while (temp.isNotEmpty()) {
             val matchedRule = checkTrie(root, temp)

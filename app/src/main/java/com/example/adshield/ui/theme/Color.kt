@@ -6,14 +6,11 @@ val NeonGreen = Color(0xFF0df259)
 val NeonGreenDark = Color(0xFF08a33b)
 val NeonGreenLight = Color(0xFF6eff8b)
 
-val NeonCyan = Color(0xFF00E5FF)
-val NeonPurple = Color(0xFFD500F9)
-
 // Dark Theme Colors
 val BackgroundDark = Color(0xFF0D1117) // Slightly bluish black (GitHub Dark Dimmed style)
 val SurfaceDark = Color(0xFF161B22)
 val TerminalBgDark = Color(0xFF0D1117)
-val GridLineDark = NeonCyan.copy(alpha = 0.05f)
+val GridLineDark = NeonGreen.copy(alpha = 0.05f)
 
 // Light Theme Colors (Keeping standard for contrast, but user likely prefers dark)
 val BackgroundLight = Color(0xFFf5f8f6)

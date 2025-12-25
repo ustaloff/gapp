@@ -86,8 +86,8 @@ fun HomeView(
         Spacer(modifier = Modifier.height(32.dp))
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-            modifier = Modifier.fillMaxWidth()
+            horizontalArrangement = Arrangement.Start,
+            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
         ) {
             Image(
                 painter = androidx.compose.ui.res.painterResource(id = com.example.adshield.R.drawable.ic_app_logo_final),
@@ -427,191 +427,199 @@ fun SettingsView(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
-                .verticalScroll(rememberScrollState())
         ) {
-         // Custom Header with Back Button
-        Spacer(modifier = Modifier.height(16.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(
-                onClick = onBackClick,
-                modifier = Modifier
-                    .size(40.dp)
-                    .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), RoundedCornerShape(5.dp))
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(5.dp))
+            // Custom Header with Back Button (STATIC)
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
-                    contentDescription = "Back", 
-                    tint = MaterialTheme.colorScheme.primary
+                IconButton(
+                    onClick = onBackClick,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), RoundedCornerShape(5.dp))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(5.dp))
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
+                        contentDescription = "Back", 
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Text(
+                     text = "SYSTEM CONFIG",
+                     style = MaterialTheme.typography.titleMedium,
+                     fontWeight = FontWeight.Bold,
+                     letterSpacing = 1.sp,
+                     color = MaterialTheme.colorScheme.primary,
+                     fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
                 )
             }
-            Spacer(modifier = Modifier.width(16.dp))
-            Text(
-                 text = "SYSTEM CONFIG",
-                 style = MaterialTheme.typography.titleMedium,
-                 fontWeight = FontWeight.Bold,
-                 letterSpacing = 1.sp,
-                 color = MaterialTheme.colorScheme.primary,
-                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
-            )
-        }
+            
+            Spacer(modifier = Modifier.height(16.dp))
 
-        // Account Status Card
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(1.dp, MaterialTheme.colorScheme.secondary, RoundedCornerShape(8.dp))
-                .padding(16.dp)
-        ) {
-             if (currentUser != null) {
-                 Column {
-                     Text("OPERATOR IDENTIFIED", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
-                     Text(currentUser?.email ?: "Unknown", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
-                     Spacer(modifier = Modifier.height(8.dp))
-                     Button(
-                         onClick = { 
-                             com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
-                             googleSignInClient.signOut()
-                         },
-                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                     ) {
-                         Text("TERMINATE SESSION")
-                     }
-                 }
-             } else {
-                 Column {
-                     Text("NO IDENTITY", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
-                     Spacer(modifier = Modifier.height(8.dp))
-                     Button(
-                         onClick = { 
-                            isSigningIn = true
-                            signInLauncher.launch(googleSignInClient.signInIntent) 
-                         },
-                         enabled = !isSigningIn,
-                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                     ) {
-                         if (isSigningIn) {
-                             CircularProgressIndicator(
-                                 modifier = Modifier.size(24.dp),
-                                 color = MaterialTheme.colorScheme.onPrimary,
-                                 strokeWidth = 2.dp
-                             )
-                         } else {
-                             Text("LINK IDENTITY (GOOGLE)")
+            // Scrollable Content
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                // Account Status Card
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, MaterialTheme.colorScheme.secondary, RoundedCornerShape(8.dp))
+                        .padding(16.dp)
+                ) {
+                     if (currentUser != null) {
+                         Column {
+                             Text("OPERATOR IDENTIFIED", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
+                             Text(currentUser?.email ?: "Unknown", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                             Spacer(modifier = Modifier.height(8.dp))
+                             Button(
+                                 onClick = { 
+                                     com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
+                                     googleSignInClient.signOut()
+                                 },
+                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                             ) {
+                                 Text("TERMINATE SESSION")
+                             }
+                         }
+                     } else {
+                         Column {
+                             Text("NO IDENTITY", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                             Spacer(modifier = Modifier.height(8.dp))
+                             Button(
+                                 onClick = { 
+                                    isSigningIn = true
+                                    signInLauncher.launch(googleSignInClient.signInIntent) 
+                                 },
+                                 enabled = !isSigningIn,
+                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                             ) {
+                                 if (isSigningIn) {
+                                     CircularProgressIndicator(
+                                         modifier = Modifier.size(24.dp),
+                                         color = MaterialTheme.colorScheme.onPrimary,
+                                         strokeWidth = 2.dp
+                                     )
+                                 } else {
+                                     Text("LINK IDENTITY (GOOGLE)")
+                                 }
+                             }
                          }
                      }
-                 }
-             }
-        }
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        // PREMIUM BANNER
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
-                        colors = listOf(Color(0xFF6200EE), Color(0xFFBB86FC))
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                )
-                .clickable(onClick = onPremiumClick)
-                .padding(20.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically, 
-                horizontalArrangement = Arrangement.SpaceBetween, 
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column {
-                    Text("GO PREMIUM", fontWeight = FontWeight.Bold, color = Color.White)
-                    Text("Unlock full power & support devs", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha=0.8f))
                 }
-                Icon(androidx.compose.material.icons.Icons.Filled.Star, contentDescription = null, tint = Color.Yellow)
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                // PREMIUM BANNER
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
+                                colors = listOf(Color(0xFF6200EE), Color(0xFFBB86FC))
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .clickable(onClick = onPremiumClick)
+                        .padding(20.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically, 
+                        horizontalArrangement = Arrangement.SpaceBetween, 
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column {
+                            Text("GO PREMIUM", fontWeight = FontWeight.Bold, color = Color.White)
+                            Text("Unlock full power & support devs", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha=0.8f))
+                        }
+                        Icon(androidx.compose.material.icons.Icons.Filled.Star, contentDescription = null, tint = Color.Yellow)
+                    }
+                }
+                
+                Spacer(Modifier.height(24.dp))
+                
+                // Item 1: Whitelist (Renamed to APP WHITELIST)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                        .clickable(onClick = onWhitelistClick)
+                        .padding(16.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                        Column {
+                            Text("APP WHITELIST", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                            Text("Exclude apps from VPN", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                // Item 2: Domain Config
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                        .clickable(onClick = onDomainConfigClick)
+                        .padding(16.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                        Column {
+                            Text("DOMAIN CONFIG", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                            Text("Manage allowed domains", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Icon(Icons.Default.List, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    }
+                }
+                
+                Spacer(Modifier.height(16.dp))
+
+                // Item 3: Blocked Config (User Banned)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                        .clickable(onClick = onBlockedConfigClick)
+                        .padding(16.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                        Column {
+                            Text("BLOCKED CONFIG", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                            Text("Manage banned domains", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Icon(Icons.Default.Close, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                // Item 2: Filter Source
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                        .clickable(onClick = { tempUrl = currentUrl; showUrlDialog = true })
+                        .padding(16.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("FILTER SOURCE", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                            Text(currentUrl, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                        }
+                        Icon(androidx.compose.material.icons.Icons.Default.Refresh, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    }
+                }
+                
+                 Spacer(modifier = Modifier.height(150.dp))
             }
         }
-        
-        Spacer(Modifier.height(24.dp))
-        
-        // Item 1: Whitelist (Renamed to APP WHITELIST)
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
-                .clickable(onClick = onWhitelistClick)
-                .padding(16.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                Column {
-                    Text("APP WHITELIST", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                    Text("Exclude apps from VPN", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-            }
-        }
-
-        Spacer(Modifier.height(16.dp))
-
-        // Item 2: Domain Config
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
-                .clickable(onClick = onDomainConfigClick)
-                .padding(16.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                Column {
-                    Text("DOMAIN CONFIG", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                    Text("Manage allowed domains", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Icon(Icons.Default.List, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-            }
-        }
-        
-        Spacer(Modifier.height(16.dp))
-
-        // Item 3: Blocked Config (User Banned)
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
-                .clickable(onClick = onBlockedConfigClick)
-                .padding(16.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                Column {
-                    Text("BLOCKED CONFIG", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                    Text("Manage banned domains", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Icon(Icons.Default.Close, contentDescription = null, tint = MaterialTheme.colorScheme.error)
-            }
-        }
-
-        Spacer(Modifier.height(16.dp))
-
-        // Item 2: Filter Source
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
-                .clickable(onClick = { tempUrl = currentUrl; showUrlDialog = true })
-                .padding(16.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("FILTER SOURCE", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                    Text(currentUrl, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                }
-                Icon(androidx.compose.material.icons.Icons.Default.Refresh, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-            }
-        }
-        
-         Spacer(modifier = Modifier.height(150.dp))
-    }
-    }
+}
 }
