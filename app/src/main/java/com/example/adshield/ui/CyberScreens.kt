@@ -31,6 +31,13 @@ import com.example.adshield.data.VpnLogEntry
 import com.example.adshield.data.AppPreferences
 import androidx.compose.ui.platform.LocalContext
 import com.example.adshield.ui.components.*
+import com.example.adshield.data.UserRepository
+import kotlinx.coroutines.launch
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.firebase.auth.FirebaseUser
+import androidx.compose.material.icons.filled.CheckCircle
 
 @Composable
 fun HomeView(
@@ -293,16 +300,60 @@ fun StatsView(
     }
 }
 
+
 @Composable
 fun SettingsView(
     onWhitelistClick: () -> Unit,
     onPremiumClick: () -> Unit
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val prefs = remember { AppPreferences(context) }
     var showUrlDialog by remember { mutableStateOf(false) }
     var currentUrl by remember { mutableStateOf(prefs.getFilterSourceUrl()) }
     var tempUrl by remember { mutableStateOf(currentUrl) }
+
+    // -- Google Sign In Setup --
+    // We observe the user state to update UI immediately
+    var currentUser by remember { mutableStateOf(UserRepository.getCurrentUser()) }
+    
+    // Refresh user on composition (in case it changed)
+    LaunchedEffect(Unit) {
+        currentUser = UserRepository.getCurrentUser()
+    }
+
+    val webClientId = androidx.compose.ui.res.stringResource(com.example.adshield.R.string.default_web_client_id)
+    val gso = remember {
+         com.google.android.gms.auth.api.signin.GoogleSignInOptions.Builder(com.google.android.gms.auth.api.signin.GoogleSignInOptions.DEFAULT_SIGN_IN)
+             .requestIdToken(webClientId)
+             .requestEmail()
+             .build()
+    }
+    val googleSignInClient = remember { com.google.android.gms.auth.api.signin.GoogleSignIn.getClient(context, gso) }
+
+    val signInLauncher = rememberLauncherForActivityResult(
+         contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+         val task = com.google.android.gms.auth.api.signin.GoogleSignIn.getSignedInAccountFromIntent(result.data)
+         try {
+             val account = task.getResult(com.google.android.gms.common.api.ApiException::class.java)
+             val idToken = account.idToken
+             if (idToken != null) {
+                 scope.launch {
+                      val authResult = UserRepository.signInWithGoogle(idToken)
+                      if (authResult.isSuccess) {
+                          currentUser = UserRepository.getCurrentUser()
+                          android.widget.Toast.makeText(context, "Identity Linked!", android.widget.Toast.LENGTH_SHORT).show()
+                      } else {
+                          android.widget.Toast.makeText(context, "Link Failed", android.widget.Toast.LENGTH_SHORT).show()
+                      }
+                 }
+             }
+         } catch (e: com.google.android.gms.common.api.ApiException) {
+              android.util.Log.w("Auth", "Google sign in failed", e)
+              android.widget.Toast.makeText(context, "Sign In Error: ${e.statusCode}", android.widget.Toast.LENGTH_SHORT).show()
+         }
+    }
 
     if (showUrlDialog) {
         AlertDialog(
@@ -351,6 +402,78 @@ fun SettingsView(
                 letterSpacing = 2.sp
             )
         }
+        Spacer(Modifier.height(32.dp))
+
+        // SECTION: ACCOUNT (CYBER IDENTITY)
+        Text(
+            text = "IDENTITY",
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha=0.3f), RoundedCornerShape(8.dp))
+                .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                .padding(16.dp)
+        ) {
+             Column {
+                 Row(
+                     verticalAlignment = Alignment.CenterVertically,
+                     modifier = Modifier.fillMaxWidth()
+                 ) {
+                     Icon(
+                         imageVector = if (currentUser != null) Icons.Default.CheckCircle else Icons.Default.Info,
+                         contentDescription = null,
+                         tint = if (currentUser != null) Color.Green else MaterialTheme.colorScheme.onSurfaceVariant
+                     )
+                     Spacer(modifier = Modifier.width(12.dp))
+                     Column {
+                         Text(
+                             text = if (currentUser != null) "LINKED" else "NOT LINKED",
+                             fontWeight = FontWeight.Bold,
+                             color = if (currentUser != null) Color.Green else MaterialTheme.colorScheme.onSurfaceVariant
+                         )
+                         if (currentUser != null) {
+                             Text(
+                                 text = currentUser?.email ?: "Unknown ID",
+                                 style = MaterialTheme.typography.labelSmall,
+                                 color = MaterialTheme.colorScheme.onSurfaceVariant
+                             )
+                         }
+                     }
+                 }
+                 
+                 Spacer(modifier = Modifier.height(16.dp))
+                 
+                 if (currentUser == null) {
+                     Button(
+                         onClick = { signInLauncher.launch(googleSignInClient.signInIntent) },
+                         modifier = Modifier.fillMaxWidth(),
+                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                         shape = RoundedCornerShape(4.dp)
+                     ) {
+                         Text("LINK GOOGLE IDENTITY")
+                     }
+                 } else {
+                      OutlinedButton(
+                         onClick = { 
+                             UserRepository.signOut()
+                             currentUser = null
+                             googleSignInClient.signOut()
+                         },
+                         modifier = Modifier.fillMaxWidth(),
+                         shape = RoundedCornerShape(4.dp)
+                     ) {
+                         Text("UNLINK IDENTITY")
+                     }
+                 }
+             }
+        }
+
         Spacer(Modifier.height(32.dp))
         
         // PREMIUM BANNER
