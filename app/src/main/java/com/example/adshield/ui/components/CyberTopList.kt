@@ -23,6 +23,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.drawable.toBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.Image
 
 @Composable
 fun CyberTopList(
@@ -56,23 +60,20 @@ fun CyberTopList(
                 var appIcon by remember(packageName) { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
                 
                 LaunchedEffect(packageName) {
-                    try {
-                        val appInfo = packageManager.getApplicationInfo(packageName, 0)
-                        appName = packageManager.getApplicationLabel(appInfo).toString()
-                        val drawable = packageManager.getApplicationIcon(appInfo)
-                        
-                        // Convert Drawable to ImageBitmap (Simplified for Compose)
-                        // In a real app, use Coil or proper conversion. 
-                        // For now, we will fallback to default icon to avoid heavy bitmap logic if conversion complex,
-                        // but let's try a basic approach or just use name for now to avoid crashes?
-                        // Actually, let's stick to Name resolution first. Icon needs messy Bitmap conversion.
-                        // User asked for "Logo with Name", so we SHOULD try.
-                        // Let's use a placeholder Logic: if we get the label, that's 90% of the value.
-                        // Adding Bitmap conversion code inside a composable is risky without a utility.
-                        // I will stick to NAME resolution first to be safe, unless I add an extension.
-                    } catch (e: Exception) {
-                        // Keep package name if not found
-                        appName = packageName
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        try {
+                            val appInfo = packageManager.getApplicationInfo(packageName, 0)
+                            val label = packageManager.getApplicationLabel(appInfo).toString()
+                            val iconDrawable = packageManager.getApplicationIcon(appInfo)
+                            val bitmap = iconDrawable.toBitmap(width = 64, height = 64).asImageBitmap()
+                            
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                appName = label
+                                appIcon = bitmap
+                            }
+                        } catch (e: Exception) {
+                            // Keep default
+                        }
                     }
                 }
 
@@ -88,6 +89,25 @@ fun CyberTopList(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // App Icon
+                    if (appIcon != null) {
+                        Image(
+                            bitmap = appIcon!!,
+                            contentDescription = null,
+                            modifier = Modifier.size(32.dp).clip(RoundedCornerShape(4.dp))
+                        )
+                    } else {
+                         // Fallback Icon
+                         Icon(
+                             imageVector = Icons.Default.CheckCircle, // Generic
+                             contentDescription = null,
+                             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.3f),
+                             modifier = Modifier.size(32.dp)
+                         )
+                    }
+                    
+                    Spacer(Modifier.width(12.dp))
+
                     Column(modifier = Modifier.weight(1f)) {
                          Text(
                              text = appName, // UPDATED: Shows Human Name
@@ -98,7 +118,7 @@ fun CyberTopList(
                              overflow = TextOverflow.Ellipsis,
                              fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
                          )
-                         // Optional: Show package name below in tiny font if needed
+                         // Optional: Show package name below in tiny font
                          if (appName != packageName) {
                              Text(
                                  text = packageName,
