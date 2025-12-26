@@ -81,18 +81,18 @@ fun HomeView(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
         // TOP BAR
-        Spacer(modifier = Modifier.height(16.dp))
+        //Spacer(modifier = Modifier.height(16.dp))
         // CENTERED HEADER (Logo + Title)
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(16.dp))
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Start,
-            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+            modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp)
         ) {
             Image(
                 painter = androidx.compose.ui.res.painterResource(id = com.example.adshield.R.drawable.ic_app_logo_final),
                 contentDescription = "AdShield Logo",
-                modifier = Modifier.size(64.dp)
+                modifier = Modifier.size(48.dp)
             )
             Spacer(modifier = Modifier.width(16.dp))
             GlitchText(
@@ -102,7 +102,7 @@ fun HomeView(
             )
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         // STATUS SECTION (Redsigned)
         Box(
@@ -112,7 +112,7 @@ fun HomeView(
             Column {
                 // Header (Status Indicator)
                 Row(
-                    verticalAlignment = Alignment.CenterVertically, 
+                    verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center,
                     modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
                 ) {
@@ -120,7 +120,7 @@ fun HomeView(
                         modifier = Modifier
                             .size(8.dp)
                             .background(
-                                if (isRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error, 
+                                if (isRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                                 CircleShape
                             )
                     )
@@ -148,7 +148,7 @@ fun HomeView(
                         iconVector = androidx.compose.material.icons.Icons.Default.ThumbUp,
                         modifier = Modifier.weight(1f).fillMaxHeight()
                     )
-                    
+
                     val timeMs = VpnStats.timeSavedMs.value
                     val timeString = when {
                         timeMs < 1000 -> "${timeMs}ms"
@@ -172,9 +172,9 @@ fun HomeView(
         Spacer(modifier = Modifier.height(24.dp))
         CyberGraphSection(VpnStats.blockedHistory, bpm, isRunning)
 
-        Spacer(modifier = Modifier.height(32.dp))
-        
-        // PRIORITY 4: BLOCKED STATS (History) 
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // PRIORITY 4: BLOCKED STATS (History)
         // BLOCKED REQUESTS HEADER
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
@@ -207,44 +207,44 @@ fun HomeView(
                 modifier = Modifier.weight(1f)
             )
         }
-        
+
         // PRIORITY 5: TOP LISTS (Details)
         val context = LocalContext.current
         Spacer(modifier = Modifier.height(24.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Box(Modifier.weight(1f)) {
                 CyberTopList(
-                    title = "TOP APPS", 
-                    data = VpnStats.appBlockedStatsMap, 
+                    title = "TOP APPS",
+                    data = VpnStats.appBlockedStatsMap,
                     onAllowClick = { onAppClick(it) },
                     isWhitelisted = { pkg -> excludedApps.contains(pkg) } // Use State
                 )
             }
             Box(Modifier.weight(1f)) {
                 CyberTopList(
-                    title = "TOP DOMAINS", 
-                    data = VpnStats.domainBlockedStatsMap, 
+                    title = "TOP DOMAINS",
+                    data = VpnStats.domainBlockedStatsMap,
                     onAllowClick = { onLogClick(it) },
-                    isWhitelisted = { domain -> 
+                    isWhitelisted = { domain ->
                         val tick = filterUpdateTrigger // Force Recomp reading
-                        FilterEngine.checkDomain(domain) == FilterEngine.FilterStatus.ALLOWED_USER 
+                        FilterEngine.checkDomain(domain) == FilterEngine.FilterStatus.ALLOWED_USER
                     }
                 )
             }
         }
 
         // PRORITY 6: TERMINAL LOG (Deep Details)
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
         CyberTerminal(logs = recentLogs, onLogClick = { onLogClick(it) })
 
         // PRIORITY 7: PROTECTION ENGINE (Technical Footer)
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(24.dp))
         CyberFilterCard(
             ruleCount = filterCount,
             isUpdating = isUpdatingFilters,
             onReload = onReloadFilters
         )
-        
+
         Spacer(modifier = Modifier.height(150.dp))
     }
     }
@@ -282,11 +282,11 @@ fun LogsView(
             )
         }
         Spacer(Modifier.height(16.dp))
-        
+
         // Full Screen Terminal
         // We reuse CyberTerminal logic but expanded
         CyberTerminal(logs = logs, onLogClick = onLogClick)
-        
+
         Spacer(Modifier.height(16.dp))
         Text(
             text = "Tap any entry to whitelist domain.",
@@ -321,12 +321,12 @@ fun StatsView(
             )
         }
         Spacer(Modifier.height(24.dp))
-        
+
         CyberGraphSection(data, bpm, isRunning)
-        
+
         Spacer(Modifier.height(24.dp))
         Text("> Detailed analysis modules loading...", fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, color = Color.Gray)
-        
+
         Spacer(modifier = Modifier.height(150.dp))
     }
 }
@@ -392,7 +392,7 @@ fun SettingsView(
         AlertDialog(
             onDismissRequest = { showUrlDialog = false },
             title = { Text("FILTER SOURCE URL") },
-            text = { 
+            text = {
                 OutlinedTextField(
                     value = tempUrl,
                     onValueChange = { tempUrl = it },
@@ -438,8 +438,8 @@ fun SettingsView(
                         .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(5.dp))
                 ) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
-                        contentDescription = "Back", 
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
@@ -453,7 +453,7 @@ fun SettingsView(
                      fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
 
             // Scrollable Content
@@ -475,7 +475,7 @@ fun SettingsView(
                              Text(currentUser?.email ?: "Unknown", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
                              Spacer(modifier = Modifier.height(8.dp))
                              Button(
-                                 onClick = { 
+                                 onClick = {
                                      com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
                                      googleSignInClient.signOut()
                                  },
@@ -489,9 +489,9 @@ fun SettingsView(
                              Text("NO IDENTITY", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
                              Spacer(modifier = Modifier.height(8.dp))
                              Button(
-                                 onClick = { 
+                                 onClick = {
                                     isSigningIn = true
-                                    signInLauncher.launch(googleSignInClient.signInIntent) 
+                                    signInLauncher.launch(googleSignInClient.signInIntent)
                                  },
                                  enabled = !isSigningIn,
                                  colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
@@ -509,9 +509,9 @@ fun SettingsView(
                          }
                      }
                 }
-                
+
                 Spacer(modifier = Modifier.height(24.dp))
-                
+
                 // PREMIUM BANNER
                 Box(
                     modifier = Modifier
@@ -526,8 +526,8 @@ fun SettingsView(
                         .padding(20.dp)
                 ) {
                     Row(
-                        verticalAlignment = Alignment.CenterVertically, 
-                        horizontalArrangement = Arrangement.SpaceBetween, 
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column {
@@ -537,9 +537,9 @@ fun SettingsView(
                         Icon(androidx.compose.material.icons.Icons.Filled.Star, contentDescription = null, tint = Color.Yellow)
                     }
                 }
-                
+
                 Spacer(Modifier.height(24.dp))
-                
+
                 // Item 1: Whitelist (Renamed to APP WHITELIST)
                 Box(
                     modifier = Modifier
@@ -575,7 +575,7 @@ fun SettingsView(
                         Icon(Icons.Default.List, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     }
                 }
-                
+
                 Spacer(Modifier.height(16.dp))
 
                 // Item 3: Blocked Config (User Banned)
@@ -613,7 +613,7 @@ fun SettingsView(
                         Icon(androidx.compose.material.icons.Icons.Default.Refresh, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     }
                 }
-                
+
                  Spacer(modifier = Modifier.height(150.dp))
             }
         }
