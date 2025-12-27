@@ -166,7 +166,8 @@ fun AppListScreen(
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = MaterialTheme.colorScheme.primary,
                         selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                    )
+                    ),
+                    shape = AdShieldTheme.shapes.button
                 )
 
                 // Right: System Filter
@@ -184,7 +185,8 @@ fun AppListScreen(
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
                         selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
+                    ),
+                    shape = AdShieldTheme.shapes.button
                 )
             }
 

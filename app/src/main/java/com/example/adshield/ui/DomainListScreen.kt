@@ -144,7 +144,8 @@ fun DomainListScreen(
                 .align(Alignment.BottomEnd)
                 .padding(24.dp),
             containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            shape = AdShieldTheme.shapes.add
         ) {
             Icon(Icons.Default.Add, contentDescription = "Add Domain")
         }
@@ -227,7 +228,8 @@ fun AddDomainDialog(
                 keyboardActions = KeyboardActions(onDone = {
                     if (text.isNotBlank()) onAdd(text)
                 }),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                shape = AdShieldTheme.shapes.input
             )
         },
         confirmButton = {

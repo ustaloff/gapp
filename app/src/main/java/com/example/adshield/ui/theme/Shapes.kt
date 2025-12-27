@@ -13,7 +13,7 @@ data class AdShieldShapes(
     val window: Shape,     // For top-level containers/dialogs
     val dialog: Shape,     // For floating dialogs
     val button: Shape,
-    val back: Shape,
+    val back: Shape,// For settings back button
 
     // New variables
     val setting: Shape, // For settings boxes
@@ -22,7 +22,8 @@ data class AdShieldShapes(
     val banner: Shape, // For banner
     val input: Shape, //  For input text
     val screen: Shape, //  For graph screen
-    val icon: Shape, //  For input text
+    val icon: Shape, //  For app icon
+    val add: Shape, //  For settings add button
 
 )
 
@@ -42,6 +43,7 @@ val CyberShapes = AdShieldShapes(
     input = RoundedCornerShape(5.dp),
     screen = RoundedCornerShape(2.dp),
     icon = RoundedCornerShape(50),
+    add = RoundedCornerShape(5.dp),
 )
 
 val RoundShapes = AdShieldShapes(
@@ -59,6 +61,7 @@ val RoundShapes = AdShieldShapes(
     input = RoundedCornerShape(5.dp),
     screen = RoundedCornerShape(2.dp),
     icon = RoundedCornerShape(50),
+    add = RoundedCornerShape(50),
 )
 
 val LocalAdShieldShapes = staticCompositionLocalOf { CyberShapes }

@@ -19,7 +19,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.ThumbUp
@@ -327,7 +327,7 @@ fun LogsView(
         // Header
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
-                Icons.Default.List,
+                Icons.AutoMirrored.Filled.List,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary
             )
@@ -469,7 +469,8 @@ fun SettingsView(
                     value = tempUrl,
                     onValueChange = { tempUrl = it },
                     label = { Text("https://...") },
-                    singleLine = true
+                    singleLine = true,
+                    shape = AdShieldTheme.shapes.input
                 )
             },
             confirmButton = {
@@ -725,7 +726,7 @@ fun SettingsView(
                             )
                         }
                         Icon(
-                            Icons.Default.List,
+                            Icons.AutoMirrored.Filled.List,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary
                         )
