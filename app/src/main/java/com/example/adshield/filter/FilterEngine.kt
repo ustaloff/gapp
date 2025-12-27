@@ -19,29 +19,11 @@ object FilterEngine {
     private val userAllowlist = mutableSetOf<String>()
     private val userBlocklist = mutableSetOf<String>()
 
-    // Safety Allowlist - Critical domains that should NEVER be blocked
-    private val allowlist = mutableSetOf(
-        "googleapis.com", "gstatic.com", "googleusercontent.com",
-        "fbcdn.net",
-        "twitch.tv", "ttvnw.net",
-        "googlevideo.com", "ytimg.com", // YouTube CDNs
-        "hdrezka.ac", "hdrezka.ag", "hdrezka.me", "hdrezka.co", "hdrezka.re", "hdrezka-home.tv",
-        "rezka.ag", "rezka.me", "static.hdrezka.ac", "hls.hdrezka.ac",
-        "voidboost.net", "voidboost.cc",
-        "cloudfront.net", "cdn.net", "cloudflare.com", "icloud.com",
-        "gvt1.com", "gvt2.com", "gvt3.com",
-        "ss.lv", "m.ss.lv", "www.ss.lv", "inbox.lv"
-    )
 
-    // Domains used by browsers for DNS-over-HTTPS. Blocking these forces fallback to our VPN DNS.
-    private val dohBypassList = setOf(
-        "cloudflare-dns.com", "dns.google", "dns.nextdns.io", "doh.opendns.com",
-        "dns.quad9.net", "doh.cleanbrowsing.org"
-    )
 
     fun isDohBypass(domain: String): Boolean {
         val clean = domain.lowercase().trim().trimEnd('.')
-        return dohBypassList.any { clean == it || clean.endsWith(".$it") }
+        return FilterLists.dohBypassList.any { clean == it || clean.endsWith(".$it") }
     }
 
     fun initialize(context: android.content.Context) {
@@ -103,10 +85,7 @@ object FilterEngine {
         // 1. Reset and Merge Fallback Rules
         ruleMap.clear()
         val finalBlockRules = filterData.blockRules.toMutableSet()
-        val fallback = setOf(
-            "doubleclick.net", "ad.google.com", "mc.yandex.ru", "an.yandex.ru",
-            "videoroll.net", "marketgid.com", "mgid.com", "googleadservices.com"
-        )
+        val fallback = FilterLists.fallbackBlocklist
         finalBlockRules.addAll(fallback)
         android.util.Log.i("FilterEngine", "Merging ${fallback.size} fallback rules.")
 
@@ -208,7 +187,7 @@ object FilterEngine {
             }
 
             // System/Dynamic Exceptions
-            if (allowlist.contains(temp)) {
+            if (FilterLists.allowlist.contains(temp)) {
                 return FilterStatus.ALLOWED_SYSTEM
             }
 
