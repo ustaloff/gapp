@@ -176,50 +176,58 @@ object FilterEngine {
 
         // 1. Check for Explicit Overrides (User Rules > System Exceptions)
         // Order: User Allow > User Block > System/Dynamic Exceptions
-        var temp = currentDomain
-        while (temp.isNotEmpty()) {
-            if (userAllowlist.contains(temp)) {
+        
+        // Iterating subdomains without creating substring objects for the loop
+        var startIndex = 0
+        while (startIndex < currentDomain.length) {
+            // We can't easily optimize the Sets checks (allowlist.contains) without substring
+            // because Set keys are Strings. 
+            // However, we CAN optimize the loop to only create the substring when needed for the Set lookup.
+            val subDomain = currentDomain.substring(startIndex)
+
+            if (userAllowlist.contains(subDomain)) {
                 return FilterStatus.ALLOWED_USER
             }
             // User Blocklist (Moved Up: User Ban overrides System Allow)
-            if (userBlocklist.contains(temp)) {
+            if (userBlocklist.contains(subDomain)) {
                 return FilterStatus.BLOCKED_USER
             }
 
             // System/Dynamic Exceptions
-            if (FilterLists.allowlist.contains(temp)) {
+            if (FilterLists.allowlist.contains(subDomain)) {
                 return FilterStatus.ALLOWED_SYSTEM
             }
 
-            // Dynamic exception Trie
-            val matchedException = checkTrie(exceptionRoot, temp)
+            // Dynamic exception Trie - OPTIMIZED to use startIndex
+            val matchedException = checkTrie(exceptionRoot, currentDomain, startIndex)
             if (matchedException != null) {
                 return FilterStatus.ALLOWED_SYSTEM
             }
 
-            val nextDot = temp.indexOf('.')
+            val nextDot = currentDomain.indexOf('.', startIndex)
             if (nextDot == -1) break
-            temp = temp.substring(nextDot + 1)
+            startIndex = nextDot + 1
         }
-
-        // Dynamic Exception Regex
+        
+        // Dynamic Exception Regex (Still slow, but less frequently hit)
         val matchedExcRegex = exceptionRegexRules.find { it.containsMatchIn(currentDomain) }
         if (matchedExcRegex != null) {
             return FilterStatus.ALLOWED_SYSTEM
         }
 
         // 2. Check for Block Rules (if not allowed/banned explicitly above)
-        // (User Blocklist check was moved up)
-
-        temp = currentDomain
-        while (temp.isNotEmpty()) {
-            val matchedRule = checkTrie(root, temp)
+        
+        startIndex = 0
+        while (startIndex < currentDomain.length) {
+            // Trie Optimization: Pass full string + offset
+            val matchedRule = checkTrie(root, currentDomain, startIndex)
             if (matchedRule != null) {
                 return FilterStatus.BLOCKED
             }
-            val nextDot = temp.indexOf('.')
+            
+            val nextDot = currentDomain.indexOf('.', startIndex)
             if (nextDot == -1) break
-            temp = temp.substring(nextDot + 1)
+            startIndex = nextDot + 1
         }
 
         // Block Regex
@@ -244,21 +252,32 @@ object FilterEngine {
         )
         if (keywords.any { domain.contains(it) }) return true
 
-        // 2. Entropy / Gibberish check (High digit count)
-        // e.g. "a1b2c3d4e5.cdn.com"
-        val parts = domain.split('.')
-        for (part in parts) {
-            // Ignore common parts like "www" or tlds like "com" (simple heuristic)
-            if (part.length < 4) continue
+        // 2. Entropy / Gibberish check (High digit count) - ALLOCATION FREE LOOP
+        var labelStart = 0
+        val len = domain.length
+        
+        for (i in 0..len) {
+            if (i == len || domain[i] == '.') {
+                // Segment Logic
+                val partLen = i - labelStart
+                
+                // Ignore common parts
+                if (partLen > 3) { // optimization equivalent to "part.length < 4 continue"
+                    // Count digits manually avoiding .count{} allocation
+                    var digitCount = 0
+                    for (j in labelStart until i) {
+                         if (domain[j].isDigit()) digitCount++
+                    }
+                    
+                     // If more than 30% of a long-ish label are digits -> Suspicious
+                    if (partLen > 5 && (digitCount.toFloat() / partLen > 0.3)) return true
 
-            val digitCount = part.count { it.isDigit() }
-            val length = part.length
-
-            // If more than 30% of a long-ish label are digits -> Suspicious
-            if (length > 5 && (digitCount.toFloat() / length.toFloat() > 0.3)) return true
-
-            // Or usually long random strings
-            if (length > 35) return true
+                    // Or usually long random strings
+                    if (partLen > 35) return true
+                }
+                
+                labelStart = i + 1
+            }
         }
 
         return false
@@ -269,13 +288,31 @@ object FilterEngine {
         return status == FilterStatus.BLOCKED || status == FilterStatus.BLOCKED_USER
     }
 
-    private fun checkTrie(targetRoot: TrieNode, domain: String): String? {
-        val labels = domain.split('.').reversed()
+    // OPTIMIZED: Traverses segments from right-to-left without splitting into a List
+    private fun checkTrie(targetRoot: TrieNode, domain: String, startIndex: Int): String? {
+        var end = domain.length
         var current = targetRoot
-        for (label in labels) {
+        
+        // Scan backwards from end of string down to startIndex
+        for (i in domain.length - 1 downTo startIndex) {
+            if (domain[i] == '.') {
+                // Found separator. The label is (i+1 .. end)
+                if (i + 1 < end) {
+                    val label = domain.substring(i + 1, end)
+                    current = current.children[label] ?: return null
+                    if (current.isEndOfRule) return ruleMap[current]
+                }
+                end = i
+            }
+        }
+        
+        // Process first label (from startIndex to first dot/end)
+        if (startIndex < end) {
+            val label = domain.substring(startIndex, end)
             current = current.children[label] ?: return null
             if (current.isEndOfRule) return ruleMap[current]
         }
+        
         return null
     }
 }
