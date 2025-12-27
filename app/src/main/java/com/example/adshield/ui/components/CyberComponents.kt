@@ -382,7 +382,7 @@ fun CyberMiniPowerButton(
             // Inner Icon (Custom Power Symbol)
             Canvas(modifier = Modifier.size(20.dp)) {
                 val strokeWidth = 3.dp.toPx()
-                val radius = size.minDimension / 2 - strokeWidth
+
                 val center = Offset(size.width / 2, size.height / 2)
 
                 // Arc

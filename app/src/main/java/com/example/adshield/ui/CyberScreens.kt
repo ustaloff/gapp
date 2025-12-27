@@ -226,7 +226,7 @@ fun HomeView(
             }
 
             // PRIORITY 5: TOP LISTS (Details)
-            val context = LocalContext.current
+
             Spacer(modifier = Modifier.height(24.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),

@@ -36,6 +36,7 @@ import com.example.adshield.ui.theme.AdShieldTheme
 fun AppListScreen(
     onBackClick: () -> Unit
 ) {
+
     val context = LocalContext.current
     val repository = remember { AppsRepository(context) }
     val preferences = remember { AppPreferences(context) }

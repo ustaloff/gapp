@@ -28,8 +28,7 @@ fun PremiumScreen(
     onBackClick: () -> Unit
 ) {
     val context = LocalContext.current
-    // Offline Mode: We ignore Dynamic Offerings
-    // val offerings by BillingManager.currentOfferings.collectAsState() 
+
     val isPremium by BillingManager.isPremium.collectAsState()
 
     var isLoading by remember { mutableStateOf(false) }
