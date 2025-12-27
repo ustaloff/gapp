@@ -37,6 +37,7 @@ import com.example.adshield.data.AppPreferences
 import com.example.adshield.filter.FilterEngine
 import com.example.adshield.ui.components.*
 import com.example.adshield.data.UserRepository
+import com.example.adshield.ui.theme.AdShieldTheme
 import kotlinx.coroutines.launch
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -107,6 +108,35 @@ fun HomeView(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier
+                    //.fillMaxWidth()
+                    //.padding(bottom = 16.dp)
+                    .border(1.dp, if (isRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error, AdShieldTheme.shapes.container)
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .background(
+                            if (isRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                            CircleShape
+                        )
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = if (isRunning) "TUNNELING ACTIVE // IP MASKED" else "PROTECTION DISABLED // EXPOSED",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                    letterSpacing = 1.sp,
+                    color = if (isRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             // STATUS SECTION (Redsigned)
             Box(
                 modifier = Modifier
@@ -114,7 +144,7 @@ fun HomeView(
             ) {
                 Column {
                     // Header (Status Indicator)
-                    Row(
+                    /*Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center,
                         modifier = Modifier
@@ -137,7 +167,7 @@ fun HomeView(
                             letterSpacing = 1.sp,
                             color = if (isRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                         )
-                    }
+                    }*/
 
                     // Stats Row
                     Row(
@@ -443,15 +473,30 @@ fun SettingsView(
                 )
             },
             confirmButton = {
-                TextButton(onClick = {
-                    currentUrl = tempUrl
-                    prefs.setFilterSourceUrl(tempUrl)
-                    showUrlDialog = false
-                }) { Text("SAVE") }
+                Button(
+                    onClick = {
+                        currentUrl = tempUrl
+                        prefs.setFilterSourceUrl(tempUrl)
+                        showUrlDialog = false
+                    },
+                    shape = AdShieldTheme.shapes.button
+                ) { Text("SAVE") }
             },
             dismissButton = {
-                TextButton(onClick = { showUrlDialog = false }) { Text("CANCEL") }
-            }
+                Button(
+                    onClick = { showUrlDialog = false },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    ),
+                    shape = AdShieldTheme.shapes.button
+                ) { Text("CANCEL") }
+            },
+
+            containerColor = MaterialTheme.colorScheme.surface,
+            textContentColor = MaterialTheme.colorScheme.onSurface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            shape = AdShieldTheme.shapes.dialog
         )
     }
 
@@ -481,11 +526,11 @@ fun SettingsView(
                         .border(
                             1.dp,
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                            RoundedCornerShape(5.dp)
+                            AdShieldTheme.shapes.back
                         )
                         .background(
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            RoundedCornerShape(5.dp)
+                            AdShieldTheme.shapes.back
                         )
                 ) {
                     Icon(
@@ -517,7 +562,7 @@ fun SettingsView(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, MaterialTheme.colorScheme.secondary, RoundedCornerShape(8.dp))
+                        .border(1.dp, MaterialTheme.colorScheme.secondary, AdShieldTheme.shapes.setting)
                         .padding(16.dp)
                 ) {
                     if (currentUser != null) {
@@ -583,7 +628,7 @@ fun SettingsView(
                             brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
                                 colors = listOf(Color(0xFF6200EE), Color(0xFFBB86FC))
                             ),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = AdShieldTheme.shapes.banner
                         )
                         .clickable(onClick = onPremiumClick)
                         .padding(20.dp)
@@ -618,7 +663,7 @@ fun SettingsView(
                         .border(
                             1.dp,
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                            RoundedCornerShape(8.dp)
+                            AdShieldTheme.shapes.setting
                         )
                         .clickable(onClick = onWhitelistClick)
                         .padding(16.dp)
@@ -657,7 +702,7 @@ fun SettingsView(
                         .border(
                             1.dp,
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                            RoundedCornerShape(8.dp)
+                            AdShieldTheme.shapes.setting
                         )
                         .clickable(onClick = onDomainConfigClick)
                         .padding(16.dp)
@@ -696,7 +741,7 @@ fun SettingsView(
                         .border(
                             1.dp,
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                            RoundedCornerShape(8.dp)
+                            AdShieldTheme.shapes.setting
                         )
                         .clickable(onClick = onBlockedConfigClick)
                         .padding(16.dp)
@@ -735,7 +780,7 @@ fun SettingsView(
                         .border(
                             1.dp,
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                            RoundedCornerShape(8.dp)
+                            AdShieldTheme.shapes.setting
                         )
                         .clickable(onClick = { tempUrl = currentUrl; showUrlDialog = true })
                         .padding(16.dp)

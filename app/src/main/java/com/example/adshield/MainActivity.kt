@@ -326,7 +326,7 @@ fun DashboardScreen(
             onDismissRequest = { showDisclosureDialog = false },
             title = { Text("SYSTEM DISCLOSURE") },
             text = { Text("Local VPN required for packet inspection.\nData remains local.\nProceed?") },
-            containerColor = MaterialTheme.colorScheme.surface,
+
             confirmButton = {
                 Button(
                     onClick = {
@@ -339,17 +339,28 @@ fun DashboardScreen(
                         showDisclosureDialog = false
                         onStartClick()
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                    shape = AdShieldTheme.shapes.button
                 ) { Text("INITIALIZE", color = MaterialTheme.colorScheme.onPrimary) }
             },
+
             dismissButton = {
-                TextButton(onClick = { showDisclosureDialog = false }) {
-                    Text(
-                        "ABORT",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                Button(
+                    onClick = { showDisclosureDialog = false },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    ),
+                    shape = AdShieldTheme.shapes.button
+                ) {
+                    Text("ABORT")
                 }
-            }
+            },
+
+            containerColor = MaterialTheme.colorScheme.surface,
+            textContentColor = MaterialTheme.colorScheme.onSurface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            shape = AdShieldTheme.shapes.dialog
         )
     }
 

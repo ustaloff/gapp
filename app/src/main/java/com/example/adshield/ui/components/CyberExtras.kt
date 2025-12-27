@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.adshield.ui.theme.AdShieldTheme
 
 @Composable
 fun GlitchText(
@@ -81,7 +82,7 @@ fun GlitchText(
 fun NeonCard(
     modifier: Modifier = Modifier,
     borderColor: Color = MaterialTheme.colorScheme.primary,
-    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(5.dp),
+    shape: androidx.compose.ui.graphics.Shape = AdShieldTheme.shapes.container,
     content: @Composable BoxScope.() -> Unit
 ) {
     Box(

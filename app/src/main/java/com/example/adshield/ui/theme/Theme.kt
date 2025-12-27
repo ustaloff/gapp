@@ -61,9 +61,22 @@ fun AdShieldTheme(
         else -> LightColorScheme
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+    val shapes = if (darkTheme) CyberShapes else CyberShapes // Logic to switch shapes can be added here later
+
+    androidx.compose.runtime.CompositionLocalProvider(
+        LocalAdShieldShapes provides shapes
+    ) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            content = content
+        )
+    }
+}
+
+// Helper to access shapes easily
+object AdShieldTheme {
+    val shapes: AdShieldShapes
+        @Composable
+        get() = LocalAdShieldShapes.current
 }

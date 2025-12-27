@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import com.example.adshield.data.AppPreferences
 import com.example.adshield.filter.FilterEngine
 import com.example.adshield.ui.components.GridBackground
+import com.example.adshield.ui.theme.AdShieldTheme
 import kotlinx.coroutines.launch
 
 @Composable
@@ -74,11 +75,11 @@ fun DomainListScreen(
                         .border(
                             1.dp,
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                            RoundedCornerShape(5.dp)
+                            AdShieldTheme.shapes.back
                         )
                         .background(
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            RoundedCornerShape(5.dp)
+                            AdShieldTheme.shapes.back
                         )
                 ) {
                     Icon(
@@ -179,7 +180,7 @@ fun DomainItem(
             .border(
                 1.dp,
                 MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f),
-                RoundedCornerShape(5.dp)
+                AdShieldTheme.shapes.entity
             )
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.05f))
             .padding(12.dp),
@@ -232,18 +233,27 @@ fun AddDomainDialog(
         confirmButton = {
             Button(
                 onClick = { if (text.isNotBlank()) onAdd(text) },
-                enabled = text.isNotBlank()
+                enabled = text.isNotBlank(),
+                shape = AdShieldTheme.shapes.button
             ) {
                 Text("ADD")
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant, // Neutral Dark
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                ),
+                shape = AdShieldTheme.shapes.button
+            ) {
                 Text("CANCEL")
             }
         },
         containerColor = MaterialTheme.colorScheme.surface,
         textContentColor = MaterialTheme.colorScheme.onSurface,
-        titleContentColor = MaterialTheme.colorScheme.onSurface
+        titleContentColor = MaterialTheme.colorScheme.onSurface,
+        shape = AdShieldTheme.shapes.dialog
     )
 }

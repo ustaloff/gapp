@@ -29,6 +29,7 @@ import com.example.adshield.data.AppPreferences
 import com.example.adshield.data.AppsRepository
 import com.example.adshield.ui.components.GridBackground
 import kotlinx.coroutines.launch
+import com.example.adshield.ui.theme.AdShieldTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,11 +80,11 @@ fun AppListScreen(
                         .border(
                             1.dp,
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                            RoundedCornerShape(5.dp)
+                            AdShieldTheme.shapes.back
                         )
                         .background(
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            RoundedCornerShape(5.dp)
+                            AdShieldTheme.shapes.back
                         )
                 ) {
                     Icon(
@@ -135,7 +136,7 @@ fun AppListScreen(
                     focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.1f),
                     unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.1f)
                 ),
-                shape = RoundedCornerShape(5.dp),
+                shape = AdShieldTheme.shapes.input,
                 singleLine = true
             )
 
@@ -263,7 +264,7 @@ fun AppListItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, borderColor, RoundedCornerShape(5.dp))
+            .border(1.dp, borderColor, AdShieldTheme.shapes.entity)
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.05f))
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -278,7 +279,7 @@ fun AppListItem(
             contentDescription = null,
             modifier = Modifier
                 .size(40.dp)
-                .clip(RoundedCornerShape(4.dp)),
+                .clip(AdShieldTheme.shapes.icon),
             alpha = alpha
         )
 

@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import com.example.adshield.ui.theme.NeonGreen
+import com.example.adshield.ui.theme.AdShieldTheme
 import com.example.adshield.data.VpnLogEntry
 import androidx.compose.ui.text.style.TextOverflow
 import java.text.SimpleDateFormat
@@ -307,7 +308,7 @@ fun CyberStatCard(
     NeonCard(
         modifier = modifier,
         borderColor = MaterialTheme.colorScheme.primary,
-        shape = RoundedCornerShape(5.dp)
+        shape = AdShieldTheme.shapes.container
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -382,7 +383,7 @@ fun CyberStatCard(
                             .height(4.dp)
                             .background(
                                 com.example.adshield.ui.theme.NeonGreen.copy(alpha = 0.1f),
-                                RoundedCornerShape(2.dp)
+                                AdShieldTheme.shapes.indicator
                             )
                     ) {
                         Box(
@@ -391,7 +392,7 @@ fun CyberStatCard(
                                 .fillMaxHeight()
                                 .background(
                                     com.example.adshield.ui.theme.NeonGreen,
-                                    RoundedCornerShape(2.dp)
+                                    AdShieldTheme.shapes.indicator
                                 )
                         )
                     }
@@ -414,7 +415,7 @@ fun CyberStatCard(
                                         color = if (i < filledSegments) com.example.adshield.ui.theme.NeonGreen else com.example.adshield.ui.theme.NeonGreen.copy(
                                             alpha = 0.1f
                                         ),
-                                        shape = RoundedCornerShape(2.dp)
+                                        shape = AdShieldTheme.shapes.indicator
                                     )
                             )
                         }
@@ -444,7 +445,7 @@ fun CyberFilterCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(5.dp),
+        shape = AdShieldTheme.shapes.container,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         ),
@@ -667,7 +668,7 @@ fun CyberNavBar(
             modifier = Modifier
                 .height(72.dp) // Height for the bar
                 .fillMaxWidth(),
-            shape = RoundedCornerShape(percent = 50), // Fully rounded pill
+            shape = AdShieldTheme.shapes.menu, // Fully rounded pill
             //shape = RoundedCornerShape(3.dp),
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f),
             border = androidx.compose.foundation.BorderStroke(
@@ -789,7 +790,7 @@ fun CyberGraphSection(data: List<Int>, bpm: Int, isRunning: Boolean) {
             .border(
                 1.dp,
                 (if (isRunning) primaryColor else offlineColor).copy(alpha = 0.2f),
-                RoundedCornerShape(5.dp)
+                AdShieldTheme.shapes.container
             )
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
             .padding(16.dp)
@@ -828,11 +829,11 @@ fun CyberGraphSection(data: List<Int>, bpm: Int, isRunning: Boolean) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(120.dp) // Taller graph
-                .background(Color.Black.copy(alpha = 0.3f), RoundedCornerShape(5.dp))
+                .background(Color.Black.copy(alpha = 0.3f), AdShieldTheme.shapes.screen)
                 .border(
                     1.dp,
                     (if (isRunning) primaryColor else offlineColor).copy(alpha = 0.1f),
-                    RoundedCornerShape(5.dp)
+                    AdShieldTheme.shapes.screen
                 )
         ) {
             Canvas(modifier = Modifier
@@ -980,13 +981,13 @@ fun CyberGraphSection(data: List<Int>, bpm: Int, isRunning: Boolean) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(4.dp)
-                .background(threatColor.copy(alpha = 0.2f), RoundedCornerShape(2.dp))
+                .background(threatColor.copy(alpha = 0.2f), AdShieldTheme.shapes.indicator)
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth(progress)
                     .fillMaxHeight()
-                    .background(threatColor, RoundedCornerShape(2.dp))
+                    .background(threatColor, AdShieldTheme.shapes.indicator)
             )
         }
 
@@ -1062,9 +1063,9 @@ fun CyberTerminal(
     NeonCard(
         modifier = Modifier
             .fillMaxWidth()
-            .height(400.dp),
+            .height(200.dp),
         borderColor = MaterialTheme.colorScheme.primary,
-        shape = RoundedCornerShape(8.dp)
+        shape = AdShieldTheme.shapes.container
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             // ... Header ...

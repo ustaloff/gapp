@@ -27,6 +27,7 @@ import androidx.core.graphics.drawable.toBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.Image
+import com.example.adshield.ui.theme.AdShieldTheme
 
 @Composable
 fun CyberTopList(
@@ -44,7 +45,7 @@ fun CyberTopList(
             .border(
                 1.dp,
                 MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                RoundedCornerShape(5.dp)
+                AdShieldTheme.shapes.container
             )
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
             .padding(12.dp)
@@ -121,7 +122,7 @@ fun CyberTopList(
                             contentDescription = null,
                             modifier = Modifier
                                 .size(32.dp)
-                                .clip(RoundedCornerShape(4.dp))
+                                .clip(AdShieldTheme.shapes.icon)
                         )
                     } else {
                         // Fallback Icon
