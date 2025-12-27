@@ -370,7 +370,7 @@ fun DashboardScreen(
             .background(Color(0xFF0F172A)) // Dark Background
     ) {
         GridBackground()
-        // Optional: Scanline(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.03f))
+
 
         // Content Switcher
         when (currentScreen) {
