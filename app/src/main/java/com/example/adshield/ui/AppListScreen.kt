@@ -38,7 +38,7 @@ fun AppListScreen(
     val context = LocalContext.current
     val repository = remember { AppsRepository(context) }
     val preferences = remember { AppPreferences(context) }
-    
+
     // State
     var apps by remember { mutableStateOf<List<AppInfo>>(emptyList()) }
     var excludedApps by remember { mutableStateOf(setOf<String>()) }
@@ -48,7 +48,7 @@ fun AppListScreen(
     // Load data
     LaunchedEffect(Unit) {
         excludedApps = preferences.getExcludedApps()
-        apps = repository.getInstalledApps() 
+        apps = repository.getInstalledApps()
         isLoading = false
     }
 
@@ -58,7 +58,7 @@ fun AppListScreen(
             .background(MaterialTheme.colorScheme.background)
     ) {
         GridBackground()
-        
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -67,17 +67,30 @@ fun AppListScreen(
             // HEADER
             Spacer(modifier = Modifier.height(16.dp))
             Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
                     onClick = onBackClick,
                     modifier = Modifier
                         .size(40.dp)
-                        .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), RoundedCornerShape(5.dp))
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(5.dp))
+                        .border(
+                            1.dp,
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                            RoundedCornerShape(5.dp)
+                        )
+                        .background(
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                            RoundedCornerShape(5.dp)
+                        )
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.primary)
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Text(
@@ -89,7 +102,7 @@ fun AppListScreen(
                     fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
                 )
             }
-            
+
             // SEARCH
             OutlinedTextField(
                 value = searchQuery,
@@ -101,14 +114,20 @@ fun AppListScreen(
                     color = MaterialTheme.colorScheme.onSurface,
                     fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
                 ),
-                placeholder = { 
+                placeholder = {
                     Text(
-                        "SEARCH_MODULE...", 
+                        "SEARCH_MODULE...",
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                         fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
-                    ) 
+                    )
                 },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                leadingIcon = {
+                    Icon(
+                        Icons.Default.Search,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                },
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
                     unfocusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
@@ -123,39 +142,49 @@ fun AppListScreen(
             // FILTERS (2 Toggles)
             var showWhitelistedOnly by remember { mutableStateOf(false) }
             var showSystemApps by remember { mutableStateOf(false) } // Default hidden
-            
+
             Row(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                 // Left: Whitelist Filter
-                 FilterChip(
-                     selected = showWhitelistedOnly,
-                     onClick = { showWhitelistedOnly = !showWhitelistedOnly },
-                     label = { Text(if (showWhitelistedOnly) "WHITELISTED ONLY" else "SHOW ALL") },
-                     leadingIcon = {
-                         if (showWhitelistedOnly) Icon(Icons.Default.CheckCircle, null, modifier = Modifier.size(16.dp)) 
-                     },
-                     colors = FilterChipDefaults.filterChipColors(
-                         selectedContainerColor = MaterialTheme.colorScheme.primary,
-                         selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                     )
-                 )
+                // Left: Whitelist Filter
+                FilterChip(
+                    selected = showWhitelistedOnly,
+                    onClick = { showWhitelistedOnly = !showWhitelistedOnly },
+                    label = { Text(if (showWhitelistedOnly) "WHITELISTED ONLY" else "SHOW ALL") },
+                    leadingIcon = {
+                        if (showWhitelistedOnly) Icon(
+                            Icons.Default.CheckCircle,
+                            null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                    )
+                )
 
-                 // Right: System Filter
-                 FilterChip(
-                     selected = showSystemApps,
-                     onClick = { showSystemApps = !showSystemApps },
-                     label = { Text("SYSTEM APPS") },
-                     leadingIcon = {
-                         if (showSystemApps) Icon(Icons.Default.Settings, null, modifier = Modifier.size(16.dp))
-                     },
-                     colors = FilterChipDefaults.filterChipColors(
-                         selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-                         selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
-                     )
-                 )
+                // Right: System Filter
+                FilterChip(
+                    selected = showSystemApps,
+                    onClick = { showSystemApps = !showSystemApps },
+                    label = { Text("SYSTEM APPS") },
+                    leadingIcon = {
+                        if (showSystemApps) Icon(
+                            Icons.Default.Settings,
+                            null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                )
             }
 
             // LIST
@@ -165,33 +194,35 @@ fun AppListScreen(
                 }
             } else {
                 val filteredApps = apps.filter { app ->
-                     // 1. Search Query
+                    // 1. Search Query
                     val matchesSearch = app.name.contains(searchQuery, ignoreCase = true) ||
-                                      app.packageName.contains(searchQuery, ignoreCase = true)
-                    
+                            app.packageName.contains(searchQuery, ignoreCase = true)
+
                     // 2. Whitelist Filter
                     val isExcluded = excludedApps.contains(app.packageName)
                     val matchesWhitelist = if (showWhitelistedOnly) isExcluded else true
-                    
+
                     // 3. System Filter
                     // If showSystemApps is FALSE, we hide system apps (isSystem=true)
                     // If showSystemApps is TRUE, we show everything
                     val matchesSystem = if (showSystemApps) true else !app.isSystem
-                    
+
                     matchesSearch && matchesWhitelist && matchesSystem
                 }
 
                 if (filteredApps.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
-                            "> NO MODULES FOUND", 
+                            "> NO MODULES FOUND",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
                         )
                     }
                 } else {
                     LazyColumn(
-                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
                         contentPadding = PaddingValues(bottom = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
@@ -223,7 +254,10 @@ fun AppListItem(
     isExcluded: Boolean,
     onToggle: (Boolean) -> Unit
 ) {
-    val borderColor = if (isExcluded) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f)
+    val borderColor =
+        if (isExcluded) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(
+            alpha = 0.2f
+        )
     val alpha = if (isExcluded) 1f else 0.7f
 
     Row(
@@ -238,34 +272,36 @@ fun AppListItem(
         val iconBitmap = remember(app.icon) {
             app.icon.toBitmap(width = 48, height = 48).asImageBitmap()
         }
-        
+
         Image(
             bitmap = iconBitmap,
             contentDescription = null,
-            modifier = Modifier.size(40.dp).clip(RoundedCornerShape(4.dp)),
+            modifier = Modifier
+                .size(40.dp)
+                .clip(RoundedCornerShape(4.dp)),
             alpha = alpha
         )
-        
+
         Spacer(modifier = Modifier.width(16.dp))
-        
+
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = app.name, 
-                style = MaterialTheme.typography.bodyMedium, 
+                text = app.name,
+                style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha),
                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                 maxLines = 1
             )
             Text(
-                text = app.packageName, 
-                style = MaterialTheme.typography.labelSmall, 
+                text = app.packageName,
+                style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f * alpha),
                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                 maxLines = 1
             )
         }
-        
+
         Switch(
             checked = isExcluded,
             onCheckedChange = onToggle,

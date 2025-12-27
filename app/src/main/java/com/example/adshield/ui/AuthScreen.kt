@@ -40,16 +40,16 @@ fun AuthScreen(
                 contentDescription = "AdShield Logo",
                 modifier = Modifier.size(120.dp)
             )
-            
+
             Spacer(modifier = Modifier.height(32.dp))
-            
+
             Text(
                 text = "ADSHIELD",
                 style = MaterialTheme.typography.displayMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
-            
+
             Text(
                 text = "SECURE YOUR DIGITAL LIFE",
                 style = MaterialTheme.typography.labelLarge,
@@ -58,7 +58,7 @@ fun AuthScreen(
             )
 
             Spacer(modifier = Modifier.height(64.dp))
-            
+
             // Sign In Button
             Button(
                 onClick = onSignInClick,
@@ -75,15 +75,18 @@ fun AuthScreen(
                 Spacer(Modifier.width(8.dp))
                 Text("SIGN IN WITH GOOGLE")
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             OutlinedButton(
                 onClick = onSkipClick,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                )
             ) {
                 Text("CONTINUE AS GUEST", color = MaterialTheme.colorScheme.primary)
             }

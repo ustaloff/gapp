@@ -31,18 +31,22 @@ fun PremiumScreen(
     // Offline Mode: We ignore Dynamic Offerings
     // val offerings by BillingManager.currentOfferings.collectAsState() 
     val isPremium by BillingManager.isPremium.collectAsState()
-    
+
     var isLoading by remember { mutableStateOf(false) }
     // Hardcoded Offline Package
-    val offlinePackage = remember { 
+    val offlinePackage = remember {
         BillingManager.MockPackage(
-            "pro_lifetime", 
-            BillingManager.MockProduct("$4.99", "AdShield Pro (Lifetime)", "Unlock full protection forever")
+            "pro_lifetime",
+            BillingManager.MockProduct(
+                "$4.99",
+                "AdShield Pro (Lifetime)",
+                "Unlock full protection forever"
+            )
         )
     }
-    
+
     var selectedPackage by remember { mutableStateOf<BillingManager.MockPackage?>(offlinePackage) }
-    
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -57,16 +61,33 @@ fun PremiumScreen(
         ) {
             // Header
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                 IconButton(onClick = onBackClick) {
-                     Icon(androidx.compose.material.icons.Icons.Default.Close, contentDescription = "Close")
-                 }
+                IconButton(onClick = onBackClick) {
+                    Icon(
+                        androidx.compose.material.icons.Icons.Default.Close,
+                        contentDescription = "Close"
+                    )
+                }
             }
-            
+
             Spacer(Modifier.height(16.dp))
-            Icon(androidx.compose.material.icons.Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(64.dp))
+            Icon(
+                androidx.compose.material.icons.Icons.Default.Star,
+                contentDescription = null,
+                tint = Color(0xFFFFD700),
+                modifier = Modifier.size(64.dp)
+            )
             Spacer(Modifier.height(16.dp))
-            Text("ADSHIELD PRO", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
-            Text("UNLOCK FULL PROTECTION", style = MaterialTheme.typography.labelLarge, letterSpacing = 2.sp)
+            Text(
+                "ADSHIELD PRO",
+                style = MaterialTheme.typography.displaySmall,
+                fontWeight = FontWeight.Black,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                "UNLOCK FULL PROTECTION",
+                style = MaterialTheme.typography.labelLarge,
+                letterSpacing = 2.sp
+            )
 
             Spacer(Modifier.height(32.dp))
 
@@ -75,9 +96,9 @@ fun PremiumScreen(
             FeatureRow("Faster DNS Proxy", false, true)
             FeatureRow("Priority Support", false, true)
             FeatureRow("Support Development", false, true)
-            
+
             Spacer(Modifier.height(32.dp))
-            
+
             if (isPremium) {
                 Text(
                     "YOU ARE PREMIUM!",
@@ -90,14 +111,14 @@ fun PremiumScreen(
                     style = MaterialTheme.typography.bodyMedium
                 )
             } else {
-                 val packages = listOf(offlinePackage)
-                 
-                 packages.forEach { pkg ->
-                     val isSelected = selectedPackage == pkg
-                     val price = pkg.product.price
-                     
-                     Box(
-                         modifier = Modifier
+                val packages = listOf(offlinePackage)
+
+                packages.forEach { pkg ->
+                    val isSelected = selectedPackage == pkg
+                    val price = pkg.product.price
+
+                    Box(
+                        modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 8.dp)
                             .border(
@@ -111,48 +132,64 @@ fun PremiumScreen(
                             )
                             .clickable { selectedPackage = pkg }
                             .padding(16.dp)
-                     ) {
-                         Row(
-                             modifier = Modifier.fillMaxWidth(),
-                             horizontalArrangement = Arrangement.SpaceBetween,
-                             verticalAlignment = Alignment.CenterVertically
-                         ) {
-                             Column {
-                                 Text(pkg.product.title, fontWeight = FontWeight.Bold)
-                                 Text(pkg.product.description, style = MaterialTheme.typography.bodySmall)
-                             }
-                             Text(price, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                         }
-                     }
-                 }
-                 
-                 Spacer(Modifier.height(24.dp))
-                 
-                 Button(
-                     onClick = {
-                         selectedPackage?.let { pkg ->
-                             BillingManager.purchase(context as Activity, pkg) { loading ->
-                                 isLoading = loading
-                             }
-                         }
-                     },
-                     modifier = Modifier.fillMaxWidth().height(56.dp),
-                     enabled = !isLoading && selectedPackage != null,
-                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                 ) {
-                     if (isLoading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-                     else Text("UNLOCK NOW (OFFLINE)", fontWeight = FontWeight.Bold)
-                 }
-                 
-                 TextButton(onClick = { 
-                     BillingManager.restorePurchases(context) { loading -> isLoading = loading }
-                 }) {
-                     Text("Restore Purchases", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                 }
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(pkg.product.title, fontWeight = FontWeight.Bold)
+                                Text(
+                                    pkg.product.description,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                            Text(
+                                price,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(24.dp))
+
+                Button(
+                    onClick = {
+                        selectedPackage?.let { pkg ->
+                            BillingManager.purchase(context as Activity, pkg) { loading ->
+                                isLoading = loading
+                            }
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    enabled = !isLoading && selectedPackage != null,
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    if (isLoading) CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    else Text("UNLOCK NOW (OFFLINE)", fontWeight = FontWeight.Bold)
+                }
+
+                TextButton(onClick = {
+                    BillingManager.restorePurchases(context) { loading -> isLoading = loading }
+                }) {
+                    Text("Restore Purchases", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
-            
-             Spacer(modifier = Modifier.height(24.dp))
-             Text("Terms of Service | Privacy Policy", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                "Terms of Service | Privacy Policy",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.Gray
+            )
         }
     }
 }
@@ -160,20 +197,26 @@ fun PremiumScreen(
 @Composable
 fun FeatureRow(text: String, free: Boolean, pro: Boolean) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(text, modifier = Modifier.weight(1f))
         Row(modifier = Modifier.width(80.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            Icon(if (free) androidx.compose.material.icons.Icons.Default.Check else androidx.compose.material.icons.Icons.Default.Close, 
-                 contentDescription = null, 
-                 tint = if (free) MaterialTheme.colorScheme.primary else Color.Gray.copy(alpha=0.5f),
-                 modifier = Modifier.size(20.dp))
-            Icon(if (pro) androidx.compose.material.icons.Icons.Default.Check else androidx.compose.material.icons.Icons.Default.Close, 
-                 contentDescription = null, 
-                 tint = if (pro) MaterialTheme.colorScheme.primary else Color.Gray.copy(alpha=0.5f),
-                 modifier = Modifier.size(20.dp))
+            Icon(
+                if (free) androidx.compose.material.icons.Icons.Default.Check else androidx.compose.material.icons.Icons.Default.Close,
+                contentDescription = null,
+                tint = if (free) MaterialTheme.colorScheme.primary else Color.Gray.copy(alpha = 0.5f),
+                modifier = Modifier.size(20.dp)
+            )
+            Icon(
+                if (pro) androidx.compose.material.icons.Icons.Default.Check else androidx.compose.material.icons.Icons.Default.Close,
+                contentDescription = null,
+                tint = if (pro) MaterialTheme.colorScheme.primary else Color.Gray.copy(alpha = 0.5f),
+                modifier = Modifier.size(20.dp)
+            )
         }
     }
 }

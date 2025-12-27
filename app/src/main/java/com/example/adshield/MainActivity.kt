@@ -94,11 +94,11 @@ class MainActivity : ComponentActivity() {
                     var toastVisible by remember { mutableStateOf(false) }
                     var toastMessage by remember { mutableStateOf("") }
                     var toastType by remember { mutableStateOf(CyberToastType.INFO) }
-                    
+
                     LaunchedEffect(Unit) {
                         // Always go to dashboard
                         if (currentScreen == "splash") {
-                             currentScreen = "dashboard"
+                            currentScreen = "dashboard"
                         }
                     }
 
@@ -122,21 +122,21 @@ class MainActivity : ComponentActivity() {
                                     toastType = CyberToastType.INFO // Info/Warning color
                                     toastVisible = true
                                 }
-                                
+
                                 // Restart VPN if running to apply changes
-                                if (VpnStats.isRunning.value) { 
-                                     stopVpnService()
-                                     lifecycleScope.launch {
-                                         kotlinx.coroutines.delay(500)
-                                         startVpnService()
-                                     }
+                                if (VpnStats.isRunning.value) {
+                                    stopVpnService()
+                                    lifecycleScope.launch {
+                                        kotlinx.coroutines.delay(500)
+                                        startVpnService()
+                                    }
                                 }
                             },
                             // Pass State
                             toastVisible = toastVisible,
                             toastMessage = toastMessage,
                             toastType = toastType,
-                            onToastChange = { v, m, t -> 
+                            onToastChange = { v, m, t ->
                                 toastVisible = v
                                 if (m != null) toastMessage = m
                                 if (t != null) toastType = t
@@ -195,27 +195,27 @@ fun DashboardScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    
+
     val isRunning = VpnStats.isRunning.value
     val blockedCount = VpnStats.blockedCount.value
     val totalCount = VpnStats.totalCount.value
     val recentLogs = VpnStats.recentLogs
     val dataSaved = VpnStats.dataSavedBytes.value
     val bpm = VpnStats.blocksPerMinute.value
-    
+
     var filterCount by remember { mutableStateOf(FilterEngine.getRuleCount()) }
     var isUpdatingFilters by remember { mutableStateOf(false) }
-    
+
     val preferences = remember { AppPreferences(context) }
-    
+
     var hasAcceptedDisclosure by remember { mutableStateOf(false) }
     var showDisclosureDialog by remember { mutableStateOf(false) }
-    
+
     // State for Navigation
     var currentScreen by rememberSaveable { mutableStateOf("HOME") }
     // Back navigation stack
     var backStack by rememberSaveable { mutableStateOf(listOf<String>()) }
-    
+
     // State for Whitelist (for UI Refresh)
     var excludedApps by remember { mutableStateOf(preferences.getExcludedApps()) }
 
@@ -236,22 +236,23 @@ fun DashboardScreen(
             currentScreen = backStack.last()
             backStack = backStack.dropLast(1)
         } else {
-             if (currentScreen != "HOME") {
-                 currentScreen = "HOME"
-             }
+            if (currentScreen != "HOME") {
+                currentScreen = "HOME"
+            }
         }
     }
-    
+
     val scrollState = rememberScrollState()
 
     // Load states on startup
     LaunchedEffect(Unit) {
-        val prefs = context.getSharedPreferences("adshield_prefs", android.content.Context.MODE_PRIVATE)
+        val prefs =
+            context.getSharedPreferences("adshield_prefs", android.content.Context.MODE_PRIVATE)
         hasAcceptedDisclosure = prefs.getBoolean("disclosure_accepted", false)
-        
+
         // Initialize Persistent Stats
         VpnStats.initialize(context)
-        
+
         if (filterCount < 100) {
             isUpdatingFilters = true
             delay(1000)
@@ -283,26 +284,31 @@ fun DashboardScreen(
                 FilterEngine.addToAllowlist(context, domain)
                 onToastChange(true, "ALLOWED: $domain", CyberToastType.SUCCESS)
             }
+
             FilterEngine.FilterStatus.BLOCKED_USER -> {
                 // Was BANNED (User) -> Unban
                 FilterEngine.removeFromBlocklist(context, domain)
                 onToastChange(true, "UNBANNED: $domain", CyberToastType.INFO)
             }
+
             FilterEngine.FilterStatus.ALLOWED_USER -> {
                 // Was ALLOWED (User) -> Remove (Restore)
                 FilterEngine.removeFromAllowlist(context, domain)
                 onToastChange(true, "REMOVED: $domain", CyberToastType.INFO)
             }
+
             FilterEngine.FilterStatus.SUSPICIOUS -> {
                 // Was SUSPICIOUS -> BAN (User confirm)
                 FilterEngine.addToBlocklist(context, domain)
                 onToastChange(true, "BANNED: $domain", CyberToastType.SUCCESS)
             }
+
             FilterEngine.FilterStatus.ALLOWED_DEFAULT -> {
                 // Was CLEAN -> BAN (User)
                 FilterEngine.addToBlocklist(context, domain)
                 onToastChange(true, "BANNED: $domain", CyberToastType.ERROR)
             }
+
             FilterEngine.FilterStatus.ALLOWED_SYSTEM -> {
                 // Safe
                 onToastChange(true, "PROTECTED: $domain", CyberToastType.INFO)
@@ -314,7 +320,7 @@ fun DashboardScreen(
     }
 
 
-    
+
     if (showDisclosureDialog) {
         AlertDialog(
             onDismissRequest = { showDisclosureDialog = false },
@@ -325,7 +331,10 @@ fun DashboardScreen(
                 Button(
                     onClick = {
                         hasAcceptedDisclosure = true
-                        context.getSharedPreferences("adshield_prefs", android.content.Context.MODE_PRIVATE)
+                        context.getSharedPreferences(
+                            "adshield_prefs",
+                            android.content.Context.MODE_PRIVATE
+                        )
                             .edit().putBoolean("disclosure_accepted", true).apply()
                         showDisclosureDialog = false
                         onStartClick()
@@ -334,7 +343,12 @@ fun DashboardScreen(
                 ) { Text("INITIALIZE", color = MaterialTheme.colorScheme.onPrimary) }
             },
             dismissButton = {
-                TextButton(onClick = { showDisclosureDialog = false }) { Text("ABORT", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                TextButton(onClick = { showDisclosureDialog = false }) {
+                    Text(
+                        "ABORT",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         )
     }
@@ -363,60 +377,66 @@ fun DashboardScreen(
                 onStartClick = onStartClick,
                 onStopClick = onStopClick,
                 onWhitelistClick = { navigateTo("APP_LIST") },
-                onReloadFilters = { 
-                     // Reload logic (moved from inline)
-                     if (!isUpdatingFilters) {
-                         isUpdatingFilters = true
-                         scope.launch {
-                             withContext(Dispatchers.IO) {
-                                 val filterData = FilterRepository.downloadAndParseFilters(context)
-                                 if (filterData.blockRules.isNotEmpty()) {
-                                     FilterEngine.updateBlocklist(filterData)
-                                 }
-                             }
-                             val newCount = FilterEngine.getRuleCount()
-                             filterCount = newCount
-                             isUpdatingFilters = false
-                         }
-                     }
+                onReloadFilters = {
+                    // Reload logic (moved from inline)
+                    if (!isUpdatingFilters) {
+                        isUpdatingFilters = true
+                        scope.launch {
+                            withContext(Dispatchers.IO) {
+                                val filterData = FilterRepository.downloadAndParseFilters(context)
+                                if (filterData.blockRules.isNotEmpty()) {
+                                    FilterEngine.updateBlocklist(filterData)
+                                }
+                            }
+                            val newCount = FilterEngine.getRuleCount()
+                            filterCount = newCount
+                            isUpdatingFilters = false
+                        }
+                    }
                 },
                 onLogClick = { onDomainToggle(it) },
-                onAppClick = { packageName -> 
+                onAppClick = { packageName ->
                     onWhitelistApp(packageName)
-                    excludedApps = preferences.getExcludedApps() // Update state to trigger UI refresh
+                    excludedApps =
+                        preferences.getExcludedApps() // Update state to trigger UI refresh
                 }
             )
+
             "LOGS" -> {
                 androidx.activity.compose.BackHandler { navigateBack() }
                 LogsView(
-                     logs = recentLogs,
-                     onLogClick = { onDomainToggle(it) }
+                    logs = recentLogs,
+                    onLogClick = { onDomainToggle(it) }
                 )
             }
+
             "STATS" -> {
                 androidx.activity.compose.BackHandler { navigateBack() }
                 StatsView(
-                     data = VpnStats.blockedHistory,
-                     bpm = bpm,
-                     isRunning = isRunning
+                    data = VpnStats.blockedHistory,
+                    bpm = bpm,
+                    isRunning = isRunning
                 )
             }
+
             "SETTINGS" -> {
                 androidx.activity.compose.BackHandler { navigateBack() }
                 SettingsView(
-                     onBackClick = { navigateBack() },
-                     onWhitelistClick = { navigateTo("APP_LIST") },
-                     onDomainConfigClick = { navigateTo("DOMAIN_LIST") },
-                     onBlockedConfigClick = { navigateTo("BLOCKED_LIST") },
-                     onPremiumClick = { navigateTo("PREMIUM") }
+                    onBackClick = { navigateBack() },
+                    onWhitelistClick = { navigateTo("APP_LIST") },
+                    onDomainConfigClick = { navigateTo("DOMAIN_LIST") },
+                    onBlockedConfigClick = { navigateTo("BLOCKED_LIST") },
+                    onPremiumClick = { navigateTo("PREMIUM") }
                 )
             }
+
             "APP_LIST" -> {
                 androidx.activity.compose.BackHandler { navigateBack() }
                 com.example.adshield.ui.AppListScreen(
                     onBackClick = { navigateBack() }
                 )
             }
+
             "DOMAIN_LIST" -> {
                 androidx.activity.compose.BackHandler { navigateBack() }
                 DomainListScreen(
@@ -424,19 +444,22 @@ fun DashboardScreen(
                     isBlocklist = false
                 )
             }
+
             "BLOCKED_LIST" -> {
-                 androidx.activity.compose.BackHandler { navigateBack() }
-                 DomainListScreen(
+                androidx.activity.compose.BackHandler { navigateBack() }
+                DomainListScreen(
                     onBackClick = { navigateBack() },
                     isBlocklist = true
                 )
             }
+
             "PREMIUM" -> {
                 androidx.activity.compose.BackHandler { navigateBack() }
                 PremiumScreen(
                     onBackClick = { navigateBack() }
                 )
             }
+
             else -> HomeView( // Fallback
                 isRunning = isRunning,
                 blockedCount = blockedCount,
@@ -452,7 +475,7 @@ fun DashboardScreen(
                 onWhitelistClick = { navigateTo("APP_LIST") },
                 onReloadFilters = {},
                 onLogClick = { onDomainToggle(it) },
-                onAppClick = { packageName -> 
+                onAppClick = { packageName ->
                     onWhitelistApp(packageName)
                     excludedApps = preferences.getExcludedApps()
                 }
@@ -464,18 +487,23 @@ fun DashboardScreen(
             CyberNavBar(
                 isRunning = isRunning,
                 onPowerClick = {
-                     if (isRunning) onStopClick() 
-                     else if (!hasAcceptedDisclosure) showDisclosureDialog = true 
-                     else onStartClick()
+                    if (isRunning) onStopClick()
+                    else if (!hasAcceptedDisclosure) showDisclosureDialog = true
+                    else onStartClick()
                 },
                 currentScreen = currentScreen,
                 onNavigate = { navigateTo(it) },
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
-        
+
         // CYBER TOAST OVERLAY
-        Box(modifier = Modifier.align(Alignment.TopCenter).padding(top = 32.dp), contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 32.dp),
+            contentAlignment = Alignment.Center
+        ) {
             CyberToast(
                 message = toastMessage,
                 type = toastType,

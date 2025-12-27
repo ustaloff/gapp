@@ -48,7 +48,7 @@ fun AdShieldTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
     // We default to FALSE to strictly enforce the Industrial Brand Identity
-    dynamicColor: Boolean = false, 
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {

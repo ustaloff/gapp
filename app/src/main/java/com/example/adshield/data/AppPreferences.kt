@@ -5,7 +5,8 @@ import android.content.SharedPreferences
 
 class AppPreferences(context: Context) {
 
-    private val prefs: SharedPreferences = context.getSharedPreferences("adshield_prefs", Context.MODE_PRIVATE)
+    private val prefs: SharedPreferences =
+        context.getSharedPreferences("adshield_prefs", Context.MODE_PRIVATE)
 
     companion object {
         private const val KEY_EXCLUDED_APPS = "excluded_apps"
@@ -29,7 +30,7 @@ class AppPreferences(context: Context) {
         current.remove(packageName)
         prefs.edit().putStringSet(KEY_EXCLUDED_APPS, current).apply()
     }
-    
+
     fun isAppExcluded(packageName: String): Boolean {
         return getExcludedApps().contains(packageName)
     }
@@ -71,13 +72,16 @@ class AppPreferences(context: Context) {
     }
 
     // --- Blocklist Source Configuration ---
-    
+
     fun getFilterSourceUrl(): String {
         // Default to AdShield Custom Blocklist if not set
-        return prefs.getString(KEY_FILTER_SOURCE, "https://raw.githubusercontent.com/ustaloff/adshield-lists/refs/heads/master/blocklist.txt") 
-               ?: "https://raw.githubusercontent.com/ustaloff/adshield-lists/refs/heads/master/blocklist.txt"
+        return prefs.getString(
+            KEY_FILTER_SOURCE,
+            "https://raw.githubusercontent.com/ustaloff/adshield-lists/refs/heads/master/blocklist.txt"
+        )
+            ?: "https://raw.githubusercontent.com/ustaloff/adshield-lists/refs/heads/master/blocklist.txt"
     }
-    
+
     fun setFilterSourceUrl(url: String) {
         prefs.edit().putString(KEY_FILTER_SOURCE, url).apply()
     }

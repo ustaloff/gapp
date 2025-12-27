@@ -121,9 +121,12 @@ fun PulsatingShield(
     modifier: Modifier = Modifier,
     isSecure: Boolean = true
 ) {
-    val primaryColor = if (isSecure) MaterialTheme.colorScheme.primary else androidx.compose.ui.graphics.Color.White.copy(alpha = 0.3f)
+    val primaryColor =
+        if (isSecure) MaterialTheme.colorScheme.primary else androidx.compose.ui.graphics.Color.White.copy(
+            alpha = 0.3f
+        )
     val infiniteTransition = rememberInfiniteTransition()
-    
+
     // Animations (Active only if secure)
     // Rotation Animation (Always Active)
     val rotation by infiniteTransition.animateFloat(
@@ -143,8 +146,10 @@ fun PulsatingShield(
                 repeatMode = RepeatMode.Restart
             )
         )
-    } else { remember { mutableFloatStateOf(0f) } }
-    
+    } else {
+        remember { mutableFloatStateOf(0f) }
+    }
+
     val pulseScale by if (isSecure) {
         infiniteTransition.animateFloat(
             initialValue = 0.8f,
@@ -154,7 +159,9 @@ fun PulsatingShield(
                 repeatMode = RepeatMode.Restart
             )
         )
-    } else { remember { mutableFloatStateOf(1f) } }
+    } else {
+        remember { mutableFloatStateOf(1f) }
+    }
 
     // Floating Icon Animation (Always Active)
     val floatOffset by infiniteTransition.animateFloat(
@@ -165,7 +172,7 @@ fun PulsatingShield(
             repeatMode = RepeatMode.Reverse
         )
     )
-    
+
     val shieldShape = CircleShape
 
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
@@ -180,7 +187,9 @@ fun PulsatingShield(
         }
 
         // 2. Rotating Dash Rings (Circuit Lines)
-        Canvas(modifier = Modifier.size(160.dp).graphicsLayer { rotationZ = rotation }) {
+        Canvas(modifier = Modifier
+            .size(160.dp)
+            .graphicsLayer { rotationZ = rotation }) {
             drawCircle(
                 color = primaryColor.copy(alpha = 0.3f),
                 radius = size.minDimension / 2,
@@ -198,7 +207,7 @@ fun PulsatingShield(
                 )
             )
         }
-        
+
         // 3. Main Container (Glassmorphism base)
         Box(
             modifier = Modifier
@@ -215,20 +224,20 @@ fun PulsatingShield(
                 .border(1.dp, primaryColor.copy(alpha = if (isSecure) 0.5f else 0.1f), CircleShape),
             contentAlignment = Alignment.Center
         ) {
-             // Inner Gradient Glow
-             Box(
-                 modifier = Modifier
-                     .fillMaxSize()
-                     .background(
-                         brush = Brush.linearGradient(
-                             colors = listOf(
-                                 primaryColor.copy(alpha = if (isSecure) 0.2f else 0f),
-                                 Color.Transparent
-                             )
-                         ),
-                         shape = CircleShape
-                     )
-             )
+            // Inner Gradient Glow
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                primaryColor.copy(alpha = if (isSecure) 0.2f else 0f),
+                                Color.Transparent
+                            )
+                        ),
+                        shape = CircleShape
+                    )
+            )
         }
 
         // 4. Floating Icon
@@ -243,7 +252,7 @@ fun PulsatingShield(
                 val strokeWidth = 8f
                 val radius = size.minDimension / 2 - strokeWidth
                 val center = Offset(size.width / 2, size.height / 2)
-                
+
                 // 1. The Arc (Circle with top gap)
                 // Start angle -90 is top. We want a gap at top.
                 // Let's start at -60 and sweep 300 degrees.
@@ -254,13 +263,19 @@ fun PulsatingShield(
                     useCenter = false,
                     topLeft = Offset(center.x - radius, center.y - radius),
                     size = androidx.compose.ui.geometry.Size(radius * 2, radius * 2),
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = strokeWidth, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(
+                        width = strokeWidth,
+                        cap = androidx.compose.ui.graphics.StrokeCap.Round
+                    )
                 )
-                
+
                 // 2. The Stick (Vertical line at top)
                 drawLine(
                     color = primaryColor,
-                    start = Offset(center.x, center.y - radius - strokeWidth/2), // Slightly above center logic
+                    start = Offset(
+                        center.x,
+                        center.y - radius - strokeWidth / 2
+                    ), // Slightly above center logic
                     end = Offset(center.x, center.y - radius * 0.2f),
                     strokeWidth = strokeWidth,
                     cap = androidx.compose.ui.graphics.StrokeCap.Round
@@ -295,7 +310,10 @@ fun CyberStatCard(
         shape = RoundedCornerShape(5.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Text(
                     text = label.uppercase(),
                     style = MaterialTheme.typography.labelSmall,
@@ -319,21 +337,25 @@ fun CyberStatCard(
                 fontWeight = FontWeight.Bold,
                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
             )
-            
+
             // Growth Indicator
             if (growth != null) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = if (growth > 0) "↗" else if (growth < 0) "↘" else "−",
-                        color = if (growth >= 0) com.example.adshield.ui.theme.NeonGreen else Color(0xFFFF5252),
+                        color = if (growth >= 0) com.example.adshield.ui.theme.NeonGreen else Color(
+                            0xFFFF5252
+                        ),
                         fontSize = 12.sp
                     )
                     Spacer(Modifier.width(4.dp))
                     Text(
-                        text = "${if(growth > 0) "+" else ""}$growth% Today",
+                        text = "${if (growth > 0) "+" else ""}$growth% Today",
                         style = MaterialTheme.typography.bodySmall,
-                        color = if (growth >= 0) com.example.adshield.ui.theme.NeonGreen else Color(0xFFFF5252),
+                        color = if (growth >= 0) com.example.adshield.ui.theme.NeonGreen else Color(
+                            0xFFFF5252
+                        ),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -358,29 +380,43 @@ fun CyberStatCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(4.dp)
-                            .background(com.example.adshield.ui.theme.NeonGreen.copy(alpha = 0.1f), RoundedCornerShape(2.dp))
+                            .background(
+                                com.example.adshield.ui.theme.NeonGreen.copy(alpha = 0.1f),
+                                RoundedCornerShape(2.dp)
+                            )
                     ) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth(progress)
                                 .fillMaxHeight()
-                                .background(com.example.adshield.ui.theme.NeonGreen, RoundedCornerShape(2.dp))
+                                .background(
+                                    com.example.adshield.ui.theme.NeonGreen,
+                                    RoundedCornerShape(2.dp)
+                                )
                         )
                     }
                 } else {
                     // Segmented Bar for Time Saved
-                    Row(modifier = Modifier.fillMaxWidth().height(4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        val filledSegments = (progress * progressSegments).roundToInt().coerceIn(0, progressSegments)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        val filledSegments =
+                            (progress * progressSegments).roundToInt().coerceIn(0, progressSegments)
                         for (i in 0 until progressSegments) {
-                             Box(
-                                 modifier = Modifier
-                                     .weight(1f)
-                                     .fillMaxHeight()
-                                     .background(
-                                         color = if (i < filledSegments) com.example.adshield.ui.theme.NeonGreen else com.example.adshield.ui.theme.NeonGreen.copy(alpha = 0.1f),
-                                         shape = RoundedCornerShape(2.dp)
-                                     )
-                             )
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                                    .background(
+                                        color = if (i < filledSegments) com.example.adshield.ui.theme.NeonGreen else com.example.adshield.ui.theme.NeonGreen.copy(
+                                            alpha = 0.1f
+                                        ),
+                                        shape = RoundedCornerShape(2.dp)
+                                    )
+                            )
                         }
                     }
                 }
@@ -412,7 +448,10 @@ fun CyberFilterCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         ),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+        )
     ) {
         Row(
             modifier = Modifier
@@ -482,9 +521,12 @@ fun CyberMiniPowerButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val primaryColor = if (isRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f) // Gray when off
+    val primaryColor =
+        if (isRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(
+            alpha = 0.5f
+        ) // Gray when off
     val infiniteTransition = rememberInfiniteTransition()
-    
+
     // Animations
     val rotation by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -503,7 +545,9 @@ fun CyberMiniPowerButton(
                 repeatMode = RepeatMode.Restart
             )
         )
-    } else { remember { mutableFloatStateOf(1f) } }
+    } else {
+        remember { mutableFloatStateOf(1f) }
+    }
 
     val pulseAlpha by if (isRunning) {
         infiniteTransition.animateFloat(
@@ -514,14 +558,16 @@ fun CyberMiniPowerButton(
                 repeatMode = RepeatMode.Restart
             )
         )
-    } else { remember { mutableFloatStateOf(0f) } }
+    } else {
+        remember { mutableFloatStateOf(0f) }
+    }
 
     Box(
         modifier = modifier
             .size(64.dp) // Base size
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = null, 
+                indication = null,
                 onClick = onClick
             ),
         contentAlignment = Alignment.Center
@@ -537,7 +583,9 @@ fun CyberMiniPowerButton(
         }
 
         // 2. Rotating Dash Rings (Mini)
-        Canvas(modifier = Modifier.fillMaxSize().graphicsLayer { rotationZ = rotation }) {
+        Canvas(modifier = Modifier
+            .fillMaxSize()
+            .graphicsLayer { rotationZ = rotation }) {
             drawCircle(
                 color = primaryColor.copy(alpha = 0.3f),
                 radius = size.minDimension / 2,
@@ -547,7 +595,7 @@ fun CyberMiniPowerButton(
                 )
             )
         }
-        
+
         // 3. Main Container (Glassmorphism base)
         Box(
             modifier = Modifier
@@ -561,24 +609,31 @@ fun CyberMiniPowerButton(
                     ),
                     shape = CircleShape
                 )
-                .border(1.dp, primaryColor.copy(alpha = if (isRunning) 0.8f else 0.3f), CircleShape),
+                .border(
+                    1.dp,
+                    primaryColor.copy(alpha = if (isRunning) 0.8f else 0.3f),
+                    CircleShape
+                ),
             contentAlignment = Alignment.Center
         ) {
-             // Inner Icon (Custom Power Symbol)
+            // Inner Icon (Custom Power Symbol)
             Canvas(modifier = Modifier.size(20.dp)) {
                 val strokeWidth = 3.dp.toPx()
                 val radius = size.minDimension / 2 - strokeWidth
                 val center = Offset(size.width / 2, size.height / 2)
-                
+
                 // Arc
                 drawArc(
                     color = primaryColor,
                     startAngle = -60f,
                     sweepAngle = 300f,
                     useCenter = false,
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(
+                        width = strokeWidth,
+                        cap = StrokeCap.Round
+                    )
                 )
-                
+
                 // Stick
                 drawLine(
                     color = primaryColor,
@@ -613,8 +668,12 @@ fun CyberNavBar(
                 .height(72.dp) // Height for the bar
                 .fillMaxWidth(),
             shape = RoundedCornerShape(percent = 50), // Fully rounded pill
+            //shape = RoundedCornerShape(3.dp),
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f),
-            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)),
+            border = androidx.compose.foundation.BorderStroke(
+                1.dp,
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+            ),
             shadowElevation = 12.dp
         ) {
             Row(
@@ -643,7 +702,7 @@ fun CyberNavBar(
 
                 // 4. STATS
                 NavBarItem(
-                    icon = androidx.compose.material.icons.Icons.Default.Info, 
+                    icon = androidx.compose.material.icons.Icons.Default.Info,
                     label = "Stats",
                     isSelected = currentScreen == "STATS",
                     onClick = { onNavigate("STATS") }
@@ -663,7 +722,7 @@ fun CyberNavBar(
         CyberMiniPowerButton(
             isRunning = isRunning,
             onClick = onPowerClick,
-            modifier = Modifier.align(Alignment.Center) 
+            modifier = Modifier.align(Alignment.Center)
         )
     }
 }
@@ -693,26 +752,28 @@ fun NavBarItem(
 
 @Composable
 fun CyberGraphSection(data: List<Int>, bpm: Int, isRunning: Boolean) {
-     val primaryColor = MaterialTheme.colorScheme.primary
-     val offlineColor = MaterialTheme.colorScheme.error // Or Gray
-     
-     // Animation state for pulse
-     val infiniteTransition = rememberInfiniteTransition(label = "monitoring_pulse")
-     val pulseAlpha by if (isRunning) {
-         infiniteTransition.animateFloat(
-             initialValue = 0.4f,
-             targetValue = 1f,
-             animationSpec = infiniteRepeatable(
-                 animation = tween(1000, easing = LinearEasing),
-                 repeatMode = RepeatMode.Reverse
-             ),
-             label = "pulse_alpha"
-         )
-     } else { remember { mutableFloatStateOf(1f) } } // Static when offline
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val offlineColor = MaterialTheme.colorScheme.error // Or Gray
 
-     // Threat Logic
-     val (level, threatColor) = when {
-        !isRunning -> "OFFLINE" to offlineColor.copy(alpha=0.5f)
+    // Animation state for pulse
+    val infiniteTransition = rememberInfiniteTransition(label = "monitoring_pulse")
+    val pulseAlpha by if (isRunning) {
+        infiniteTransition.animateFloat(
+            initialValue = 0.4f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(1000, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "pulse_alpha"
+        )
+    } else {
+        remember { mutableFloatStateOf(1f) }
+    } // Static when offline
+
+    // Threat Logic
+    val (level, threatColor) = when {
+        !isRunning -> "OFFLINE" to offlineColor.copy(alpha = 0.5f)
         bpm > 20 -> "HIGH" to Color(0xFFFF5252) // Red
         bpm > 5 -> "MED" to Color(0xFFFFAB40) // Orange
         else -> "LOW" to primaryColor // Green/Primary
@@ -722,104 +783,117 @@ fun CyberGraphSection(data: List<Int>, bpm: Int, isRunning: Boolean) {
         else -> (bpm / 30f).coerceIn(0.05f, 1f)
     }
 
-     Column(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, (if (isRunning) primaryColor else offlineColor).copy(alpha = 0.2f), RoundedCornerShape(5.dp))
+            .border(
+                1.dp,
+                (if (isRunning) primaryColor else offlineColor).copy(alpha = 0.2f),
+                RoundedCornerShape(5.dp)
+            )
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
             .padding(16.dp)
-     ) {
-         // HUD Header
-         Row(
-             modifier = Modifier.fillMaxWidth(), 
-             horizontalArrangement = Arrangement.SpaceBetween,
-             verticalAlignment = Alignment.CenterVertically
-         ) {
-             // Left: Title
-             Row(verticalAlignment = Alignment.CenterVertically) {
-                 Box(
+    ) {
+        // HUD Header
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Left: Title
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
                     modifier = Modifier
                         .size(8.dp)
-                        .background(if (isRunning) threatColor.copy(alpha = pulseAlpha) else offlineColor, CircleShape)
-                 )
-                 Spacer(Modifier.width(8.dp))
-                 Text(
-                     text = if (isRunning) "TRAFFIC ANALYSIS // LIVE" else "TRAFFIC ANALYSIS // OFFLINE", 
-                     style = MaterialTheme.typography.labelSmall, 
-                     fontWeight = FontWeight.Bold, 
-                     color = if (isRunning) primaryColor else offlineColor,
-                     fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                     letterSpacing = 1.sp
-                 )
-             }
-         }
-         Spacer(Modifier.height(16.dp))
-         
-         // Canvas Graph
-         Box(
+                        .background(
+                            if (isRunning) threatColor.copy(alpha = pulseAlpha) else offlineColor,
+                            CircleShape
+                        )
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = if (isRunning) "TRAFFIC ANALYSIS // LIVE" else "TRAFFIC ANALYSIS // OFFLINE",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isRunning) primaryColor else offlineColor,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                    letterSpacing = 1.sp
+                )
+            }
+        }
+        Spacer(Modifier.height(16.dp))
+
+        // Canvas Graph
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(120.dp) // Taller graph
                 .background(Color.Black.copy(alpha = 0.3f), RoundedCornerShape(5.dp))
-                .border(1.dp, (if (isRunning) primaryColor else offlineColor).copy(alpha = 0.1f), RoundedCornerShape(5.dp))
-         ) {
-             Canvas(modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp, vertical = 8.dp)) {
-                 val width = size.width
-                 val height = size.height
-                 // Use all 60 points or whatever is available, but limit if needed
-                 val graphData = if (data.isEmpty()) List(60) { 0 } else data
-                 val max = (graphData.maxOrNull() ?: 5).coerceAtLeast(5).toFloat()
-                 val graphColor = if (isRunning) primaryColor else offlineColor.copy(alpha=0.3f)
-                 
-                 // Draw Grid
-                 val verticalLines = 6 // roughly every 10 mins
-                 val horizontalLines = 4
-                 
-                 for (i in 1 until verticalLines) {
-                     val x = (width / verticalLines) * i
-                     drawLine(
-                         color = graphColor.copy(alpha = 0.05f),
-                         start = Offset(x, 0f),
-                         end = Offset(x, height),
-                         strokeWidth = 1f
-                     )
-                 }
-                 
-                 for (i in 1 until horizontalLines) {
-                     val y = (height / horizontalLines) * i
-                     drawLine(
-                         color = graphColor.copy(alpha = 0.05f),
-                         start = Offset(0f, y),
-                         end = Offset(width, y),
-                         strokeWidth = 1f
-                     )
-                 }
+                .border(
+                    1.dp,
+                    (if (isRunning) primaryColor else offlineColor).copy(alpha = 0.1f),
+                    RoundedCornerShape(5.dp)
+                )
+        ) {
+            Canvas(modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 4.dp, vertical = 8.dp)) {
+                val width = size.width
+                val height = size.height
+                // Use all 60 points or whatever is available, but limit if needed
+                val graphData = if (data.isEmpty()) List(60) { 0 } else data
+                val max = (graphData.maxOrNull() ?: 5).coerceAtLeast(5).toFloat()
+                val graphColor = if (isRunning) primaryColor else offlineColor.copy(alpha = 0.3f)
 
-                 // Draw Path (Smooth Bezier) -- ONLY IF RUNNING OR DATA EXISTS
-                 if (isRunning && graphData.isNotEmpty() && graphData.any { it > 0 }) {
-                     val path = Path()
-                     // ... (path building logic simplified for brevity, assume unchanged or reconstructed)
-                     // Let's assume the previous logic works, we just need to add the Brush fill below it.
-                     
-                     // Construct path from points
-                     val stepX = width / (graphData.size - 1)
-                     path.moveTo(0f, height - (graphData.first().toFloat() / max) * height)
-                     
-                     for (i in 1 until graphData.size) {
-                         val pX = i * stepX
-                         val pY = height - (graphData[i].toFloat() / max) * height
-                         // Simple line to for now, or bezier if we had the logic
-                         path.lineTo(pX, pY)
-                     }
-                     
-                     // Draw Gradient Fill
-                     val fillPath = Path()
-                     fillPath.addPath(path)
-                     fillPath.lineTo(width, height)
-                     fillPath.lineTo(0f, height)
-                     fillPath.close()
-                     
-                     drawPath(
+                // Draw Grid
+                val verticalLines = 6 // roughly every 10 mins
+                val horizontalLines = 4
+
+                for (i in 1 until verticalLines) {
+                    val x = (width / verticalLines) * i
+                    drawLine(
+                        color = graphColor.copy(alpha = 0.05f),
+                        start = Offset(x, 0f),
+                        end = Offset(x, height),
+                        strokeWidth = 1f
+                    )
+                }
+
+                for (i in 1 until horizontalLines) {
+                    val y = (height / horizontalLines) * i
+                    drawLine(
+                        color = graphColor.copy(alpha = 0.05f),
+                        start = Offset(0f, y),
+                        end = Offset(width, y),
+                        strokeWidth = 1f
+                    )
+                }
+
+                // Draw Path (Smooth Bezier) -- ONLY IF RUNNING OR DATA EXISTS
+                if (isRunning && graphData.isNotEmpty() && graphData.any { it > 0 }) {
+                    val path = Path()
+                    // ... (path building logic simplified for brevity, assume unchanged or reconstructed)
+                    // Let's assume the previous logic works, we just need to add the Brush fill below it.
+
+                    // Construct path from points
+                    val stepX = width / (graphData.size - 1)
+                    path.moveTo(0f, height - (graphData.first().toFloat() / max) * height)
+
+                    for (i in 1 until graphData.size) {
+                        val pX = i * stepX
+                        val pY = height - (graphData[i].toFloat() / max) * height
+                        // Simple line to for now, or bezier if we had the logic
+                        path.lineTo(pX, pY)
+                    }
+
+                    // Draw Gradient Fill
+                    val fillPath = Path()
+                    fillPath.addPath(path)
+                    fillPath.lineTo(width, height)
+                    fillPath.lineTo(0f, height)
+                    fillPath.close()
+
+                    drawPath(
                         path = fillPath,
                         brush = Brush.verticalGradient(
                             colors = listOf(
@@ -827,95 +901,125 @@ fun CyberGraphSection(data: List<Int>, bpm: Int, isRunning: Boolean) {
                                 Color.Transparent
                             )
                         )
-                     )
+                    )
 
-                     // Draw Stroke
-                     drawPath(
-                         path = path,
-                         color = primaryColor,
-                         style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f, cap = StrokeCap.Round)
-                     )
-                 } else if (!isRunning) {
-                     // Draw Flat Line or Static Noise if offline?
-                     // Let's just draw a flat line at the bottom
-                     drawLine(
-                         color = offlineColor.copy(alpha = 0.3f),
-                         start = Offset(0f, height),
-                         end = Offset(width, height),
-                         strokeWidth = 2.dp.value * density
-                     )
-                 }
-             }
-             // Scanline Overlay
-             //if (isRunning) {
-                 Scanline(
-                     modifier = Modifier.fillMaxSize(),
-                     color = primaryColor.copy(alpha = 0.01f)
-                 )
-             //}
-         }
-         
-         // Time Labels
-         Spacer(Modifier.height(8.dp))
-         Row(
-             modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-             horizontalArrangement = Arrangement.SpaceBetween
-         ) {
-              Text("-60m", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f), fontSize = 10.sp)
-              Text("-45m", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f), fontSize = 10.sp)
-              Text("-30m", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f), fontSize = 10.sp)
-              Text("-15m", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f), fontSize = 10.sp)
-              Text("NOW", style = MaterialTheme.typography.labelSmall, color = if (isRunning) primaryColor else offlineColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-         }
+                    // Draw Stroke
+                    drawPath(
+                        path = path,
+                        color = primaryColor,
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(
+                            width = 3f,
+                            cap = StrokeCap.Round
+                        )
+                    )
+                } else if (!isRunning) {
+                    // Draw Flat Line or Static Noise if offline?
+                    // Let's just draw a flat line at the bottom
+                    drawLine(
+                        color = offlineColor.copy(alpha = 0.3f),
+                        start = Offset(0f, height),
+                        end = Offset(width, height),
+                        strokeWidth = 2.dp.value * density
+                    )
+                }
+            }
+            // Scanline Overlay
+            //if (isRunning) {
+            Scanline(
+                modifier = Modifier.fillMaxSize(),
+                color = primaryColor.copy(alpha = 0.01f)
+            )
+            //}
+        }
 
-         Spacer(Modifier.height(12.dp))
-         
-         // Threat Indicator Bar
-         Box(
+        // Time Labels
+        Spacer(Modifier.height(8.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                "-60m",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                fontSize = 10.sp
+            )
+            Text(
+                "-45m",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                fontSize = 10.sp
+            )
+            Text(
+                "-30m",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                fontSize = 10.sp
+            )
+            Text(
+                "-15m",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                fontSize = 10.sp
+            )
+            Text(
+                "NOW",
+                style = MaterialTheme.typography.labelSmall,
+                color = if (isRunning) primaryColor else offlineColor,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        // Threat Indicator Bar
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(4.dp)
                 .background(threatColor.copy(alpha = 0.2f), RoundedCornerShape(2.dp))
-         ) {
-             Box(
+        ) {
+            Box(
                 modifier = Modifier
                     .fillMaxWidth(progress)
                     .fillMaxHeight()
                     .background(threatColor, RoundedCornerShape(2.dp))
-             )
-         }
-         
-         Spacer(Modifier.height(8.dp))
+            )
+        }
 
-         // Footer: Threat Level & BPM
-         Row(
-             modifier = Modifier.fillMaxWidth(),
-             horizontalArrangement = Arrangement.SpaceBetween,
-             verticalAlignment = Alignment.CenterVertically
-         ) {
-             // Bottom Left: Threat Logic
-             Text(
-                 text = if (isRunning) "THREAT: $level" else "SYSTEM: STANDBY", 
-                 color = threatColor, 
-                 fontWeight = FontWeight.Bold, 
-                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, 
-                 fontSize = 12.sp,
-                 letterSpacing = 1.sp
-             )
-             
-             // Bottom Right: BPM
-             Text(
-                 text = if (isRunning) "ACT :: $bpm/MIN" else "ACT :: ---", 
-                 color = MaterialTheme.colorScheme.onSurfaceVariant, 
-                 fontWeight = FontWeight.Bold, 
-                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, 
-                 fontSize = 12.sp,
-                 letterSpacing = 1.sp
-             )
-         }
-     }
+        Spacer(Modifier.height(8.dp))
+
+        // Footer: Threat Level & BPM
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Bottom Left: Threat Logic
+            Text(
+                text = if (isRunning) "THREAT: $level" else "SYSTEM: STANDBY",
+                color = threatColor,
+                fontWeight = FontWeight.Bold,
+                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                fontSize = 12.sp,
+                letterSpacing = 1.sp
+            )
+
+            // Bottom Right: BPM
+            Text(
+                text = if (isRunning) "ACT :: $bpm/MIN" else "ACT :: ---",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Bold,
+                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                fontSize = 12.sp,
+                letterSpacing = 1.sp
+            )
+        }
+    }
 }
-
 
 
 // ----------------------------------------------------
@@ -948,7 +1052,7 @@ fun CyberTerminal(
     // 2. Auto-scroll
     val listState = rememberScrollState()
     var autoScrollEnabled by remember { mutableStateOf(true) }
-    
+
     LaunchedEffect(logs.size, autoScrollEnabled) {
         if (autoScrollEnabled && logs.isNotEmpty()) {
             listState.animateScrollTo(listState.maxValue)
@@ -956,25 +1060,37 @@ fun CyberTerminal(
     }
 
     NeonCard(
-        modifier = Modifier.fillMaxWidth().height(400.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(400.dp),
         borderColor = MaterialTheme.colorScheme.primary,
         shape = RoundedCornerShape(8.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             // ... Header ...
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(" [ TERMINAL SESSION ACTIVE ] ", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    " [ TERMINAL SESSION ACTIVE ] ",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
                 // Auto-scroll toggle
-                 Text(
-                    text = "AUTO-SCROLL: ${if(autoScrollEnabled) "ON" else "OFF"}",
+                Text(
+                    text = "AUTO-SCROLL: ${if (autoScrollEnabled) "ON" else "OFF"}",
                     style = MaterialTheme.typography.labelSmall,
                     fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                    color = if(autoScrollEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (autoScrollEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.clickable { autoScrollEnabled = !autoScrollEnabled }
                 )
             }
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.primary.copy(alpha=0.3f))
-            
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 8.dp),
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+            )
+
             // USE COLUMN WITH VERTICAL SCROLL instead of LazyColumn for simple cursor appending at end
             Column(
                 modifier = Modifier
@@ -983,37 +1099,48 @@ fun CyberTerminal(
                     .verticalScroll(listState)
             ) {
                 if (logs.isEmpty()) {
-                     Text("> Initializing system...", color = MaterialTheme.colorScheme.primary, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, fontSize = 12.sp)
-                     Text("> Waiting for traffic...", color = Color.Gray, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, fontSize = 12.sp)
+                    Text(
+                        "> Initializing system...",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        fontSize = 12.sp
+                    )
+                    Text(
+                        "> Waiting for traffic...",
+                        color = Color.Gray,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        fontSize = 12.sp
+                    )
                 }
 
                 logs.reversed().forEach { log ->
                     // Determine Color and Label based on Status
                     val (color, prefix, isClickable) = when (log.status) {
-                        com.example.adshield.filter.FilterEngine.FilterStatus.BLOCKED -> 
+                        com.example.adshield.filter.FilterEngine.FilterStatus.BLOCKED ->
                             Triple(Color(0xFFFF5252), "BLK", true) // Red
-                        com.example.adshield.filter.FilterEngine.FilterStatus.BLOCKED_USER -> 
+                        com.example.adshield.filter.FilterEngine.FilterStatus.BLOCKED_USER ->
                             Triple(Color(0xFFFFAB40), "BAN", true) // Orange (Manual Ban)
-                        com.example.adshield.filter.FilterEngine.FilterStatus.ALLOWED_USER -> 
+                        com.example.adshield.filter.FilterEngine.FilterStatus.ALLOWED_USER ->
                             Triple(com.example.adshield.ui.theme.NeonGreen, "USR", true) // Green
-                        com.example.adshield.filter.FilterEngine.FilterStatus.ALLOWED_SYSTEM -> 
+                        com.example.adshield.filter.FilterEngine.FilterStatus.ALLOWED_SYSTEM ->
                             Triple(Color.Gray, "SYS", false) // Gray, Non-interactive
-                        com.example.adshield.filter.FilterEngine.FilterStatus.SUSPICIOUS -> 
+                        com.example.adshield.filter.FilterEngine.FilterStatus.SUSPICIOUS ->
                             Triple(Color(0xFFFFD600), "WRN", true) // Yellow, Warning, Clickable
-                        com.example.adshield.filter.FilterEngine.FilterStatus.ALLOWED_DEFAULT -> 
+                        com.example.adshield.filter.FilterEngine.FilterStatus.ALLOWED_DEFAULT ->
                             Triple(Color.White, "ALW", true) // White, CAN BE BLOCKED
                     }
-                    
+
                     val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.US)
-                    
-                    Row(modifier = Modifier
-                        .padding(vertical = 2.dp)
-                        .clickable(enabled = isClickable) { onLogClick(log.domain) }
+
+                    Row(
+                        modifier = Modifier
+                            .padding(vertical = 2.dp)
+                            .clickable(enabled = isClickable) { onLogClick(log.domain) }
                     ) {
                         Text(
                             text = "> ${timeFormat.format(Date(log.timestamp))} ",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.5f),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                             fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                             fontSize = 10.sp
                         )
@@ -1036,7 +1163,7 @@ fun CyberTerminal(
                         )
                     }
                 }
-                
+
                 // BLINKING CURSOR
                 Box(
                     modifier = Modifier
@@ -1048,6 +1175,7 @@ fun CyberTerminal(
         }
     }
 }
+
 @Composable
 fun CyberToast(
     message: String,
@@ -1060,13 +1188,13 @@ fun CyberToast(
         CyberToastType.ERROR -> Color(0xFFFF5252) // Red
         CyberToastType.INFO -> MaterialTheme.colorScheme.primary // Cyan
     }
-    
+
     val icon = when (type) {
         CyberToastType.SUCCESS -> androidx.compose.material.icons.Icons.Filled.CheckCircle
         CyberToastType.ERROR -> androidx.compose.material.icons.Icons.Filled.Close
         CyberToastType.INFO -> androidx.compose.material.icons.Icons.Filled.Info
     }
-    
+
     val title = when (type) {
         CyberToastType.SUCCESS -> "ACCESS GRANTED"
         CyberToastType.ERROR -> "ACCESS DENIED"
@@ -1086,7 +1214,12 @@ fun CyberToast(
         NeonCard(
             modifier = Modifier.fillMaxWidth(),
             borderColor = typeColor.copy(alpha = 0.8f),
-            shape = CutCornerShape(topStart = 0.dp, bottomEnd = 0.dp, topEnd = 12.dp, bottomStart = 12.dp)
+            shape = CutCornerShape(
+                topStart = 0.dp,
+                bottomEnd = 0.dp,
+                topEnd = 12.dp,
+                bottomStart = 12.dp
+            )
         ) {
             // Inner Box for background
             Box(

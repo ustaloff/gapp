@@ -43,7 +43,7 @@ class DnsMessage(private val rawData: ByteArray) {
                 val pointer = (length and 0x3F) shl 8 or (buffer.get().toInt() and 0xFF)
                 val currentPos = buffer.position()
                 buffer.position(pointer)
-                nameParts.add(parseName(buffer, depth + 1).first) 
+                nameParts.add(parseName(buffer, depth + 1).first)
                 buffer.position(currentPos)
                 nameBuffer.add(length.toByte())
                 nameBuffer.add((pointer and 0xFF).toByte())
@@ -69,7 +69,7 @@ class DnsMessage(private val rawData: ByteArray) {
         responseBuffer.putShort(transactionId) // Transaction ID
         responseBuffer.putShort(0x8180.toShort()) // Flags: Standard response, no error
         responseBuffer.putShort(1) // QDCOUNT
-        
+
         // Only provide an answer for A (1) or AAAA (28) records.
         // For others (HTTPS, SVCB, etc.), return 0 answers (Standard block)
         val hasAddressAnswer = qType == 1 || qType == 28
@@ -86,7 +86,7 @@ class DnsMessage(private val rawData: ByteArray) {
             responseBuffer.putShort(qType.toShort())  // Preserve original type (A or AAAA)
             responseBuffer.putShort(qClass.toShort()) // Preserve original class (IN)
             responseBuffer.putInt(60) // TTL
-            
+
             if (qType == 28) { // AAAA
                 responseBuffer.putShort(16) // RDLENGTH for IPv6
                 responseBuffer.put(ByteArray(16)) // RDATA: ::

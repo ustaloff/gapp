@@ -26,7 +26,7 @@ object UserRepository {
     fun getCurrentUser(): FirebaseUser? {
         return auth.currentUser
     }
-    
+
     suspend fun signInWithGoogle(idToken: String): Result<FirebaseUser> {
         val credential = com.google.firebase.auth.GoogleAuthProvider.getCredential(idToken, null)
         return try {
@@ -50,7 +50,7 @@ object UserRepository {
         return try {
             val doc = db.collection("users").document(user.uid).get().await()
             val isPremium = doc.getBoolean("isPremium") ?: false
-            
+
             // TODO: Check expiration date logic here
             isPremium
         } catch (e: Exception) {
@@ -58,7 +58,7 @@ object UserRepository {
             false
         }
     }
-    
+
     suspend fun updatePremiumStatus(isPremium: Boolean) {
         val user = auth.currentUser ?: return
         try {
@@ -77,17 +77,17 @@ object UserRepository {
             "email" to (user.email ?: ""),
             "lastLogin" to com.google.firebase.Timestamp.now()
         )
-        
+
         try {
             // Set with merge to avoid overwriting existing fields like isPremium
             db.collection("users").document(user.uid)
                 .set(userMap, com.google.firebase.firestore.SetOptions.merge())
                 .await()
         } catch (e: Exception) {
-             Log.e("UserRepository", "Error updating user doc", e)
+            Log.e("UserRepository", "Error updating user doc", e)
         }
     }
-    
+
     fun signOut() {
         auth.signOut()
     }

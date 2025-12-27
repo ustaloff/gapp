@@ -34,11 +34,11 @@ fun DomainListScreen(
 ) {
     val context = LocalContext.current
     val preferences = remember { AppPreferences(context) }
-    
+
     // Dynamic fetch function
     fun getList(): List<String> {
         return if (isBlocklist) preferences.getUserBlocklist().toList().sorted()
-               else preferences.getUserAllowlist().toList().sorted()
+        else preferences.getUserAllowlist().toList().sorted()
     }
 
     var domains by remember { mutableStateOf(getList()) }
@@ -62,17 +62,30 @@ fun DomainListScreen(
             // HEADER
             Spacer(modifier = Modifier.height(16.dp))
             Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
                     onClick = onBackClick,
                     modifier = Modifier
                         .size(40.dp)
-                        .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), RoundedCornerShape(5.dp))
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(5.dp))
+                        .border(
+                            1.dp,
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                            RoundedCornerShape(5.dp)
+                        )
+                        .background(
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                            RoundedCornerShape(5.dp)
+                        )
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.primary)
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Text(
@@ -98,7 +111,9 @@ fun DomainListScreen(
                 }
             } else {
                 LazyColumn(
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
                     contentPadding = PaddingValues(bottom = 80.dp), // Space for FAB
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
@@ -161,7 +176,11 @@ fun DomainItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f), RoundedCornerShape(5.dp))
+            .border(
+                1.dp,
+                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f),
+                RoundedCornerShape(5.dp)
+            )
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.05f))
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,

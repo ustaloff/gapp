@@ -12,7 +12,7 @@ object DohClient {
     private const val TAG = "DohClient"
     private const val PRIMARY_DOH = "https://cloudflare-dns.com/dns-query"
     private const val BACKUP_DOH = "https://dns.google/dns-query"
-    
+
     suspend fun resolve(dnsQuery: ByteArray): ByteArray? = withContext(Dispatchers.IO) {
         // Try Cloudflare first, then Google as fallback
         return@withContext tryDoh(PRIMARY_DOH, dnsQuery) ?: tryDoh(BACKUP_DOH, dnsQuery)
@@ -23,7 +23,7 @@ object DohClient {
         try {
             val url = URL(providerUrl)
             connection = url.openConnection() as HttpURLConnection
-            
+
             connection.apply {
                 requestMethod = "POST"
                 doOutput = true

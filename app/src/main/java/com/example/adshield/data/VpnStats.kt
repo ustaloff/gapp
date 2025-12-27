@@ -18,7 +18,7 @@ object VpnStats {
     val blockedCount = mutableStateOf(0)
     val totalCount = mutableStateOf(0)
     val dataSavedBytes = mutableStateOf(0L)
-    
+
     val blockedToday = mutableStateOf(0)
     val blockedWeekly = mutableStateOf(0) // Sum of last 7 days
 
@@ -27,7 +27,8 @@ object VpnStats {
     val growthToday = mutableStateOf(0) // Percentage vs yesterday
     val timeSavedMs = mutableStateOf(0L) // Estimated time saved in ms
 
-    val appBlockedStats = mutableStateListOf<Pair<String, Int>>() // Simplified for sorting: actually let's use map and convert in UI, or stateMap
+    val appBlockedStats =
+        mutableStateListOf<Pair<String, Int>>() // Simplified for sorting: actually let's use map and convert in UI, or stateMap
     val appBlockedStatsMap = mutableStateMapOf<String, Int>()
     val domainBlockedStatsMap = mutableStateMapOf<String, Int>()
 
@@ -43,17 +44,16 @@ object VpnStats {
     private val dailyBuckets = IntArray(7)
 
 
-
     // ...
 
     private fun updatePublicMetrics() {
         blockedToday.value = dailyBuckets[0]
         blockedWeekly.value = dailyBuckets.sum()
-        
+
         // Calculate Growth (Today vs Yesterday)
         val today = dailyBuckets[0]
         val yesterday = dailyBuckets[1]
-        
+
         if (yesterday > 0) {
             growthToday.value = ((today - yesterday).toFloat() / yesterday.toFloat() * 100).toInt()
         } else {
@@ -65,14 +65,14 @@ object VpnStats {
 
     // Mutex to protect concurrent updates from multiple threads
     private val statsLock = Mutex()
-    
+
     // Live stream of logs for the UI
     private val _recentLogs = mutableStateListOf<VpnLogEntry>()
     val recentLogs: List<VpnLogEntry> get() = _recentLogs
 
     // History for the graph (last 60 buckets, 1 minute each)
-    private val _blockedHistory = mutableStateListOf<Int>().apply { 
-        repeat(60) { add(0) } 
+    private val _blockedHistory = mutableStateListOf<Int>().apply {
+        repeat(60) { add(0) }
     }
     val blockedHistory: List<Int> get() = _blockedHistory
 
@@ -92,7 +92,7 @@ object VpnStats {
         blockedCount.value = prefs.getInt(KEY_TOTAL, 0)
         dataSavedBytes.value = prefs.getLong(KEY_DATA_SAVED, 0L)
         timeSavedMs.value = prefs.getLong(KEY_TIME_SAVED, 0L)
-        
+
         val savedCounts = prefs.getString(KEY_DAILY_COUNTS, "") ?: ""
         if (savedCounts.isNotEmpty()) {
             val parts = savedCounts.split(",")
@@ -100,7 +100,7 @@ object VpnStats {
                 if (i < 7) dailyBuckets[i] = parts[i].toIntOrNull() ?: 0
             }
         }
-        
+
         checkDayReset(context)
         updatePublicMetrics()
     }
@@ -109,7 +109,7 @@ object VpnStats {
         val prefs = context.getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE)
         val lastDay = prefs.getLong(KEY_LAST_DAY, 0L)
         val currentDay = System.currentTimeMillis() / (1000 * 60 * 60 * 24)
-        
+
         if (currentDay > lastDay) {
             val daysPassed = (currentDay - lastDay).toInt()
             // Shift buckets
@@ -129,28 +129,41 @@ object VpnStats {
     }
 
     private fun saveStats(context: android.content.Context) {
-         val prefs = context.getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE)
-         val csv = dailyBuckets.joinToString(",")
-         prefs.edit()
-             .putInt(KEY_TOTAL, blockedCount.value)
-             .putLong(KEY_DATA_SAVED, dataSavedBytes.value)
-             .putLong(KEY_TIME_SAVED, timeSavedMs.value)
-             .putString(KEY_DAILY_COUNTS, csv)
-             .apply()
+        val prefs = context.getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE)
+        val csv = dailyBuckets.joinToString(",")
+        prefs.edit()
+            .putInt(KEY_TOTAL, blockedCount.value)
+            .putLong(KEY_DATA_SAVED, dataSavedBytes.value)
+            .putLong(KEY_TIME_SAVED, timeSavedMs.value)
+            .putString(KEY_DAILY_COUNTS, csv)
+            .apply()
     }
 
 
-
-    suspend fun incrementBlocked(context: android.content.Context, domain: String, appName: String? = null) {
+    suspend fun incrementBlocked(
+        context: android.content.Context,
+        domain: String,
+        appName: String? = null
+    ) {
         // Technically this is only called for BLOCKED status in legacy, but we'll genericize it or call generic increment
-        increment(context, domain, com.example.adshield.filter.FilterEngine.FilterStatus.BLOCKED, appName)
+        increment(
+            context,
+            domain,
+            com.example.adshield.filter.FilterEngine.FilterStatus.BLOCKED,
+            appName
+        )
     }
 
-    suspend fun increment(context: android.content.Context, domain: String, status: com.example.adshield.filter.FilterEngine.FilterStatus, appName: String? = null) {
+    suspend fun increment(
+        context: android.content.Context,
+        domain: String,
+        status: com.example.adshield.filter.FilterEngine.FilterStatus,
+        appName: String? = null
+    ) {
         statsLock.withLock {
             if (status == com.example.adshield.filter.FilterEngine.FilterStatus.BLOCKED) {
                 blockedCount.value++
-                dataSavedBytes.value += 30 * 1024 
+                dataSavedBytes.value += 30 * 1024
                 timeSavedMs.value += 300
                 checkDayReset(context)
                 dailyBuckets[0]++
@@ -166,19 +179,28 @@ object VpnStats {
 
             // Update Domain Stats
             if (status == com.example.adshield.filter.FilterEngine.FilterStatus.BLOCKED) {
-                 domainBlockedStatsMap[domain] = (domainBlockedStatsMap[domain] ?: 0) + 1
-                 if (appName != null) {
-                      appBlockedStatsMap[appName] = (appBlockedStatsMap[appName] ?: 0) + 1
-                 }
+                domainBlockedStatsMap[domain] = (domainBlockedStatsMap[domain] ?: 0) + 1
+                if (appName != null) {
+                    appBlockedStatsMap[appName] = (appBlockedStatsMap[appName] ?: 0) + 1
+                }
             }
 
             addLog(domain, status, appName)
         }
     }
-    
+
     // Deprecated or simplified
-    suspend fun incrementTotal(context: android.content.Context, domain: String, appName: String? = null) {
-        increment(context, domain, com.example.adshield.filter.FilterEngine.FilterStatus.ALLOWED_DEFAULT, appName)
+    suspend fun incrementTotal(
+        context: android.content.Context,
+        domain: String,
+        appName: String? = null
+    ) {
+        increment(
+            context,
+            domain,
+            com.example.adshield.filter.FilterEngine.FilterStatus.ALLOWED_DEFAULT,
+            appName
+        )
     }
 
     private fun updateHistory() {
@@ -195,7 +217,11 @@ object VpnStats {
         }
     }
 
-    private fun addLog(domain: String, status: com.example.adshield.filter.FilterEngine.FilterStatus, appName: String?) {
+    private fun addLog(
+        domain: String,
+        status: com.example.adshield.filter.FilterEngine.FilterStatus,
+        appName: String?
+    ) {
         _recentLogs.add(0, VpnLogEntry(System.currentTimeMillis(), domain, status, appName))
         if (_recentLogs.size > 50) {
             _recentLogs.removeAt(_recentLogs.size - 1)

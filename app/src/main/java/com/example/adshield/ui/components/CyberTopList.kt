@@ -30,8 +30,8 @@ import androidx.compose.foundation.Image
 
 @Composable
 fun CyberTopList(
-    title: String, 
-    data: Map<String, Int>, 
+    title: String,
+    data: Map<String, Int>,
     onAllowClick: (String) -> Unit,
     isWhitelisted: (String) -> Boolean // Logic to check status
 ) {
@@ -41,32 +41,51 @@ fun CyberTopList(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), RoundedCornerShape(5.dp))
+            .border(
+                1.dp,
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                RoundedCornerShape(5.dp)
+            )
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
             .padding(12.dp)
     ) {
-        Text(title, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            title,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
         Spacer(Modifier.height(8.dp))
-        
+
         if (data.isEmpty()) {
-            Text("NO DATA COLLECTED", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.5f), fontStyle = FontStyle.Italic)
+            Text(
+                "NO DATA COLLECTED",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                fontStyle = FontStyle.Italic
+            )
         } else {
             // Sort by count descending and take top 5
             val sorted = data.toList().sortedByDescending { (_, value) -> value }.take(5)
-            
+
             sorted.forEach { (packageName, count) ->
                 // Resolve App Info
                 var appName by remember(packageName) { mutableStateOf(packageName) }
-                var appIcon by remember(packageName) { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
-                
+                var appIcon by remember(packageName) {
+                    mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(
+                        null
+                    )
+                }
+
                 LaunchedEffect(packageName) {
                     kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                         try {
                             val appInfo = packageManager.getApplicationInfo(packageName, 0)
                             val label = packageManager.getApplicationLabel(appInfo).toString()
                             val iconDrawable = packageManager.getApplicationIcon(appInfo)
-                            val bitmap = iconDrawable.toBitmap(width = 64, height = 64).asImageBitmap()
-                            
+                            val bitmap =
+                                iconDrawable.toBitmap(width = 64, height = 64).asImageBitmap()
+
                             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
                                 appName = label
                                 appIcon = bitmap
@@ -78,9 +97,15 @@ fun CyberTopList(
                 }
 
                 val isActive = isWhitelisted(packageName)
-                val statusIcon = Icons.Filled.Lock 
-                val tint = if (isActive) com.example.adshield.ui.theme.NeonGreen else androidx.compose.ui.graphics.Color(0xFFFF5252)
-                val bgBorder = if (isActive) com.example.adshield.ui.theme.NeonGreen.copy(alpha=0.5f) else androidx.compose.ui.graphics.Color(0xFFFF5252).copy(alpha=0.5f)
+                val statusIcon = Icons.Filled.Lock
+                val tint =
+                    if (isActive) com.example.adshield.ui.theme.NeonGreen else androidx.compose.ui.graphics.Color(
+                        0xFFFF5252
+                    )
+                val bgBorder =
+                    if (isActive) com.example.adshield.ui.theme.NeonGreen.copy(alpha = 0.5f) else androidx.compose.ui.graphics.Color(
+                        0xFFFF5252
+                    ).copy(alpha = 0.5f)
 
                 Row(
                     modifier = Modifier
@@ -94,41 +119,43 @@ fun CyberTopList(
                         Image(
                             bitmap = appIcon!!,
                             contentDescription = null,
-                            modifier = Modifier.size(32.dp).clip(RoundedCornerShape(4.dp))
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(RoundedCornerShape(4.dp))
                         )
                     } else {
-                         // Fallback Icon
-                         Icon(
-                             imageVector = Icons.Default.CheckCircle, // Generic
-                             contentDescription = null,
-                             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.3f),
-                             modifier = Modifier.size(32.dp)
-                         )
+                        // Fallback Icon
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle, // Generic
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                            modifier = Modifier.size(32.dp)
+                        )
                     }
-                    
+
                     Spacer(Modifier.width(12.dp))
 
                     Column(modifier = Modifier.weight(1f)) {
-                         Text(
-                             text = appName, // UPDATED: Shows Human Name
-                             style = MaterialTheme.typography.bodySmall,
-                             fontWeight = FontWeight.Medium,
-                             color = if (isActive) com.example.adshield.ui.theme.NeonGreen else MaterialTheme.colorScheme.onSurface,
-                             maxLines = 1,
-                             overflow = TextOverflow.Ellipsis,
-                             fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
-                         )
-                         // Optional: Show package name below in tiny font
-                         if (appName != packageName) {
-                             Text(
-                                 text = packageName,
-                                 style = MaterialTheme.typography.labelSmall,
-                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                                 fontSize = 8.sp,
-                                 maxLines = 1,
-                                 overflow = TextOverflow.Ellipsis
-                             )
-                         }
+                        Text(
+                            text = appName, // UPDATED: Shows Human Name
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Medium,
+                            color = if (isActive) com.example.adshield.ui.theme.NeonGreen else MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                        )
+                        // Optional: Show package name below in tiny font
+                        if (appName != packageName) {
+                            Text(
+                                text = packageName,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                fontSize = 8.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
                     Spacer(Modifier.width(8.dp))
                     Text(
@@ -141,16 +168,24 @@ fun CyberTopList(
                     Spacer(Modifier.width(8.dp))
                     // Tiny toggle button
                     Box(
-                         modifier = Modifier
-                             .size(24.dp)
-                             .clickable { onAllowClick(packageName) }
-                             .border(1.dp, bgBorder, CircleShape),
-                         contentAlignment = Alignment.Center
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clickable { onAllowClick(packageName) }
+                            .border(1.dp, bgBorder, CircleShape),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Icon(statusIcon, contentDescription = "Toggle", tint = tint, modifier = Modifier.size(14.dp))
+                        Icon(
+                            statusIcon,
+                            contentDescription = "Toggle",
+                            tint = tint,
+                            modifier = Modifier.size(14.dp)
+                        )
                     }
                 }
-                HorizontalDivider(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f), thickness = 0.5.dp)
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f),
+                    thickness = 0.5.dp
+                )
             }
         }
     }
