@@ -297,8 +297,6 @@ fun Modifier.scale(scale: Float) = this.then(Modifier.graphicsLayer {
 fun CyberStatCard(
     label: String,
     value: String,
-    subValue: String? = null,
-    growth: Int? = null,
     progress: Float? = null,
     progressSegments: Int = 1,
     iconVector: androidx.compose.ui.graphics.vector.ImageVector? = null,
@@ -338,39 +336,6 @@ fun CyberStatCard(
                 fontWeight = FontWeight.Bold,
                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
             )
-
-            // Growth Indicator
-            if (growth != null) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = if (growth > 0) "↗" else if (growth < 0) "↘" else "−",
-                        color = if (growth >= 0) com.example.adshield.ui.theme.NeonGreen else Color(
-                            0xFFFF5252
-                        ),
-                        fontSize = 12.sp
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = "${if (growth > 0) "+" else ""}$growth% Today",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (growth >= 0) com.example.adshield.ui.theme.NeonGreen else Color(
-                            0xFFFF5252
-                        ),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            } else if (subValue != null) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = subValue,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
 
             // Progress Bar
             if (progress != null) {
@@ -490,31 +455,6 @@ fun CyberFilterCard(
         }
     }
 }
-
-@Composable
-fun CyberPowerButton(
-    isRunning: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .size(240.dp) // Adjusted large touch target
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null, // Disable default ripple
-                onClick = onClick
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        PulsatingShield(
-            modifier = Modifier.fillMaxSize(),
-            isSecure = isRunning
-        )
-
-    }
-}
-
 
 @Composable
 fun CyberMiniPowerButton(

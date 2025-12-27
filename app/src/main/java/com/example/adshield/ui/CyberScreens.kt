@@ -82,8 +82,6 @@ fun HomeView(
                 .verticalScroll(scrollState),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // TOP BAR
-            //Spacer(modifier = Modifier.height(16.dp))
             // CENTERED HEADER (Logo + Title)
             Spacer(modifier = Modifier.height(16.dp))
             Row(
@@ -112,8 +110,6 @@ fun HomeView(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
                 modifier = Modifier
-                    //.fillMaxWidth()
-                    //.padding(bottom = 16.dp)
                     .border(1.dp, if (isRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error, AdShieldTheme.shapes.container)
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
@@ -143,32 +139,6 @@ fun HomeView(
                     .fillMaxWidth()
             ) {
                 Column {
-                    // Header (Status Indicator)
-                    /*Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 16.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(8.dp)
-                                .background(
-                                    if (isRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                                    CircleShape
-                                )
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = if (isRunning) "TUNNELING ACTIVE // IP MASKED" else "PROTECTION DISABLED // EXPOSED",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                            letterSpacing = 1.sp,
-                            color = if (isRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-                        )
-                    }*/
-
                     // Stats Row
                     Row(
                         modifier = Modifier
