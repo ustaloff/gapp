@@ -775,8 +775,8 @@ fun CyberGraphSection(data: List<Int>, bpm: Int, isRunning: Boolean) {
     // Threat Logic
     val (level, threatColor) = when {
         !isRunning -> "OFFLINE" to offlineColor.copy(alpha = 0.5f)
-        bpm > 20 -> "HIGH" to Color(0xFFFF5252) // Red
-        bpm > 5 -> "MED" to Color(0xFFFFAB40) // Orange
+        bpm > 20 -> "HIGH" to com.example.adshield.ui.theme.ErrorRed // Red
+        bpm > 5 -> "MED" to com.example.adshield.ui.theme.WarningOrange // Orange
         else -> "LOW" to primaryColor // Green/Primary
     }
     val progress = if (!isRunning) 0f else when {
@@ -1118,15 +1118,15 @@ fun CyberTerminal(
                     // Determine Color and Label based on Status
                     val (color, prefix, isClickable) = when (log.status) {
                         com.example.adshield.filter.FilterEngine.FilterStatus.BLOCKED ->
-                            Triple(Color(0xFFFF5252), "BLK", true) // Red
+                            Triple(com.example.adshield.ui.theme.ErrorRed, "BLK", true) // Red
                         com.example.adshield.filter.FilterEngine.FilterStatus.BLOCKED_USER ->
-                            Triple(Color(0xFFFFAB40), "BAN", true) // Orange (Manual Ban)
+                            Triple(com.example.adshield.ui.theme.WarningOrange, "BAN", true) // Orange (Manual Ban)
                         com.example.adshield.filter.FilterEngine.FilterStatus.ALLOWED_USER ->
                             Triple(com.example.adshield.ui.theme.NeonGreen, "USR", true) // Green
                         com.example.adshield.filter.FilterEngine.FilterStatus.ALLOWED_SYSTEM ->
                             Triple(Color.Gray, "SYS", false) // Gray, Non-interactive
                         com.example.adshield.filter.FilterEngine.FilterStatus.SUSPICIOUS ->
-                            Triple(Color(0xFFFFD600), "WRN", true) // Yellow, Warning, Clickable
+                            Triple(com.example.adshield.ui.theme.WarningYellow, "WRN", true) // Yellow, Warning, Clickable
                         com.example.adshield.filter.FilterEngine.FilterStatus.ALLOWED_DEFAULT ->
                             Triple(Color.White, "ALW", true) // White, CAN BE BLOCKED
                     }
@@ -1186,7 +1186,7 @@ fun CyberToast(
 ) {
     val typeColor = when (type) {
         CyberToastType.SUCCESS -> com.example.adshield.ui.theme.NeonGreen // Green
-        CyberToastType.ERROR -> Color(0xFFFF5252) // Red
+        CyberToastType.ERROR -> com.example.adshield.ui.theme.ErrorRed // Red
         CyberToastType.INFO -> MaterialTheme.colorScheme.primary // Cyan
     }
 

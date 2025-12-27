@@ -627,7 +627,7 @@ fun SettingsView(
                         .fillMaxWidth()
                         .background(
                             brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
-                                colors = listOf(Color(0xFF6200EE), Color(0xFFBB86FC))
+                                colors = listOf(com.example.adshield.ui.theme.PremiumStart, com.example.adshield.ui.theme.PremiumEnd)
                             ),
                             shape = AdShieldTheme.shapes.banner
                         )

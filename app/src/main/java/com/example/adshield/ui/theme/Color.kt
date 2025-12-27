@@ -20,3 +20,10 @@ val GridLineLight = Color(0xFF0df259).copy(alpha = 0.1f)
 
 val ErrorRed = Color(0xFFFF5252) // More vibrant
 val SafeGreen = Color(0xFF66BB6A)
+val WarningOrange = Color(0xFFFFAB40)
+val WarningYellow = Color(0xFFFFD600)
+val Gold = Color(0xFFFFD700)
+
+// Premium Gradient
+val PremiumStart = Color(0xFF6200EE)
+val PremiumEnd = Color(0xFFBB86FC)

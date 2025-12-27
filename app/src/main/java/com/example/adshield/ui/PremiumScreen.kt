@@ -73,7 +73,7 @@ fun PremiumScreen(
             Icon(
                 androidx.compose.material.icons.Icons.Default.Star,
                 contentDescription = null,
-                tint = Color(0xFFFFD700),
+                tint = com.example.adshield.ui.theme.Gold,
                 modifier = Modifier.size(64.dp)
             )
             Spacer(Modifier.height(16.dp))
