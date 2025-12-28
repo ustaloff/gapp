@@ -20,7 +20,6 @@ object FilterEngine {
     private val userBlocklist = mutableSetOf<String>()
 
 
-
     fun isDohBypass(domain: String): Boolean {
         val clean = domain.lowercase().trim().trimEnd('.')
         return FilterLists.dohBypassList.any { clean == it || clean.endsWith(".$it") }
@@ -176,7 +175,7 @@ object FilterEngine {
 
         // 1. Check for Explicit Overrides (User Rules > System Exceptions)
         // Order: User Allow > User Block > System/Dynamic Exceptions
-        
+
         // Iterating subdomains without creating substring objects for the loop
         var startIndex = 0
         while (startIndex < currentDomain.length) {
@@ -208,7 +207,7 @@ object FilterEngine {
             if (nextDot == -1) break
             startIndex = nextDot + 1
         }
-        
+
         // Dynamic Exception Regex (Still slow, but less frequently hit)
         val matchedExcRegex = exceptionRegexRules.find { it.containsMatchIn(currentDomain) }
         if (matchedExcRegex != null) {
@@ -216,7 +215,7 @@ object FilterEngine {
         }
 
         // 2. Check for Block Rules (if not allowed/banned explicitly above)
-        
+
         startIndex = 0
         while (startIndex < currentDomain.length) {
             // Trie Optimization: Pass full string + offset
@@ -224,7 +223,7 @@ object FilterEngine {
             if (matchedRule != null) {
                 return FilterStatus.BLOCKED
             }
-            
+
             val nextDot = currentDomain.indexOf('.', startIndex)
             if (nextDot == -1) break
             startIndex = nextDot + 1
@@ -255,27 +254,27 @@ object FilterEngine {
         // 2. Entropy / Gibberish check (High digit count) - ALLOCATION FREE LOOP
         var labelStart = 0
         val len = domain.length
-        
+
         for (i in 0..len) {
             if (i == len || domain[i] == '.') {
                 // Segment Logic
                 val partLen = i - labelStart
-                
+
                 // Ignore common parts
                 if (partLen > 3) { // optimization equivalent to "part.length < 4 continue"
                     // Count digits manually avoiding .count{} allocation
                     var digitCount = 0
                     for (j in labelStart until i) {
-                         if (domain[j].isDigit()) digitCount++
+                        if (domain[j].isDigit()) digitCount++
                     }
-                    
-                     // If more than 30% of a long-ish label are digits -> Suspicious
+
+                    // If more than 30% of a long-ish label are digits -> Suspicious
                     if (partLen > 5 && (digitCount.toFloat() / partLen > 0.3)) return true
 
                     // Or usually long random strings
                     if (partLen > 35) return true
                 }
-                
+
                 labelStart = i + 1
             }
         }
@@ -292,7 +291,7 @@ object FilterEngine {
     private fun checkTrie(targetRoot: TrieNode, domain: String, startIndex: Int): String? {
         var end = domain.length
         var current = targetRoot
-        
+
         // Scan backwards from end of string down to startIndex
         for (i in domain.length - 1 downTo startIndex) {
             if (domain[i] == '.') {
@@ -305,14 +304,77 @@ object FilterEngine {
                 end = i
             }
         }
-        
+
         // Process first label (from startIndex to first dot/end)
         if (startIndex < end) {
             val label = domain.substring(startIndex, end)
             current = current.children[label] ?: return null
             if (current.isEndOfRule) return ruleMap[current]
         }
-        
+
         return null
+    }
+
+    data class ToggleResult(
+        val message: String,
+        val toastType: com.example.adshield.ui.components.CyberToastType
+    )
+
+    fun toggleDomainStatus(context: android.content.Context, domain: String): ToggleResult {
+        val status = checkDomain(domain)
+        return when (status) {
+            FilterStatus.BLOCKED -> {
+                // Was BLOCKED (Ad) -> Allow (User)
+                addToAllowlist(context, domain)
+                ToggleResult(
+                    "ALLOWED: $domain",
+                    com.example.adshield.ui.components.CyberToastType.SUCCESS
+                )
+            }
+
+            FilterStatus.BLOCKED_USER -> {
+                // Was BANNED (User) -> Unban
+                removeFromBlocklist(context, domain)
+                ToggleResult(
+                    "UNBANNED: $domain",
+                    com.example.adshield.ui.components.CyberToastType.INFO
+                )
+            }
+
+            FilterStatus.ALLOWED_USER -> {
+                // Was ALLOWED (User) -> Remove (Restore)
+                removeFromAllowlist(context, domain)
+                ToggleResult(
+                    "REMOVED: $domain",
+                    com.example.adshield.ui.components.CyberToastType.INFO
+                )
+            }
+
+            FilterStatus.SUSPICIOUS -> {
+                // Was SUSPICIOUS -> BAN (User confirm)
+                addToBlocklist(context, domain)
+                ToggleResult(
+                    "BANNED: $domain",
+                    com.example.adshield.ui.components.CyberToastType.SUCCESS
+                )
+            }
+
+            FilterStatus.ALLOWED_DEFAULT -> {
+                // Was CLEAN -> BAN (User)
+                addToBlocklist(context, domain)
+                ToggleResult(
+                    "BANNED: $domain",
+                    com.example.adshield.ui.components.CyberToastType.ERROR
+                )
+            }
+
+            FilterStatus.ALLOWED_SYSTEM -> {
+                // Safe
+                ToggleResult(
+                    "PROTECTED: $domain",
+                    com.example.adshield.ui.components.CyberToastType.INFO
+                )
+            }
+        }
     }
 }

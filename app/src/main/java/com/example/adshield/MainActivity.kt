@@ -276,43 +276,8 @@ fun DashboardScreen(
     }
 
     val onDomainToggle: (String) -> Unit = { domain ->
-        val status = FilterEngine.checkDomain(domain)
-        when (status) {
-            FilterEngine.FilterStatus.BLOCKED -> {
-                // Was BLOCKED (Ad) -> Allow (User)
-                FilterEngine.addToAllowlist(context, domain)
-                onToastChange(true, "ALLOWED: $domain", CyberToastType.SUCCESS)
-            }
-
-            FilterEngine.FilterStatus.BLOCKED_USER -> {
-                // Was BANNED (User) -> Unban
-                FilterEngine.removeFromBlocklist(context, domain)
-                onToastChange(true, "UNBANNED: $domain", CyberToastType.INFO)
-            }
-
-            FilterEngine.FilterStatus.ALLOWED_USER -> {
-                // Was ALLOWED (User) -> Remove (Restore)
-                FilterEngine.removeFromAllowlist(context, domain)
-                onToastChange(true, "REMOVED: $domain", CyberToastType.INFO)
-            }
-
-            FilterEngine.FilterStatus.SUSPICIOUS -> {
-                // Was SUSPICIOUS -> BAN (User confirm)
-                FilterEngine.addToBlocklist(context, domain)
-                onToastChange(true, "BANNED: $domain", CyberToastType.SUCCESS)
-            }
-
-            FilterEngine.FilterStatus.ALLOWED_DEFAULT -> {
-                // Was CLEAN -> BAN (User)
-                FilterEngine.addToBlocklist(context, domain)
-                onToastChange(true, "BANNED: $domain", CyberToastType.ERROR)
-            }
-
-            FilterEngine.FilterStatus.ALLOWED_SYSTEM -> {
-                // Safe
-                onToastChange(true, "PROTECTED: $domain", CyberToastType.INFO)
-            }
-        }
+        val result = FilterEngine.toggleDomainStatus(context, domain)
+        onToastChange(true, result.message, result.toastType)
         // Force UI update
         VpnStats.refreshLogStatuses()
         filterUpdateTrigger++ // Increment to trigger UI refresh
@@ -405,6 +370,7 @@ fun DashboardScreen(
                     }
                 },
                 onLogClick = { onDomainToggle(it) },
+                onDomainManagerClick = { navigateTo("DOMAIN_LIST") }, // Added callback
                 onAppClick = { packageName ->
                     onWhitelistApp(packageName)
                     excludedApps =
@@ -435,7 +401,6 @@ fun DashboardScreen(
                     onBackClick = { navigateBack() },
                     onWhitelistClick = { navigateTo("APP_LIST") },
                     onDomainConfigClick = { navigateTo("DOMAIN_LIST") },
-                    onBlockedConfigClick = { navigateTo("BLOCKED_LIST") },
                     onPremiumClick = { navigateTo("PREMIUM") }
                 )
             }
@@ -450,16 +415,7 @@ fun DashboardScreen(
             "DOMAIN_LIST" -> {
                 androidx.activity.compose.BackHandler { navigateBack() }
                 DomainListScreen(
-                    onBackClick = { navigateBack() },
-                    isBlocklist = false
-                )
-            }
-
-            "BLOCKED_LIST" -> {
-                androidx.activity.compose.BackHandler { navigateBack() }
-                DomainListScreen(
-                    onBackClick = { navigateBack() },
-                    isBlocklist = true
+                    onBackClick = { navigateBack() }
                 )
             }
 
@@ -485,6 +441,7 @@ fun DashboardScreen(
                 onWhitelistClick = { navigateTo("APP_LIST") },
                 onReloadFilters = {},
                 onLogClick = { onDomainToggle(it) },
+                onDomainManagerClick = { navigateTo("DOMAIN_LIST") }, // Added callback
                 onAppClick = { packageName ->
                     onWhitelistApp(packageName)
                     excludedApps = preferences.getExcludedApps()

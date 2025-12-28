@@ -65,7 +65,8 @@ fun HomeView(
     onWhitelistClick: () -> Unit,
     onReloadFilters: () -> Unit,
     onLogClick: (String) -> Unit,
-    onAppClick: (String) -> Unit
+    onAppClick: (String) -> Unit,
+    onDomainManagerClick: () -> Unit // Added callback
 ) {
     val scrollState = rememberScrollState()
 
@@ -110,7 +111,11 @@ fun HomeView(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
                 modifier = Modifier
-                    .border(1.dp, if (isRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error, AdShieldTheme.shapes.container)
+                    .border(
+                        1.dp,
+                        if (isRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                        AdShieldTheme.shapes.container
+                    )
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 Box(
@@ -168,7 +173,7 @@ fun HomeView(
                             value = timeString,
                             progress = (timeMs / (5 * 60 * 1000f)).coerceIn(0.01f, 1f),
                             progressSegments = 3,
-                            iconVector = androidx.compose.material.icons.Icons.Default.Speed, // Changed from Speed to Bolt
+                            iconVector = androidx.compose.material.icons.Icons.Default.Speed,
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight()
@@ -228,19 +233,20 @@ fun HomeView(
             // PRIORITY 5: TOP LISTS (Details)
 
             Spacer(modifier = Modifier.height(24.dp))
-            Row(
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Box(Modifier.weight(1f)) {
+                Box(Modifier.fillMaxWidth()) {
                     CyberTopList(
                         title = "TOP APPS",
                         data = VpnStats.appBlockedStatsMap,
                         onAllowClick = { onAppClick(it) },
-                        isWhitelisted = { pkg -> excludedApps.contains(pkg) } // Use State
+                        isWhitelisted = { pkg -> excludedApps.contains(pkg) }, // Use State
+                        onSettingsClick = onWhitelistClick // Go to App Whitelist
                     )
                 }
-                Box(Modifier.weight(1f)) {
+                Box(Modifier.fillMaxWidth()) {
                     CyberTopList(
                         title = "TOP DOMAINS",
                         data = VpnStats.domainBlockedStatsMap,
@@ -248,7 +254,8 @@ fun HomeView(
                         isWhitelisted = { domain ->
                             val tick = filterUpdateTrigger // Force Recomp reading
                             FilterEngine.checkDomain(domain) == FilterEngine.FilterStatus.ALLOWED_USER
-                        }
+                        },
+                        onSettingsClick = onDomainManagerClick // Go to Domain Manager
                     )
                 }
             }
@@ -374,7 +381,6 @@ fun SettingsView(
     onBackClick: () -> Unit,
     onWhitelistClick: () -> Unit,
     onDomainConfigClick: () -> Unit,
-    onBlockedConfigClick: () -> Unit,
     onPremiumClick: () -> Unit
 ) {
     val context = LocalContext.current
@@ -533,7 +539,11 @@ fun SettingsView(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, MaterialTheme.colorScheme.secondary, AdShieldTheme.shapes.setting)
+                        .border(
+                            1.dp,
+                            MaterialTheme.colorScheme.secondary,
+                            AdShieldTheme.shapes.setting
+                        )
                         .padding(16.dp)
                 ) {
                     if (currentUser != null) {
@@ -597,7 +607,10 @@ fun SettingsView(
                         .fillMaxWidth()
                         .background(
                             brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
-                                colors = listOf(com.example.adshield.ui.theme.PremiumStart, com.example.adshield.ui.theme.PremiumEnd)
+                                colors = listOf(
+                                    com.example.adshield.ui.theme.PremiumStart,
+                                    com.example.adshield.ui.theme.PremiumEnd
+                                )
                             ),
                             shape = AdShieldTheme.shapes.banner
                         )
@@ -666,7 +679,7 @@ fun SettingsView(
 
                 Spacer(Modifier.height(16.dp))
 
-                // Item 2: Domain Config
+                // Item 2: Domain Manager (Unified)
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -685,12 +698,12 @@ fun SettingsView(
                     ) {
                         Column {
                             Text(
-                                "DOMAIN CONFIG",
+                                "DOMAIN MANAGER",
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                "Manage allowed domains",
+                                "Manage allowed & banned domains",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -699,45 +712,6 @@ fun SettingsView(
                             Icons.AutoMirrored.Filled.List,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(16.dp))
-
-                // Item 3: Blocked Config (User Banned)
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .border(
-                            1.dp,
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                            AdShieldTheme.shapes.setting
-                        )
-                        .clickable(onClick = onBlockedConfigClick)
-                        .padding(16.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column {
-                            Text(
-                                "BLOCKED CONFIG",
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                "Manage banned domains",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Icon(
-                            Icons.Default.Close,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error
                         )
                     }
                 }

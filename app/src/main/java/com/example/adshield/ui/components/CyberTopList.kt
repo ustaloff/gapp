@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -34,7 +35,8 @@ fun CyberTopList(
     title: String,
     data: Map<String, Int>,
     onAllowClick: (String) -> Unit,
-    isWhitelisted: (String) -> Boolean // Logic to check status
+    isWhitelisted: (String) -> Boolean, // Logic to check status
+    onSettingsClick: (() -> Unit)? = null
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val packageManager = remember(context) { context.packageManager }
@@ -50,12 +52,29 @@ fun CyberTopList(
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
             .padding(12.dp)
     ) {
-        Text(
-            title,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                title,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            if (onSettingsClick != null) {
+                Icon(
+                    Icons.Default.Settings,
+                    contentDescription = "Settings",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                    modifier = Modifier
+                        .size(16.dp)
+                        .clickable(onClick = onSettingsClick)
+                )
+            }
+        }
         Spacer(Modifier.height(8.dp))
 
         if (data.isEmpty()) {
@@ -100,13 +119,9 @@ fun CyberTopList(
                 val isActive = isWhitelisted(packageName)
                 val statusIcon = Icons.Filled.Lock
                 val tint =
-                    if (isActive) com.example.adshield.ui.theme.NeonGreen else androidx.compose.ui.graphics.Color(
-                        0xFFFF5252
-                    )
+                    if (isActive) androidx.compose.ui.graphics.Color(0xFFFF5252) else com.example.adshield.ui.theme.NeonGreen
                 val bgBorder =
-                    if (isActive) com.example.adshield.ui.theme.NeonGreen.copy(alpha = 0.5f) else androidx.compose.ui.graphics.Color(
-                        0xFFFF5252
-                    ).copy(alpha = 0.5f)
+                    if (isActive) androidx.compose.ui.graphics.Color(0xFFFF5252).copy(alpha = 0.5f) else com.example.adshield.ui.theme.NeonGreen.copy(alpha = 0.5f)
 
                 Row(
                     modifier = Modifier
@@ -121,7 +136,7 @@ fun CyberTopList(
                             bitmap = appIcon!!,
                             contentDescription = null,
                             modifier = Modifier
-                                .size(32.dp)
+                                .size(24.dp)
                                 .clip(AdShieldTheme.shapes.icon)
                         )
                     } else {
@@ -130,7 +145,7 @@ fun CyberTopList(
                             imageVector = Icons.Default.CheckCircle, // Generic
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(24.dp)
                         )
                     }
 

@@ -3,6 +3,8 @@ package com.example.adshield.data
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -160,32 +162,34 @@ object VpnStats {
         status: com.example.adshield.filter.FilterEngine.FilterStatus,
         appName: String? = null
     ) {
-        statsLock.withLock {
-            if (status == com.example.adshield.filter.FilterEngine.FilterStatus.BLOCKED) {
-                blockedCount.value++
-                dataSavedBytes.value += 30 * 1024
-                timeSavedMs.value += 300
-                checkDayReset(context)
-                dailyBuckets[0]++
-                saveStats(context)
-                updatePublicMetrics()
-                updateHistory()
-                _blockedHistory[59]++
-                blocksPerMinute.value = _blockedHistory[59]
-            } else {
-                totalCount.value++
-                updateHistory()
-            }
-
-            // Update Domain Stats
-            if (status == com.example.adshield.filter.FilterEngine.FilterStatus.BLOCKED) {
-                domainBlockedStatsMap[domain] = (domainBlockedStatsMap[domain] ?: 0) + 1
-                if (appName != null) {
-                    appBlockedStatsMap[appName] = (appBlockedStatsMap[appName] ?: 0) + 1
+        withContext(Dispatchers.Main) {
+            statsLock.withLock {
+                if (status == com.example.adshield.filter.FilterEngine.FilterStatus.BLOCKED) {
+                    blockedCount.value++
+                    dataSavedBytes.value += 30 * 1024
+                    timeSavedMs.value += 300
+                    checkDayReset(context)
+                    dailyBuckets[0]++
+                    saveStats(context)
+                    updatePublicMetrics()
+                    updateHistory()
+                    _blockedHistory[59]++
+                    blocksPerMinute.value = _blockedHistory[59]
+                } else {
+                    totalCount.value++
+                    updateHistory()
                 }
-            }
 
-            addLog(domain, status, appName)
+                // Update Domain Stats
+                if (status == com.example.adshield.filter.FilterEngine.FilterStatus.BLOCKED) {
+                    domainBlockedStatsMap[domain] = (domainBlockedStatsMap[domain] ?: 0) + 1
+                    if (appName != null) {
+                        appBlockedStatsMap[appName] = (appBlockedStatsMap[appName] ?: 0) + 1
+                    }
+                }
+
+                addLog(domain, status, appName)
+            }
         }
     }
 

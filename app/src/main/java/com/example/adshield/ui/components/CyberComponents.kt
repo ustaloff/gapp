@@ -118,10 +118,6 @@ fun Scanline(
 }
 
 
-
-
-
-
 @Composable
 fun CyberStatCard(
     label: String,
@@ -346,9 +342,10 @@ fun CyberMiniPowerButton(
         }
 
         // 2. Rotating Dash Rings (Mini)
-        Canvas(modifier = Modifier
-            .fillMaxSize()
-            .graphicsLayer { rotationZ = rotation }) {
+        Canvas(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer { rotationZ = rotation }) {
             drawCircle(
                 color = primaryColor.copy(alpha = 0.3f),
                 radius = size.minDimension / 2,
@@ -565,15 +562,6 @@ fun CyberGraphSection(data: List<Int>, bpm: Int, isRunning: Boolean) {
         ) {
             // Left: Title
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .background(
-                            if (isRunning) threatColor.copy(alpha = pulseAlpha) else offlineColor,
-                            CircleShape
-                        )
-                )
-                Spacer(Modifier.width(8.dp))
                 Text(
                     text = if (isRunning) "TRAFFIC ANALYSIS // LIVE" else "TRAFFIC ANALYSIS // OFFLINE",
                     style = MaterialTheme.typography.labelSmall,
@@ -581,6 +569,17 @@ fun CyberGraphSection(data: List<Int>, bpm: Int, isRunning: Boolean) {
                     color = if (isRunning) primaryColor else offlineColor,
                     fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                     letterSpacing = 1.sp
+                )
+
+                Spacer(Modifier.width(8.dp))
+
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .background(
+                            if (isRunning) threatColor.copy(alpha = pulseAlpha) else offlineColor,
+                            CircleShape
+                        )
                 )
             }
         }
@@ -598,9 +597,11 @@ fun CyberGraphSection(data: List<Int>, bpm: Int, isRunning: Boolean) {
                     AdShieldTheme.shapes.screen
                 )
         ) {
-            Canvas(modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 4.dp, vertical = 8.dp)) {
+            Canvas(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 4.dp, vertical = 8.dp)
+            ) {
                 val width = size.width
                 val height = size.height
                 // Use all 60 points or whatever is available, but limit if needed
@@ -882,13 +883,21 @@ fun CyberTerminal(
                         com.example.adshield.filter.FilterEngine.FilterStatus.BLOCKED ->
                             Triple(com.example.adshield.ui.theme.ErrorRed, "BLK", true) // Red
                         com.example.adshield.filter.FilterEngine.FilterStatus.BLOCKED_USER ->
-                            Triple(com.example.adshield.ui.theme.WarningOrange, "BAN", true) // Orange (Manual Ban)
+                            Triple(
+                                com.example.adshield.ui.theme.WarningOrange,
+                                "BAN",
+                                true
+                            ) // Orange (Manual Ban)
                         com.example.adshield.filter.FilterEngine.FilterStatus.ALLOWED_USER ->
                             Triple(com.example.adshield.ui.theme.NeonGreen, "USR", true) // Green
                         com.example.adshield.filter.FilterEngine.FilterStatus.ALLOWED_SYSTEM ->
                             Triple(Color.Gray, "SYS", false) // Gray, Non-interactive
                         com.example.adshield.filter.FilterEngine.FilterStatus.SUSPICIOUS ->
-                            Triple(com.example.adshield.ui.theme.WarningYellow, "WRN", true) // Yellow, Warning, Clickable
+                            Triple(
+                                com.example.adshield.ui.theme.WarningYellow,
+                                "WRN",
+                                true
+                            ) // Yellow, Warning, Clickable
                         com.example.adshield.filter.FilterEngine.FilterStatus.ALLOWED_DEFAULT ->
                             Triple(Color.White, "ALW", true) // White, CAN BE BLOCKED
                     }
