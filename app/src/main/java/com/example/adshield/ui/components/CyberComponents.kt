@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.material3.*
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.scale
@@ -837,7 +839,7 @@ fun CyberTerminal(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    " [ TERMINAL SESSION ACTIVE ] ",
+                    "[ TERMINAL SESSION ACTIVE ]",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -853,100 +855,130 @@ fun CyberTerminal(
 
             Spacer(Modifier.height(8.dp))
 
-            // USE COLUMN WITH VERTICAL SCROLL instead of LazyColumn for simple cursor appending at end
-            Column(
+            // SCREEN CONTAINER (Box for layering Scanline)
+            Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .verticalScroll(listState)
                     .background(Color.Black.copy(alpha = 0.3f), AdShieldTheme.shapes.screen)
                     .border(
                         1.dp,
                         MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
                         AdShieldTheme.shapes.screen
                     )
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                    .clip(AdShieldTheme.shapes.screen) // Clip content to shape
             ) {
-                if (logs.isEmpty()) {
-                    Text(
-                        "> Initializing system...",
-                        color = MaterialTheme.colorScheme.primary,
-                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                        fontSize = 12.sp
-                    )
-                    Text(
-                        "> Waiting for traffic...",
-                        color = Color.Gray,
-                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                        fontSize = 12.sp
-                    )
-                }
-
-                logs.reversed().forEach { log ->
-                    // Determine Color and Label based on Status
-                    val (color, prefix, isClickable) = when (log.status) {
-                        com.example.adshield.filter.FilterEngine.FilterStatus.BLOCKED ->
-                            Triple(com.example.adshield.ui.theme.ErrorRed, "BLK", true) // Red
-                        com.example.adshield.filter.FilterEngine.FilterStatus.BLOCKED_USER ->
-                            Triple(
-                                com.example.adshield.ui.theme.WarningOrange,
-                                "BAN",
-                                true
-                            ) // Orange (Manual Ban)
-                        com.example.adshield.filter.FilterEngine.FilterStatus.ALLOWED_USER ->
-                            Triple(com.example.adshield.ui.theme.NeonGreen, "USR", true) // Green
-                        com.example.adshield.filter.FilterEngine.FilterStatus.ALLOWED_SYSTEM ->
-                            Triple(Color.Gray, "SYS", false) // Gray, Non-interactive
-                        com.example.adshield.filter.FilterEngine.FilterStatus.SUSPICIOUS ->
-                            Triple(
-                                com.example.adshield.ui.theme.WarningYellow,
-                                "WRN",
-                                true
-                            ) // Yellow, Warning, Clickable
-                        com.example.adshield.filter.FilterEngine.FilterStatus.ALLOWED_DEFAULT ->
-                            Triple(Color.White, "ALW", true) // White, CAN BE BLOCKED
-                    }
-
-                    val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.US)
-
-                    Row(
-                        modifier = Modifier
-                            .padding(vertical = 2.dp)
-                            .clickable(enabled = isClickable) { onLogClick(log.domain) }
-                    ) {
-                        Text(
-                            text = "> ${timeFormat.format(Date(log.timestamp))} ",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                            fontSize = 10.sp
-                        )
-                        Text(
-                            text = "[$prefix] ",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = color,
-                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = log.domain,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (isClickable) MaterialTheme.colorScheme.onSurface else Color.Gray,
-                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                            fontSize = 10.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-
-                // BLINKING CURSOR
-                Box(
+                // USE COLUMN WITH VERTICAL SCROLL instead of LazyColumn for simple cursor appending at end
+                Column(
                     modifier = Modifier
-                        .padding(top = 4.dp)
-                        .size(8.dp, 14.dp)
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = cursorAlpha))
+                        .fillMaxSize()
+                        .verticalScroll(listState)
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    if (logs.isEmpty()) {
+                        Text(
+                            "> Initializing system...",
+                            color = MaterialTheme.colorScheme.primary,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                            fontSize = 12.sp
+                        )
+                        Text(
+                            "> Waiting for traffic...",
+                            color = Color.Gray,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                            fontSize = 12.sp
+                        )
+                    }
+
+                    logs.reversed().forEach { log ->
+                        // Determine Color and Label based on Status
+                        val (color, prefix, isClickable) = when (log.status) {
+                            com.example.adshield.filter.FilterEngine.FilterStatus.BLOCKED ->
+                                Triple(com.example.adshield.ui.theme.ErrorRed, "BLK", true) // Red
+                            com.example.adshield.filter.FilterEngine.FilterStatus.BLOCKED_USER ->
+                                Triple(
+                                    com.example.adshield.ui.theme.WarningOrange,
+                                    "BAN",
+                                    true
+                                ) // Orange (Manual Ban)
+                            com.example.adshield.filter.FilterEngine.FilterStatus.ALLOWED_USER ->
+                                Triple(
+                                    com.example.adshield.ui.theme.NeonGreen,
+                                    "USR",
+                                    true
+                                ) // Green
+                            com.example.adshield.filter.FilterEngine.FilterStatus.ALLOWED_SYSTEM ->
+                                Triple(Color.Gray, "SYS", false) // Gray, Non-interactive
+                            com.example.adshield.filter.FilterEngine.FilterStatus.SUSPICIOUS ->
+                                Triple(
+                                    com.example.adshield.ui.theme.WarningYellow,
+                                    "WRN",
+                                    true
+                                ) // Yellow, Warning, Clickable
+                            com.example.adshield.filter.FilterEngine.FilterStatus.ALLOWED_DEFAULT ->
+                                Triple(Color.White, "ALW", true) // White, CAN BE BLOCKED
+                        }
+
+                        val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.US)
+
+                        Row(
+                            modifier = Modifier
+                                .padding(vertical = 2.dp)
+                                .clickable(enabled = isClickable) { onLogClick(log.domain) }
+                        ) {
+                            Text(
+                                text = "> ${timeFormat.format(Date(log.timestamp))} ",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                fontSize = 10.sp
+                            )
+                            Text(
+                                text = "[$prefix] ",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = color,
+                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = log.domain,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (isClickable) MaterialTheme.colorScheme.onSurface else Color.Gray,
+                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                fontSize = 10.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+
+                    // BLINKING CURSOR
+                    Box(
+                        modifier = Modifier
+                            .padding(top = 4.dp)
+                            .size(8.dp, 14.dp)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = cursorAlpha))
+                    )
+                }
+
+                // Scanline Effect (Overlay only on screen)
+                Scanline(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.03f)
+                )
+            }
+
+            Spacer(Modifier.height(4.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                Text(
+                    "Tap any entry to manage domain.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                 )
             }
         }

@@ -75,6 +75,7 @@ fun CyberTopList(
                 )
             }
         }
+
         Spacer(Modifier.height(8.dp))
 
         if (data.isEmpty()) {
@@ -121,7 +122,8 @@ fun CyberTopList(
                 val tint =
                     if (isActive) androidx.compose.ui.graphics.Color(0xFFFF5252) else com.example.adshield.ui.theme.NeonGreen
                 val bgBorder =
-                    if (isActive) androidx.compose.ui.graphics.Color(0xFFFF5252).copy(alpha = 0.5f) else com.example.adshield.ui.theme.NeonGreen.copy(alpha = 0.5f)
+                    if (isActive) androidx.compose.ui.graphics.Color(0xFFFF5252)
+                        .copy(alpha = 0.5f) else com.example.adshield.ui.theme.NeonGreen.copy(alpha = 0.5f)
 
                 Row(
                     modifier = Modifier
