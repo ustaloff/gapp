@@ -98,7 +98,7 @@ fun NeonCard(
             )
             .border(
                 width = 1.dp,
-                color = borderColor.copy(alpha = 0.5f), // Solid border, slight alpha
+                color = borderColor.copy(alpha = 0.2f), // Solid border, slight alpha
                 shape = shape
             )
             .padding(1.dp) // Inner padding for border

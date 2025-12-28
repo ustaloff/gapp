@@ -552,7 +552,7 @@ fun CyberGraphSection(data: List<Int>, bpm: Int, isRunning: Boolean) {
                 AdShieldTheme.shapes.container
             )
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
-            .padding(16.dp)
+            .padding(12.dp)
     ) {
         // HUD Header
         Row(
@@ -830,7 +830,7 @@ fun CyberTerminal(
         borderColor = MaterialTheme.colorScheme.primary,
         shape = AdShieldTheme.shapes.container
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(12.dp)) {
             // ... Header ...
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -850,10 +850,8 @@ fun CyberTerminal(
                     modifier = Modifier.clickable { autoScrollEnabled = !autoScrollEnabled }
                 )
             }
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = 8.dp),
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
-            )
+
+            Spacer(Modifier.height(8.dp))
 
             // USE COLUMN WITH VERTICAL SCROLL instead of LazyColumn for simple cursor appending at end
             Column(
@@ -861,6 +859,13 @@ fun CyberTerminal(
                     .weight(1f)
                     .fillMaxWidth()
                     .verticalScroll(listState)
+                    .background(Color.Black.copy(alpha = 0.3f), AdShieldTheme.shapes.screen)
+                    .border(
+                        1.dp,
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                        AdShieldTheme.shapes.screen
+                    )
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
                 if (logs.isEmpty()) {
                     Text(
