@@ -185,7 +185,7 @@ fun CyberGraphSection(data: List<Int>, bpm: Int, isRunning: Boolean) {
                 }
             }
         }
-        
+
         Spacer(Modifier.height(12.dp))
 
         // Footer: Analysis Stats
@@ -199,15 +199,18 @@ fun CyberGraphSection(data: List<Int>, bpm: Int, isRunning: Boolean) {
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = "SYSTEM LOAD: $level",
+                    //text = "SYSTEM LOAD: $level",
+                    text = if (isRunning) "THREAT: $level" else "SYSTEM: STANDBY",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = threatColor,
                     fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                     fontSize = 10.sp
                 )
                 Spacer(Modifier.width(8.dp))
                 // Simple stacked bar for load
-                Row(modifier = Modifier.height(4.dp).width(40.dp)) {
+                Row(modifier = Modifier
+                    .height(4.dp)
+                    .width(40.dp)) {
                     val segments = 4
                     val filled = (progress * segments).toInt().coerceIn(0, segments)
                     for (i in 0 until segments) {
@@ -231,7 +234,8 @@ fun CyberGraphSection(data: List<Int>, bpm: Int, isRunning: Boolean) {
                 style = MaterialTheme.typography.labelSmall,
                 color = if (isRunning) primaryColor else offlineColor,
                 fontWeight = FontWeight.Bold,
-                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                fontSize = 10.sp
             )
         }
     }

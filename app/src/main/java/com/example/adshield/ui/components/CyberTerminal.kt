@@ -201,7 +201,7 @@ fun CyberTerminal(
                 horizontalArrangement = Arrangement.End
             ) {
                 Text(
-                    "Tap any entry to manage domain.",
+                    "Tap any entry to manage domain",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                 )
