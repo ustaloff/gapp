@@ -1,19 +1,89 @@
 package com.example.adshield.ui.components
 
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.adshield.ui.theme.AdShieldTheme
+
+// Helper for type conversion in Canvas loop
+fun classWithVal(v: Float) = v
+
+@Composable
+fun GridBackground(
+    modifier: Modifier = Modifier,
+    gridSize: Dp = 20.dp,
+    gridColor: Color = com.example.adshield.ui.theme.NeonGreen.copy(alpha = 0.05f)
+) {
+    Canvas(modifier = modifier.fillMaxSize()) {
+        val canvasWidth = size.width
+        val canvasHeight = size.height
+        val step = gridSize.toPx()
+
+        // Draw vertical lines
+        for (x in 0..classWithVal(canvasWidth / step).toInt()) {
+            val xPos = x * step
+            drawLine(
+                color = gridColor,
+                start = Offset(xPos, 0f),
+                end = Offset(xPos, canvasHeight),
+                strokeWidth = 1f
+            )
+        }
+
+        // Draw horizontal lines
+        for (y in 0..classWithVal(canvasHeight / step).toInt()) {
+            val yPos = y * step
+            drawLine(
+                color = gridColor,
+                start = Offset(0f, yPos),
+                end = Offset(canvasWidth, yPos),
+                strokeWidth = 1f
+            )
+        }
+    }
+}
+
+@Composable
+fun Scanline(
+    modifier: Modifier = Modifier,
+    color: Color = Color.Black.copy(alpha = 0.1f)
+) {
+    val infiniteTransition = rememberInfiniteTransition()
+    val offsetY by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(4000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        )
+    )
+
+    Canvas(modifier = modifier.fillMaxSize()) {
+        val y = size.height * offsetY
+        drawRect(
+            brush = Brush.verticalGradient(
+                colors = listOf(Color.Transparent, color, Color.Transparent),
+                startY = y - 50f,
+                endY = y + 50f
+            )
+        )
+    }
+}
 
 @Composable
 fun GlitchText(
@@ -82,7 +152,7 @@ fun GlitchText(
 fun NeonCard(
     modifier: Modifier = Modifier,
     borderColor: Color = MaterialTheme.colorScheme.primary,
-    shape: androidx.compose.ui.graphics.Shape = AdShieldTheme.shapes.container,
+    shape: Shape = AdShieldTheme.shapes.container,
     content: @Composable BoxScope.() -> Unit
 ) {
     Box(

@@ -43,6 +43,7 @@ import com.example.adshield.ui.components.* // Import CyberComponents
 import com.example.adshield.data.AppPreferences
 import com.example.adshield.data.UserRepository
 import com.example.adshield.ui.* // Import Screens
+import com.example.adshield.ui.screens.* // Import Refactored Screens
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.geometry.Offset
