@@ -417,7 +417,17 @@ fun DashboardScreen(
             "APP_LIST" -> {
                 androidx.activity.compose.BackHandler { navigateBack() }
                 com.example.adshield.ui.AppListScreen(
-                    onBackClick = { navigateBack() }
+                    onBackClick = { navigateBack() },
+                    onAppToggle = { pkg, isExcluded ->
+                        // If isExcluded == true, we want to EXCLUDE it (add to list).
+                        // MainActivity's onWhitelistApp toggles state smartly based on current state.
+                        // Let's check MainActivity logic again.
+                        // onWhitelistApp checks: if in list -> remove (protect); else -> add (whitelist).
+                        // so we can just call onWhitelistApp(pkg) directly as it acts as a toggle.
+                        // However, to be safe with the 'isExcluded' boolean from UI, we should ensure we match intent.
+                        onWhitelistApp(pkg)
+                        excludedApps = preferences.getExcludedApps() // Update Dashboard state
+                    }
                 )
             }
 
