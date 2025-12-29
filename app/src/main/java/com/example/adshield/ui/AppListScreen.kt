@@ -81,11 +81,11 @@ fun AppListScreen(
                         .border(
                             1.dp,
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                            AdShieldTheme.shapes.back
+                            MaterialTheme.shapes.medium
                         )
                         .background(
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            AdShieldTheme.shapes.back
+                            MaterialTheme.shapes.medium
                         )
                 ) {
                     Icon(
@@ -137,7 +137,7 @@ fun AppListScreen(
                     focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.1f),
                     unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.1f)
                 ),
-                shape = AdShieldTheme.shapes.input,
+                shape = MaterialTheme.shapes.small,
                 singleLine = true
             )
 
@@ -168,7 +168,7 @@ fun AppListScreen(
                         selectedContainerColor = MaterialTheme.colorScheme.primary,
                         selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                     ),
-                    shape = AdShieldTheme.shapes.button
+                    shape = MaterialTheme.shapes.small
                 )
 
                 // Right: System Filter
@@ -187,7 +187,7 @@ fun AppListScreen(
                         selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
                         selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
                     ),
-                    shape = AdShieldTheme.shapes.button
+                    shape = MaterialTheme.shapes.small
                 )
             }
 
@@ -267,7 +267,7 @@ fun AppListItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, borderColor, AdShieldTheme.shapes.entity)
+            .border(1.dp, borderColor, MaterialTheme.shapes.extraSmall)
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.05f))
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -282,7 +282,7 @@ fun AppListItem(
             contentDescription = null,
             modifier = Modifier
                 .size(40.dp)
-                .clip(AdShieldTheme.shapes.icon),
+                .clip(MaterialTheme.shapes.extraLarge),
             alpha = alpha
         )
 

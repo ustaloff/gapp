@@ -41,8 +41,8 @@ fun CyberGraphSection(data: List<Int>, bpm: Int, isRunning: Boolean) {
     // Threat Logic
     val (level, threatColor) = when {
         !isRunning -> "OFFLINE" to offlineColor.copy(alpha = 0.5f)
-        bpm > 20 -> "HIGH" to com.example.adshield.ui.theme.ErrorRed // Red
-        bpm > 5 -> "MED" to com.example.adshield.ui.theme.WarningOrange // Orange
+        bpm > 20 -> "HIGH" to MaterialTheme.colorScheme.error // Red
+        bpm > 5 -> "MED" to AdShieldTheme.colors.warning // Orange
         else -> "LOW" to primaryColor // Green/Primary
     }
     val progress = if (!isRunning) 0f else when {
@@ -56,7 +56,7 @@ fun CyberGraphSection(data: List<Int>, bpm: Int, isRunning: Boolean) {
             .border(
                 1.dp,
                 (if (isRunning) primaryColor else offlineColor).copy(alpha = 0.2f),
-                AdShieldTheme.shapes.container
+                MaterialTheme.shapes.small
             )
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
             .padding(12.dp)
@@ -97,11 +97,11 @@ fun CyberGraphSection(data: List<Int>, bpm: Int, isRunning: Boolean) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(120.dp) // Taller graph
-                .background(Color.Black.copy(alpha = 0.3f), AdShieldTheme.shapes.screen)
+                .background(Color.Black.copy(alpha = 0.3f), MaterialTheme.shapes.extraSmall)
                 .border(
                     1.dp,
                     (if (isRunning) primaryColor else offlineColor).copy(alpha = 0.1f),
-                    AdShieldTheme.shapes.screen
+                    MaterialTheme.shapes.extraSmall
                 )
         ) {
             Canvas(

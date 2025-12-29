@@ -55,7 +55,7 @@ fun CyberTerminal(
             .fillMaxWidth()
             .height(200.dp),
         borderColor = MaterialTheme.colorScheme.primary,
-        shape = AdShieldTheme.shapes.container
+        shape = MaterialTheme.shapes.small
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             // ... Header ...
@@ -85,13 +85,13 @@ fun CyberTerminal(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .background(Color.Black.copy(alpha = 0.3f), AdShieldTheme.shapes.screen)
+                    .background(Color.Black.copy(alpha = 0.3f), MaterialTheme.shapes.extraSmall)
                     .border(
                         1.dp,
                         MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                        AdShieldTheme.shapes.screen
+                        MaterialTheme.shapes.extraSmall
                     )
-                    .clip(AdShieldTheme.shapes.screen) // Clip content to shape
+                    .clip(MaterialTheme.shapes.extraSmall) // Clip content to shape
             ) {
                 // USE COLUMN WITH VERTICAL SCROLL instead of LazyColumn for simple cursor appending at end
                 Column(
@@ -119,24 +119,24 @@ fun CyberTerminal(
                         // Determine Color and Label based on Status
                         val (color, prefix, isClickable) = when (log.status) {
                             com.example.adshield.filter.FilterEngine.FilterStatus.BLOCKED ->
-                                Triple(com.example.adshield.ui.theme.ErrorRed, "BLK", true) // Red
+                                Triple(MaterialTheme.colorScheme.error, "BLK", true) // Blocked
                             com.example.adshield.filter.FilterEngine.FilterStatus.BLOCKED_USER ->
                                 Triple(
-                                    com.example.adshield.ui.theme.WarningOrange,
+                                    AdShieldTheme.colors.warning,
                                     "BAN",
                                     true
                                 ) // Orange (Manual Ban)
                             com.example.adshield.filter.FilterEngine.FilterStatus.ALLOWED_USER ->
                                 Triple(
-                                    com.example.adshield.ui.theme.NeonGreen,
+                                    MaterialTheme.colorScheme.primary,
                                     "USR",
                                     true
-                                ) // Green
+                                ) // User Allowed
                             com.example.adshield.filter.FilterEngine.FilterStatus.ALLOWED_SYSTEM ->
                                 Triple(Color.Gray, "SYS", false) // Gray, Non-interactive
                             com.example.adshield.filter.FilterEngine.FilterStatus.SUSPICIOUS ->
                                 Triple(
-                                    com.example.adshield.ui.theme.WarningYellow,
+                                    AdShieldTheme.colors.warning,
                                     "WRN",
                                     true
                                 ) // Yellow, Warning, Clickable
@@ -201,7 +201,7 @@ fun CyberTerminal(
                 horizontalArrangement = Arrangement.End
             ) {
                 Text(
-                    "Tap any entry to manage domain",
+                    "[Tap any entry]",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                 )

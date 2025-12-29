@@ -47,14 +47,20 @@ fun CyberTopList(
             .border(
                 1.dp,
                 MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                AdShieldTheme.shapes.container
+                MaterialTheme.shapes.small
             )
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.background)
+                .background(
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
+                    MaterialTheme.shapes.small.copy(
+                        bottomStart = androidx.compose.foundation.shape.CornerSize(0.dp),
+                        bottomEnd = androidx.compose.foundation.shape.CornerSize(0.dp)
+                    )
+                )
                 .padding(12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
@@ -124,10 +130,10 @@ fun CyberTopList(
                     val isActive = isWhitelisted(packageName)
                     val statusIcon = Icons.Filled.Lock
                     val tint =
-                        if (isActive) androidx.compose.ui.graphics.Color(0xFFFF5252) else com.example.adshield.ui.theme.NeonGreen
+                        if (isActive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                     val bgBorder =
-                        if (isActive) androidx.compose.ui.graphics.Color(0xFFFF5252)
-                            .copy(alpha = 0.5f) else com.example.adshield.ui.theme.NeonGreen.copy(
+                        if (isActive) MaterialTheme.colorScheme.error
+                            .copy(alpha = 0.5f) else MaterialTheme.colorScheme.primary.copy(
                             alpha = 0.5f
                         )
 
@@ -137,7 +143,7 @@ fun CyberTopList(
                             .border(
                                 1.dp,
                                 MaterialTheme.colorScheme.surface,
-                                AdShieldTheme.shapes.screen
+                                MaterialTheme.shapes.extraSmall
                             )
                             .background(MaterialTheme.colorScheme.surface)
                             .padding(vertical = 8.dp, horizontal = 8.dp),
@@ -151,7 +157,7 @@ fun CyberTopList(
                                 contentDescription = null,
                                 modifier = Modifier
                                     .size(24.dp)
-                                    .clip(AdShieldTheme.shapes.icon)
+                                    .clip(MaterialTheme.shapes.extraLarge)
                             )
                         } else {
                             // Fallback Icon
@@ -170,7 +176,7 @@ fun CyberTopList(
                                 text = appName, // UPDATED: Shows Human Name
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Medium,
-                                color = if (isActive) com.example.adshield.ui.theme.NeonGreen else MaterialTheme.colorScheme.onSurface,
+                                color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace

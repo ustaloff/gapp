@@ -27,7 +27,7 @@ fun classWithVal(v: Float) = v
 fun GridBackground(
     modifier: Modifier = Modifier,
     gridSize: Dp = 20.dp,
-    gridColor: Color = com.example.adshield.ui.theme.NeonGreen.copy(alpha = 0.05f)
+    gridColor: Color = MaterialTheme.colorScheme.primary.copy(alpha = 0.05f) // Theme aware!
 ) {
     Canvas(modifier = modifier.fillMaxSize()) {
         val canvasWidth = size.width
@@ -61,7 +61,7 @@ fun GridBackground(
 @Composable
 fun Scanline(
     modifier: Modifier = Modifier,
-    color: Color = Color.Black.copy(alpha = 0.1f)
+    color: Color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f) // Black/White based on theme
 ) {
     val infiniteTransition = rememberInfiniteTransition()
     val offsetY by infiniteTransition.animateFloat(
@@ -113,7 +113,7 @@ fun GlitchText(
                 0.2f at 100 // Quick glitch
                 1f at 200
                 1f at 2500
-                0.5f at 2600
+                1f at 2600
                 1f at 3000
             },
             repeatMode = RepeatMode.Restart
@@ -121,11 +121,11 @@ fun GlitchText(
     )
 
     Box(modifier = modifier) {
-        // Ghost text (Green offset)
+        // Ghost text (Primary Color offset)
         Text(
             text = text,
             style = style,
-            color = com.example.adshield.ui.theme.NeonGreen.copy(alpha = 0.5f),
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), // Theme aware
             modifier = Modifier.offset(x = (offset * 1.5).dp, y = 0.dp),
             fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
         )
@@ -133,7 +133,7 @@ fun GlitchText(
         Text(
             text = text,
             style = style,
-            color = Color.White.copy(alpha = 0.3f), // White noise instead of purple
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f), // White noise
             modifier = Modifier.offset(x = (-offset).dp, y = (offset * 0.5).dp),
             fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
         )
@@ -152,7 +152,7 @@ fun GlitchText(
 fun NeonCard(
     modifier: Modifier = Modifier,
     borderColor: Color = MaterialTheme.colorScheme.primary,
-    shape: Shape = AdShieldTheme.shapes.container,
+    shape: Shape = MaterialTheme.shapes.small,
     content: @Composable BoxScope.() -> Unit
 ) {
     Box(

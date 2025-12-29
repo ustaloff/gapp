@@ -37,9 +37,9 @@ fun CyberToast(
     modifier: Modifier = Modifier
 ) {
     val typeColor = when (type) {
-        CyberToastType.SUCCESS -> com.example.adshield.ui.theme.NeonGreen // Green
-        CyberToastType.ERROR -> com.example.adshield.ui.theme.ErrorRed // Red
-        CyberToastType.INFO -> MaterialTheme.colorScheme.primary // Cyan
+        CyberToastType.SUCCESS -> AdShieldTheme.colors.success // Green
+        CyberToastType.ERROR -> MaterialTheme.colorScheme.error // Error (Red) - Sticking to standard Error
+        CyberToastType.INFO -> AdShieldTheme.colors.info // Info (Yellow/Gold)
     }
 
     val icon = when (type) {

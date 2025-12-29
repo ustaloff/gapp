@@ -18,7 +18,7 @@ fun CyberFilterCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = AdShieldTheme.shapes.container,
+        shape = MaterialTheme.shapes.small,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         ),

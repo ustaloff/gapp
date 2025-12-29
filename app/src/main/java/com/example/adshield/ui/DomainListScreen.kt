@@ -96,11 +96,11 @@ fun DomainListScreen(
                         .border(
                             1.dp,
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                            AdShieldTheme.shapes.back
+                            MaterialTheme.shapes.medium
                         )
                         .background(
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            AdShieldTheme.shapes.back
+                            MaterialTheme.shapes.medium
                         )
                 ) {
                     Icon(
@@ -152,7 +152,7 @@ fun DomainListScreen(
                     focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.1f),
                     unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.1f)
                 ),
-                shape = AdShieldTheme.shapes.input,
+                shape = MaterialTheme.shapes.small,
                 singleLine = true
             )
 
@@ -181,7 +181,7 @@ fun DomainListScreen(
                         containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.1f),
                         labelColor = MaterialTheme.colorScheme.onSurface
                     ),
-                    shape = AdShieldTheme.shapes.button,
+                    shape = MaterialTheme.shapes.small,
                     border = FilterChipDefaults.filterChipBorder(
                         borderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
                         enabled = true,
@@ -210,7 +210,7 @@ fun DomainListScreen(
                         containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.1f),
                         labelColor = MaterialTheme.colorScheme.onSurface
                     ),
-                    shape = AdShieldTheme.shapes.button,
+                    shape = MaterialTheme.shapes.small,
                     border = FilterChipDefaults.filterChipBorder(
                         borderColor = if (currentTab == DomainTab.BLOCKED) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary.copy(
                             alpha = 0.5f
@@ -267,7 +267,7 @@ fun DomainListScreen(
                 .padding(24.dp),
             containerColor = if (currentTab == DomainTab.BLOCKED) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
             contentColor = if (currentTab == DomainTab.BLOCKED) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onPrimary,
-            shape = AdShieldTheme.shapes.add
+            shape = MaterialTheme.shapes.medium
         ) {
             Icon(Icons.Default.Add, contentDescription = "Add Domain")
         }
@@ -310,7 +310,7 @@ fun DomainItem(
             .border(
                 1.dp,
                 borderColor,
-                AdShieldTheme.shapes.entity
+                MaterialTheme.shapes.extraSmall
             )
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.05f))
             .padding(12.dp),
@@ -370,14 +370,14 @@ fun AddDomainDialog(
                     if (text.isNotBlank()) onAdd(text)
                 }),
                 modifier = Modifier.fillMaxWidth(),
-                shape = AdShieldTheme.shapes.input
+                shape = MaterialTheme.shapes.small
             )
         },
         confirmButton = {
             Button(
                 onClick = { if (text.isNotBlank()) onAdd(text) },
                 enabled = text.isNotBlank(),
-                shape = AdShieldTheme.shapes.button
+                shape = MaterialTheme.shapes.small
             ) {
                 Text("ADD")
             }
@@ -389,7 +389,7 @@ fun AddDomainDialog(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant, // Neutral Dark
                     contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                 ),
-                shape = AdShieldTheme.shapes.button
+                shape = MaterialTheme.shapes.small
             ) {
                 Text("CANCEL")
             }
@@ -397,6 +397,6 @@ fun AddDomainDialog(
         containerColor = MaterialTheme.colorScheme.surface,
         textContentColor = MaterialTheme.colorScheme.onSurface,
         titleContentColor = MaterialTheme.colorScheme.onSurface,
-        shape = AdShieldTheme.shapes.dialog
+        shape = MaterialTheme.shapes.medium
     )
 }

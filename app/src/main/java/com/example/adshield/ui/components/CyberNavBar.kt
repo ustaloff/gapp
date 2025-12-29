@@ -34,7 +34,7 @@ fun CyberNavBar(
             modifier = Modifier
                 .height(72.dp) // Height for the bar
                 .fillMaxWidth(),
-            shape = AdShieldTheme.shapes.menu, // Fully rounded pill
+            shape = MaterialTheme.shapes.extraLarge, // Fully rounded pill
             //shape = RoundedCornerShape(3.dp),
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f),
             border = BorderStroke(

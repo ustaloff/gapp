@@ -2,28 +2,57 @@ package com.example.adshield.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val NeonGreen = Color(0xFF0df259)
-val NeonGreenDark = Color(0xFF08a33b)
-val NeonGreenLight = Color(0xFF6eff8b)
+/* NEON-GREEN COLOR SCHEMA */
+//val NeonGreenPrimary = Color(0xFF0df259)
+//val NeonGreenPrimary = Color(0xFF78DBE2)
+//val NeonGreenPrimary = Color(0xFF1E90FF)
+val NeonGreenPrimary = Color(0xFF1bff80)
+val NeonGreenSecondary = Color(0xFFffffff)
+val NeonGreenSurface = Color(0xFF010d06)
 
-// Dark Theme Colors
-val BackgroundDark = Color(0xFF0D1117) // Slightly bluish black (GitHub Dark Dimmed style)
-val SurfaceDark = Color(0xFF161B22)
-val TerminalBgDark = Color(0xFF0D1117)
-val GridLineDark = NeonGreen.copy(alpha = 0.05f)
+/* Not theme colors, just for errors */
+val NeonGreenError = Color(0xFFFF5252)
+val NeonGreenWarning = Color(0xFFFFAB40)
+val NeonGreenSuccess = Color(0xFF66BB6A)
+val NeonGreenInfo = Color(0xFFFFD600)
 
-// Light Theme Colors (Keeping standard for contrast, but user likely prefers dark)
-val BackgroundLight = Color(0xFFf5f8f6)
-val SurfaceLight = Color(0xFFffffff)
-val TerminalBgLight = Color(0xFFe8f5e9)
-val GridLineLight = Color(0xFF0df259).copy(alpha = 0.1f)
+// Premium
+val NeonGreenPremium = Color(0xFFFFD700)
+val NeonGreenPremiumStart = Color(0xFF6200EE)
+val NeonGreenPremiumEnd = Color(0xFFBB86FC)
 
-val ErrorRed = Color(0xFFFF5252) // More vibrant
-val SafeGreen = Color(0xFF66BB6A)
-val WarningOrange = Color(0xFFFFAB40)
-val WarningYellow = Color(0xFFFFD600)
-val Gold = Color(0xFFFFD700)
 
-// Premium Gradient
-val PremiumStart = Color(0xFF6200EE)
-val PremiumEnd = Color(0xFFBB86FC)
+/* NEON-BLUE COLOR SCHEMA */
+val NeonBluePrimary = Color(0xFF2ecfff)
+val NeonBlueSecondary = Color(0xFFffffff)
+val NeonBlueSurface = Color(0xFF020a0d)
+
+/* Not theme colors, just for errors */
+val NeonBlueError = Color(0xFFFF5252)
+val NeonBlueWarning = Color(0xFFFFAB40)
+val NeonBlueSuccess = Color(0xFF66BB6A)
+val NeonBlueInfo = Color(0xFFFFD600)
+
+// Premium
+// Premium (Blue Theme Variant)
+val NeonBluePremium = Color(0xFF00E5FF) // Cyan accent for Blue theme
+val NeonBluePremiumStart = Color(0xFF2979FF) // Blue
+val NeonBluePremiumEnd = Color(0xFF00B0FF) // Light Blue
+
+
+/* NEON-Amber COLOR SCHEMA */
+val NeonAmberPrimary = Color(0xFFffb641)
+val NeonAmberSecondary = Color(0xFFffffff)
+val NeonAmberSurface = Color(0xFF0d0903)
+
+/* Not theme colors, just for errors */
+val NeonAmberError = Color(0xFFFF5252)
+val NeonAmberWarning = Color(0xFFFFAB40)
+val NeonAmberSuccess = Color(0xFF66BB6A)
+val NeonAmberInfo = Color(0xFFFFD600)
+
+// Premium
+// Premium (Amber Theme Variant)
+val NeonAmberPremium = Color(0xFF00E5FF) // Cyan accent for Amber theme
+val NeonAmberPremiumStart = Color(0xFF2979FF) // Amber
+val NeonAmberPremiumEnd = Color(0xFF00B0FF) // Light Amber

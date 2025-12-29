@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.adshield.data.BillingManager
+import com.example.adshield.ui.theme.AdShieldTheme
 import android.app.Activity
 
 @Composable
@@ -72,7 +73,7 @@ fun PremiumScreen(
             Icon(
                 androidx.compose.material.icons.Icons.Default.Star,
                 contentDescription = null,
-                tint = com.example.adshield.ui.theme.Gold,
+                tint = AdShieldTheme.colors.premium,
                 modifier = Modifier.size(64.dp)
             )
             Spacer(Modifier.height(16.dp))

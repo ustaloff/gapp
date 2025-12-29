@@ -13,6 +13,7 @@ class AppPreferences(context: Context) {
         private const val KEY_USER_ALLOWLIST = "user_allowlist"
         private const val KEY_USER_BLOCKLIST = "user_blocklist"
         private const val KEY_FILTER_SOURCE = "filter_source_url"
+        private const val KEY_APP_THEME = "app_theme"
     }
 
     fun getExcludedApps(): Set<String> {
@@ -84,5 +85,20 @@ class AppPreferences(context: Context) {
 
     fun setFilterSourceUrl(url: String) {
         prefs.edit().putString(KEY_FILTER_SOURCE, url).apply()
+    }
+
+    // --- Theme Configuration ---
+
+    fun getAppTheme(): com.example.adshield.ui.theme.AppTheme {
+        val themeName = prefs.getString(KEY_APP_THEME, com.example.adshield.ui.theme.AppTheme.CyberGreen.name)
+        return try {
+            com.example.adshield.ui.theme.AppTheme.valueOf(themeName ?: com.example.adshield.ui.theme.AppTheme.CyberGreen.name)
+        } catch (e: Exception) {
+            com.example.adshield.ui.theme.AppTheme.CyberGreen
+        }
+    }
+
+    fun setAppTheme(theme: com.example.adshield.ui.theme.AppTheme) {
+        prefs.edit().putString(KEY_APP_THEME, theme.name).apply()
     }
 }

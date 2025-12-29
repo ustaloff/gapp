@@ -88,7 +88,7 @@ fun HomeView(
                     .border(
                         1.dp,
                         if (isRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                        AdShieldTheme.shapes.container
+                        MaterialTheme.shapes.small
                     )
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {

@@ -24,8 +24,7 @@ fun CyberStatCard(
 ) {
     NeonCard(
         modifier = modifier,
-        borderColor = MaterialTheme.colorScheme.primary,
-        shape = AdShieldTheme.shapes.container
+        borderColor = MaterialTheme.colorScheme.primary
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -35,7 +34,7 @@ fun CyberStatCard(
                 Text(
                     text = label.uppercase(),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
                     letterSpacing = 1.5.sp
                 )
                 if (iconVector != null) {
@@ -66,8 +65,8 @@ fun CyberStatCard(
                             .fillMaxWidth()
                             .height(4.dp)
                             .background(
-                                com.example.adshield.ui.theme.NeonGreen.copy(alpha = 0.1f),
-                                AdShieldTheme.shapes.indicator
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                MaterialTheme.shapes.extraSmall
                             )
                     ) {
                         Box(
@@ -75,8 +74,8 @@ fun CyberStatCard(
                                 .fillMaxWidth(progress)
                                 .fillMaxHeight()
                                 .background(
-                                    com.example.adshield.ui.theme.NeonGreen,
-                                    AdShieldTheme.shapes.indicator
+                                    MaterialTheme.colorScheme.primary,
+                                    MaterialTheme.shapes.extraSmall
                                 )
                         )
                     }
@@ -96,10 +95,10 @@ fun CyberStatCard(
                                     .weight(1f)
                                     .fillMaxHeight()
                                     .background(
-                                        color = if (i < filledSegments) com.example.adshield.ui.theme.NeonGreen else com.example.adshield.ui.theme.NeonGreen.copy(
+                                        color = if (i < filledSegments) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(
                                             alpha = 0.1f
                                         ),
-                                        shape = AdShieldTheme.shapes.indicator
+                                        shape = MaterialTheme.shapes.extraSmall
                                     )
                             )
                         }

@@ -40,7 +40,8 @@ fun SettingsView(
     onBackClick: () -> Unit,
     onWhitelistClick: () -> Unit,
     onDomainConfigClick: () -> Unit,
-    onPremiumClick: () -> Unit
+    onPremiumClick: () -> Unit,
+    onThemeChange: (com.example.adshield.ui.theme.AppTheme) -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -105,7 +106,7 @@ fun SettingsView(
                     onValueChange = { tempUrl = it },
                     label = { Text("https://...") },
                     singleLine = true,
-                    shape = AdShieldTheme.shapes.input
+                    shape = MaterialTheme.shapes.small
                 )
             },
             confirmButton = {
@@ -115,7 +116,7 @@ fun SettingsView(
                         prefs.setFilterSourceUrl(tempUrl)
                         showUrlDialog = false
                     },
-                    shape = AdShieldTheme.shapes.button
+                    shape = MaterialTheme.shapes.small
                 ) { Text("SAVE") }
             },
             dismissButton = {
@@ -125,14 +126,11 @@ fun SettingsView(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant,
                         contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                     ),
-                    shape = AdShieldTheme.shapes.button
+                    shape = MaterialTheme.shapes.small
                 ) { Text("CANCEL") }
             },
 
-            containerColor = MaterialTheme.colorScheme.surface,
-            textContentColor = MaterialTheme.colorScheme.onSurface,
-            titleContentColor = MaterialTheme.colorScheme.onSurface,
-            shape = AdShieldTheme.shapes.dialog
+            shape = MaterialTheme.shapes.medium
         )
     }
 
@@ -162,11 +160,11 @@ fun SettingsView(
                         .border(
                             1.dp,
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                            AdShieldTheme.shapes.back
+                            MaterialTheme.shapes.medium
                         )
                         .background(
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            AdShieldTheme.shapes.back
+                            MaterialTheme.shapes.medium
                         )
                 ) {
                     Icon(
@@ -201,7 +199,7 @@ fun SettingsView(
                         .border(
                             1.dp,
                             MaterialTheme.colorScheme.secondary,
-                            AdShieldTheme.shapes.setting
+                            MaterialTheme.shapes.medium
                         )
                         .padding(16.dp)
                 ) {
@@ -242,7 +240,6 @@ fun SettingsView(
                                     signInLauncher.launch(googleSignInClient.signInIntent)
                                 },
                                 enabled = !isSigningIn,
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                             ) {
                                 if (isSigningIn) {
                                     CircularProgressIndicator(
@@ -267,11 +264,11 @@ fun SettingsView(
                         .background(
                             brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
                                 colors = listOf(
-                                    com.example.adshield.ui.theme.PremiumStart,
-                                    com.example.adshield.ui.theme.PremiumEnd
+                                    AdShieldTheme.colors.premiumStart,
+                                    AdShieldTheme.colors.premiumEnd
                                 )
                             ),
-                            shape = AdShieldTheme.shapes.banner
+                            shape = MaterialTheme.shapes.large
                         )
                         .clickable(onClick = onPremiumClick)
                         .padding(20.dp)
@@ -299,6 +296,70 @@ fun SettingsView(
 
                 Spacer(Modifier.height(24.dp))
 
+                // THEME SELECTOR
+                Text(
+                    "INTERFACE THEME",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val currentTheme =
+                        AdShieldTheme.colors // Just to access something, but we just set
+                    // Green Button
+                    Button(
+                        onClick = { onThemeChange(com.example.adshield.ui.theme.AppTheme.CyberGreen) },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            com.example.adshield.ui.theme.NeonGreenPrimary
+                        ),
+                        shape = MaterialTheme.shapes.small
+                    ) {
+                        Text("GREEN", color = com.example.adshield.ui.theme.NeonGreenPrimary)
+                    }
+
+                    // Blue Button
+                    Button(
+                        onClick = { onThemeChange(com.example.adshield.ui.theme.AppTheme.CyberBlue) },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            com.example.adshield.ui.theme.NeonBluePrimary
+                        ),
+                        shape = MaterialTheme.shapes.small
+                    ) {
+                        Text("BLUE", color = com.example.adshield.ui.theme.NeonBluePrimary)
+                    }
+
+                    // Amber Button
+                    Button(
+                        onClick = { onThemeChange(com.example.adshield.ui.theme.AppTheme.CyberAmber) },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            com.example.adshield.ui.theme.NeonAmberPrimary
+                        ),
+                        shape = MaterialTheme.shapes.small
+                    ) {
+                        Text("AMBER", color = com.example.adshield.ui.theme.NeonAmberPrimary)
+                    }
+                }
+
+                Spacer(Modifier.height(24.dp))
+
                 // Item 1: Whitelist (Renamed to APP WHITELIST)
                 Box(
                     modifier = Modifier
@@ -306,7 +367,7 @@ fun SettingsView(
                         .border(
                             1.dp,
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                            AdShieldTheme.shapes.setting
+                            MaterialTheme.shapes.medium
                         )
                         .clickable(onClick = onWhitelistClick)
                         .padding(16.dp)
@@ -345,7 +406,7 @@ fun SettingsView(
                         .border(
                             1.dp,
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                            AdShieldTheme.shapes.setting
+                            MaterialTheme.shapes.medium
                         )
                         .clickable(onClick = onDomainConfigClick)
                         .padding(16.dp)
@@ -384,7 +445,7 @@ fun SettingsView(
                         .border(
                             1.dp,
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                            AdShieldTheme.shapes.setting
+                            MaterialTheme.shapes.medium
                         )
                         .clickable(onClick = { tempUrl = currentUrl; showUrlDialog = true })
                         .padding(16.dp)

@@ -81,8 +81,14 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         com.example.adshield.filter.FilterEngine.initialize(this)
         com.example.adshield.data.BillingManager.initialize(this)
+        com.example.adshield.data.BillingManager.initialize(this)
         setContent {
-            AdShieldTheme {
+            val context = LocalContext.current
+            val prefs = remember { AppPreferences(context) }
+            // Load initial theme from prefs
+            var appTheme by remember { mutableStateOf(prefs.getAppTheme()) }
+
+            AdShieldTheme(appTheme = appTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -140,6 +146,10 @@ class MainActivity : ComponentActivity() {
                                 toastVisible = v
                                 if (m != null) toastMessage = m
                                 if (t != null) toastType = t
+                            },
+                            onThemeChange = {
+                                appTheme = it
+                                prefs.setAppTheme(it) // Save to Prefs
                             }
                         )
                     }
@@ -191,7 +201,8 @@ fun DashboardScreen(
     toastVisible: Boolean,
     toastMessage: String,
     toastType: CyberToastType,
-    onToastChange: (Boolean, String?, CyberToastType?) -> Unit
+    onToastChange: (Boolean, String?, CyberToastType?) -> Unit,
+    onThemeChange: (com.example.adshield.ui.theme.AppTheme) -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -304,8 +315,7 @@ fun DashboardScreen(
                         showDisclosureDialog = false
                         onStartClick()
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                    shape = AdShieldTheme.shapes.button
+                    shape = MaterialTheme.shapes.small
                 ) { Text("INITIALIZE", color = MaterialTheme.colorScheme.onPrimary) }
             },
 
@@ -316,16 +326,13 @@ fun DashboardScreen(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant,
                         contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                     ),
-                    shape = AdShieldTheme.shapes.button
+                    shape = MaterialTheme.shapes.small
                 ) {
                     Text("ABORT")
                 }
             },
 
-            containerColor = MaterialTheme.colorScheme.surface,
-            textContentColor = MaterialTheme.colorScheme.onSurface,
-            titleContentColor = MaterialTheme.colorScheme.onSurface,
-            shape = AdShieldTheme.shapes.dialog
+            shape = MaterialTheme.shapes.medium
         )
     }
 
@@ -402,7 +409,8 @@ fun DashboardScreen(
                     onBackClick = { navigateBack() },
                     onWhitelistClick = { navigateTo("APP_LIST") },
                     onDomainConfigClick = { navigateTo("DOMAIN_LIST") },
-                    onPremiumClick = { navigateTo("PREMIUM") }
+                    onPremiumClick = { navigateTo("PREMIUM") },
+                    onThemeChange = onThemeChange
                 )
             }
 
