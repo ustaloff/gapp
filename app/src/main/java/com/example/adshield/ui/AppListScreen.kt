@@ -34,7 +34,8 @@ import com.example.adshield.ui.theme.AdShieldTheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppListScreen(
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onAppToggle: (String, Boolean) -> Unit
 ) {
 
     val context = LocalContext.current
@@ -236,10 +237,10 @@ fun AppListScreen(
                                 isExcluded = excludedApps.contains(app.packageName),
                                 onToggle = { isChecked ->
                                     if (isChecked) {
-                                        preferences.addExcludedApp(app.packageName)
+                                        onAppToggle(app.packageName, true)
                                         excludedApps = excludedApps + app.packageName
                                     } else {
-                                        preferences.removeExcludedApp(app.packageName)
+                                        onAppToggle(app.packageName, false)
                                         excludedApps = excludedApps - app.packageName
                                     }
                                 }

@@ -97,26 +97,68 @@ fun SettingsView(
     }
 
     if (showUrlDialog) {
+        // Valid URL Regex (Simple check)
+        val isValidUrl = remember(tempUrl) {
+            tempUrl.isNotEmpty() && (tempUrl.startsWith("http://") || tempUrl.startsWith("https://")) && tempUrl.contains(
+                "."
+            )
+        }
+        var isError by remember { mutableStateOf(false) }
+
         AlertDialog(
             onDismissRequest = { showUrlDialog = false },
-            title = { Text("FILTER SOURCE URL") },
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("FILTER SOURCE URL")
+                    // RESET BUTTON
+                    TextButton(onClick = {
+                        tempUrl = com.example.adshield.data.FilterRepository.DEFAULT_URL
+                        isError = false
+                    }) {
+                        Text("RESET", color = MaterialTheme.colorScheme.primary)
+                    }
+                }
+            },
             text = {
-                OutlinedTextField(
-                    value = tempUrl,
-                    onValueChange = { tempUrl = it },
-                    label = { Text("https://...") },
-                    singleLine = true,
-                    shape = MaterialTheme.shapes.small
-                )
+                Column {
+                    OutlinedTextField(
+                        value = tempUrl,
+                        onValueChange = {
+                            tempUrl = it.trim()
+                            isError = false
+                        },
+                        label = { Text("https://...") },
+                        singleLine = true,
+                        shape = MaterialTheme.shapes.small,
+                        isError = isError,
+                        supportingText = {
+                            if (isError) Text(
+                                "Invalid URL (Must start with http/https)",
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    )
+                }
             },
             confirmButton = {
                 Button(
                     onClick = {
-                        currentUrl = tempUrl
-                        prefs.setFilterSourceUrl(tempUrl)
-                        showUrlDialog = false
+                        if (isValidUrl) {
+                            currentUrl = tempUrl
+                            prefs.setFilterSourceUrl(tempUrl)
+                            showUrlDialog = false
+                        } else {
+                            isError = true
+                        }
                     },
-                    shape = MaterialTheme.shapes.small
+                    shape = MaterialTheme.shapes.small,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                    )
                 ) { Text("SAVE") }
             },
             dismissButton = {
@@ -129,7 +171,6 @@ fun SettingsView(
                     shape = MaterialTheme.shapes.small
                 ) { Text("CANCEL") }
             },
-
             shape = MaterialTheme.shapes.medium
         )
     }

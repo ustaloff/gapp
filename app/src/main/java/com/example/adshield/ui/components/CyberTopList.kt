@@ -145,7 +145,7 @@ fun CyberTopList(
                                 MaterialTheme.colorScheme.surface,
                                 MaterialTheme.shapes.extraSmall
                             )
-                            .background(MaterialTheme.colorScheme.surface)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.03f))
                             .padding(vertical = 8.dp, horizontal = 8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically

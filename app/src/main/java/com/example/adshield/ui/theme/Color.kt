@@ -3,11 +3,8 @@ package com.example.adshield.ui.theme
 import androidx.compose.ui.graphics.Color
 
 /* NEON-GREEN COLOR SCHEMA */
-//val NeonGreenPrimary = Color(0xFF0df259)
-//val NeonGreenPrimary = Color(0xFF78DBE2)
-//val NeonGreenPrimary = Color(0xFF1E90FF)
 val NeonGreenPrimary = Color(0xFF1bff80)
-val NeonGreenSecondary = Color(0xFFffffff)
+val NeonGreenSecondary = Color(0xFFd9ffea)
 val NeonGreenSurface = Color(0xFF010d06)
 
 /* Not theme colors, just for errors */
@@ -24,7 +21,7 @@ val NeonGreenPremiumEnd = Color(0xFFBB86FC)
 
 /* NEON-BLUE COLOR SCHEMA */
 val NeonBluePrimary = Color(0xFF2ecfff)
-val NeonBlueSecondary = Color(0xFFffffff)
+val NeonBlueSecondary = Color(0xFFd9f6ff)
 val NeonBlueSurface = Color(0xFF020a0d)
 
 /* Not theme colors, just for errors */
@@ -42,7 +39,7 @@ val NeonBluePremiumEnd = Color(0xFF00B0FF) // Light Blue
 
 /* NEON-Amber COLOR SCHEMA */
 val NeonAmberPrimary = Color(0xFFffb641)
-val NeonAmberSecondary = Color(0xFFffffff)
+val NeonAmberSecondary = Color(0xFFfff0d9)
 val NeonAmberSurface = Color(0xFF0d0903)
 
 /* Not theme colors, just for errors */
