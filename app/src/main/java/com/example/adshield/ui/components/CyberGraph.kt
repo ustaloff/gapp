@@ -208,9 +208,11 @@ fun CyberGraphSection(data: List<Int>, bpm: Int, isRunning: Boolean) {
                 )
                 Spacer(Modifier.width(8.dp))
                 // Simple stacked bar for load
-                Row(modifier = Modifier
-                    .height(4.dp)
-                    .width(40.dp)) {
+                Row(
+                    modifier = Modifier
+                        .height(4.dp)
+                        .width(40.dp)
+                ) {
                     val segments = 4
                     val filled = (progress * segments).toInt().coerceIn(0, segments)
                     for (i in 0 until segments) {
