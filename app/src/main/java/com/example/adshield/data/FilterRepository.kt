@@ -15,7 +15,7 @@ object FilterRepository {
     private const val TAG = "FilterRepository"
 
     // Default fallback (Custom AdShield Blocklist)
-    private const val DEFAULT_URL =
+    const val DEFAULT_URL =
         "https://raw.githubusercontent.com/ustaloff/adshield-lists/refs/heads/master/blocklist.txt"
 
     suspend fun downloadAndParseFilters(context: android.content.Context): FilterData =

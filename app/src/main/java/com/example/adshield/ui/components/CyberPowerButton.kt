@@ -123,32 +123,38 @@ fun CyberMiniPowerButton(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            // Inner Icon (Custom Power Symbol)
-            Canvas(modifier = Modifier.size(20.dp)) {
-                val strokeWidth = 3.dp.toPx()
+            // Inner Icon
+            if (isRunning) {
+                CyberLogo(
+                    size = 28.dp,
+                    color = primaryColor
+                )
+            } else {
+                Canvas(modifier = Modifier.size(20.dp)) {
+                    val strokeWidth = 3.dp.toPx()
+                    val center = Offset(size.width / 2, size.height / 2)
 
-                val center = Offset(size.width / 2, size.height / 2)
+                    // Arc
+                    drawArc(
+                        color = primaryColor,
+                        startAngle = -60f,
+                        sweepAngle = 300f,
+                        useCenter = false,
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(
+                            width = strokeWidth,
+                            cap = StrokeCap.Round
+                        )
+                    )
 
-                // Arc
-                drawArc(
-                    color = primaryColor,
-                    startAngle = -60f,
-                    sweepAngle = 300f,
-                    useCenter = false,
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(
-                        width = strokeWidth,
+                    // Stick
+                    drawLine(
+                        color = primaryColor,
+                        start = Offset(center.x, 0f + strokeWidth),
+                        end = Offset(center.x, center.y),
+                        strokeWidth = strokeWidth,
                         cap = StrokeCap.Round
                     )
-                )
-
-                // Stick
-                drawLine(
-                    color = primaryColor,
-                    start = Offset(center.x, 0f + strokeWidth),
-                    end = Offset(center.x, center.y),
-                    strokeWidth = strokeWidth,
-                    cap = StrokeCap.Round
-                )
+                }
             }
         }
     }

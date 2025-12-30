@@ -124,7 +124,7 @@ class MainActivity : ComponentActivity() {
                                 } else {
                                     // WAS INCLUDED -> NOW EXCLUDE (WHITELIST)
                                     prefs.addExcludedApp(packageName)
-                                    toastMessage = "whitelisted: $packageName"
+                                    toastMessage = "WHITELISTED: $packageName"
                                     toastType = CyberToastType.INFO // Info/Warning color
                                     toastVisible = true
                                 }

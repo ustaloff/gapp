@@ -66,12 +66,12 @@ fun HomeView(
                     .fillMaxWidth()
                     .padding(vertical = 16.dp)
             ) {
-                Image(
-                    painter = androidx.compose.ui.res.painterResource(id = com.example.adshield.R.drawable.ic_app_logo_final),
-                    contentDescription = "AdShield Logo",
-                    modifier = Modifier.size(48.dp)
+                CyberLogo(
+                    modifier = Modifier.size(48.dp),
+                    size = 48.dp,
+                    color = MaterialTheme.colorScheme.primary
                 )
-                Spacer(modifier = Modifier.width(16.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 GlitchText(
                     text = "ADSHIELD",
                     style = MaterialTheme.typography.titleLarge,
