@@ -34,12 +34,11 @@ fun CyberNavBar(
             modifier = Modifier
                 .height(72.dp) // Height for the bar
                 .fillMaxWidth(),
-            shape = MaterialTheme.shapes.extraLarge, // Fully rounded pill
-            //shape = RoundedCornerShape(3.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f),
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.80f),
             border = BorderStroke(
                 1.dp,
-                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.05f)
             ),
             shadowElevation = 12.dp
         ) {
