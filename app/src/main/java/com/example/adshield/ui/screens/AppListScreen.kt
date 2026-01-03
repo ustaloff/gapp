@@ -1,4 +1,4 @@
-package com.example.adshield.ui
+package com.example.adshield.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -6,18 +6,14 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -29,8 +25,6 @@ import com.example.adshield.data.AppPreferences
 import com.example.adshield.data.AppsRepository
 import com.example.adshield.ui.components.CyberChip
 import com.example.adshield.ui.components.GridBackground
-import kotlinx.coroutines.launch
-import com.example.adshield.ui.theme.AdShieldTheme
 
 enum class AppListTab {
     ALL, BLOCKED, ALLOWED

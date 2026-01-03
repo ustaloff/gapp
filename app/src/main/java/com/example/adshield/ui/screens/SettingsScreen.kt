@@ -3,6 +3,7 @@ package com.example.adshield.ui.screens
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -19,20 +20,30 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.adshield.R
 import com.example.adshield.data.AppPreferences
+import com.example.adshield.data.FilterRepository
 import com.example.adshield.data.UserRepository
 import com.example.adshield.ui.components.GridBackground
 import com.example.adshield.ui.theme.AdShieldTheme
+import com.example.adshield.ui.theme.AppTheme
+import com.example.adshield.ui.theme.NeonAmberPrimary
+import com.example.adshield.ui.theme.NeonBluePrimary
+import com.example.adshield.ui.theme.NeonGreenPrimary
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
-import com.google.android.gms.auth.api.signin.GoogleSignInClient
+// import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.google.android.gms.common.api.ApiException
+// import com.google.android.gms.common.api.ApiException
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 
 @Composable
@@ -41,13 +52,17 @@ fun SettingsView(
     onWhitelistClick: () -> Unit,
     onDomainConfigClick: () -> Unit,
     onPremiumClick: () -> Unit,
-    onThemeChange: (com.example.adshield.ui.theme.AppTheme) -> Unit
+    onThemeChange: (AppTheme) -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val prefs = remember { AppPreferences(context) }
+
+    @Suppress("UNUSED_VALUE") // False positive: Variable is assigned but analyzer thinks it's unused
     var showUrlDialog by remember { mutableStateOf(false) }
     var currentUrl by remember { mutableStateOf(prefs.getFilterSourceUrl()) }
+
+    @Suppress("UNUSED_VALUE") // False positive on state delegation
     var tempUrl by remember { mutableStateOf(currentUrl) }
 
     // -- Google Sign In Setup --
@@ -56,20 +71,21 @@ fun SettingsView(
     var isSigningIn by remember { mutableStateOf(false) }
 
     // Explicitly defining gso and client to assist compiler type inference
-    val gso = remember<GoogleSignInOptions> {
+    val gso = remember {
         GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken(context.getString(com.example.adshield.R.string.default_web_client_id))
+            .requestIdToken(context.getString(R.string.default_web_client_id))
             .requestEmail()
             .build()
     }
-    val googleSignInClient = remember<GoogleSignInClient> { GoogleSignIn.getClient(context, gso) }
+    val googleSignInClient = remember { GoogleSignIn.getClient(context, gso) }
 
     val signInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
         val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
         try {
-            val account: GoogleSignInAccount = task.getResult(ApiException::class.java)
+            val account: GoogleSignInAccount =
+                task.getResult(com.google.android.gms.common.api.ApiException::class.java)
             val idToken = account.idToken
             if (idToken != null) {
                 scope.launch {
@@ -90,7 +106,7 @@ fun SettingsView(
                 Toast.makeText(context, "Error: Google ID Token is missing", Toast.LENGTH_SHORT)
                     .show()
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             isSigningIn = false
             Toast.makeText(context, "Google Sign In Error", Toast.LENGTH_SHORT).show()
         }
@@ -103,6 +119,8 @@ fun SettingsView(
                 "."
             )
         }
+
+        @Suppress("UNUSED_VALUE")
         var isError by remember { mutableStateOf(false) }
 
         AlertDialog(
@@ -116,7 +134,7 @@ fun SettingsView(
                     Text("FILTER SOURCE URL")
                     // RESET BUTTON
                     TextButton(onClick = {
-                        tempUrl = com.example.adshield.data.FilterRepository.DEFAULT_URL
+                        tempUrl = FilterRepository.DEFAULT_URL
                         isError = false
                     }) {
                         Text("RESET", color = MaterialTheme.colorScheme.primary)
@@ -221,7 +239,7 @@ fun SettingsView(
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp,
                     color = MaterialTheme.colorScheme.primary,
-                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                    fontFamily = FontFamily.Monospace
                 )
             }
 
@@ -259,7 +277,7 @@ fun SettingsView(
                             Spacer(modifier = Modifier.height(8.dp))
                             Button(
                                 onClick = {
-                                    com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
+                                    FirebaseAuth.getInstance().signOut()
                                     googleSignInClient.signOut()
                                 },
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
@@ -303,7 +321,7 @@ fun SettingsView(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(
-                            brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
+                            brush = Brush.horizontalGradient(
                                 colors = listOf(
                                     AdShieldTheme.colors.premiumStart,
                                     AdShieldTheme.colors.premiumEnd
@@ -328,7 +346,7 @@ fun SettingsView(
                             )
                         }
                         Icon(
-                            androidx.compose.material.icons.Icons.Filled.Star,
+                            Icons.Filled.Star,
                             contentDescription = null,
                             tint = Color.Yellow
                         )
@@ -348,54 +366,52 @@ fun SettingsView(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    val currentTheme =
-                        AdShieldTheme.colors // Just to access something, but we just set
                     // Green Button
                     Button(
-                        onClick = { onThemeChange(com.example.adshield.ui.theme.AppTheme.CyberGreen) },
+                        onClick = { onThemeChange(AppTheme.CyberGreen) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.surfaceVariant
                         ),
-                        border = androidx.compose.foundation.BorderStroke(
+                        border = BorderStroke(
                             1.dp,
-                            com.example.adshield.ui.theme.NeonGreenPrimary
+                            NeonGreenPrimary
                         ),
                         shape = MaterialTheme.shapes.small
                     ) {
-                        Text("GREEN", color = com.example.adshield.ui.theme.NeonGreenPrimary)
+                        Text("GREEN", color = NeonGreenPrimary)
                     }
 
                     // Blue Button
                     Button(
-                        onClick = { onThemeChange(com.example.adshield.ui.theme.AppTheme.CyberBlue) },
+                        onClick = { onThemeChange(AppTheme.CyberBlue) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.surfaceVariant
                         ),
-                        border = androidx.compose.foundation.BorderStroke(
+                        border = BorderStroke(
                             1.dp,
-                            com.example.adshield.ui.theme.NeonBluePrimary
+                            NeonBluePrimary
                         ),
                         shape = MaterialTheme.shapes.small
                     ) {
-                        Text("BLUE", color = com.example.adshield.ui.theme.NeonBluePrimary)
+                        Text("BLUE", color = NeonBluePrimary)
                     }
 
                     // Amber Button
                     Button(
-                        onClick = { onThemeChange(com.example.adshield.ui.theme.AppTheme.CyberAmber) },
+                        onClick = { onThemeChange(AppTheme.CyberAmber) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.surfaceVariant
                         ),
-                        border = androidx.compose.foundation.BorderStroke(
+                        border = BorderStroke(
                             1.dp,
-                            com.example.adshield.ui.theme.NeonAmberPrimary
+                            NeonAmberPrimary
                         ),
                         shape = MaterialTheme.shapes.small
                     ) {
-                        Text("AMBER", color = com.example.adshield.ui.theme.NeonAmberPrimary)
+                        Text("AMBER", color = NeonAmberPrimary)
                     }
                 }
 
@@ -507,11 +523,11 @@ fun SettingsView(
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
-                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                         Icon(
-                            androidx.compose.material.icons.Icons.Default.Refresh,
+                            Icons.Default.Refresh,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary
                         )

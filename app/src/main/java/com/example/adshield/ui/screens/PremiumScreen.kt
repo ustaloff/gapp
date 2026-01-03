@@ -1,4 +1,4 @@
-package com.example.adshield.ui
+package com.example.adshield.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background

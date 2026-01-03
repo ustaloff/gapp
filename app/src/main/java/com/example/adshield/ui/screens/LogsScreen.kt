@@ -63,7 +63,7 @@ fun LogsView(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 24.dp)
-                .padding(top = 16.dp, bottom = 100.dp) // Bottom padding for nav bar + spacing
+                .padding(top = 16.dp) // Bottom padding removed (handled by Spacer)
         ) {
             // Header
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -139,6 +139,9 @@ fun LogsView(
                     // Usually logs are appended, so last is newest.
                     items(filteredLogs.reversed()) { entry ->
                         LogItemCard(entry, onLogClick)
+                    }
+                    item {
+                        Spacer(modifier = Modifier.height(130.dp))
                     }
                 }
             }

@@ -112,7 +112,7 @@ fun CyberGraphSection(data: List<Int>, bpm: Int, isRunning: Boolean) {
                 val width = size.width
                 val height = size.height
                 // Use all 60 points or whatever is available, but limit if needed
-                val graphData = if (data.isEmpty()) List(60) { 0 } else data
+                val graphData = data.ifEmpty { List(60) { 0 } }
                 val max = (graphData.maxOrNull() ?: 5).coerceAtLeast(5).toFloat()
                 val graphColor = if (isRunning) primaryColor else offlineColor.copy(alpha = 0.3f)
 

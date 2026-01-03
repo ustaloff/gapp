@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
@@ -43,9 +44,9 @@ fun CyberToast(
     }
 
     val icon = when (type) {
-        CyberToastType.SUCCESS -> androidx.compose.material.icons.Icons.Filled.CheckCircle
-        CyberToastType.ERROR -> androidx.compose.material.icons.Icons.Filled.Close
-        CyberToastType.INFO -> androidx.compose.material.icons.Icons.Filled.Info
+        CyberToastType.SUCCESS -> Icons.Filled.CheckCircle
+        CyberToastType.ERROR -> Icons.Filled.Close
+        CyberToastType.INFO -> Icons.Filled.Info
     }
 
     val title = when (type) {

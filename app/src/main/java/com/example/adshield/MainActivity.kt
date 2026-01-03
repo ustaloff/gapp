@@ -1,72 +1,46 @@
 package com.example.adshield
 
-import android.app.Activity
+import android.content.Context
+import android.content.Context.MODE_PRIVATE
 import android.content.Intent
 import android.net.VpnService
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.core.content.edit
 import androidx.activity.compose.setContent
 import androidx.lifecycle.lifecycleScope
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.example.adshield.data.VpnStats
-import com.example.adshield.data.VpnLogEntry
 import com.example.adshield.data.FilterRepository
 import com.example.adshield.filter.FilterEngine
 import com.example.adshield.service.LocalVpnService
 import com.example.adshield.ui.theme.AdShieldTheme
 import com.example.adshield.ui.components.* // Import CyberComponents
 import com.example.adshield.data.AppPreferences
-import com.example.adshield.data.UserRepository
+import com.example.adshield.data.BillingManager
 import com.example.adshield.ui.* // Import Screens
 import com.example.adshield.ui.screens.* // Import Refactored Screens
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.animation.core.*
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.border
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material.icons.filled.CheckCircle
 
 class MainActivity : ComponentActivity() {
 
     private val vpnPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
+        if (result.resultCode == RESULT_OK) {
             val intent = Intent(this, LocalVpnService::class.java).apply {
                 action = LocalVpnService.ACTION_START
             }
@@ -82,8 +56,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        com.example.adshield.filter.FilterEngine.initialize(this)
-        com.example.adshield.data.BillingManager.initialize(this)
+        FilterEngine.initialize(this)
+        BillingManager.initialize(this)
         setContent {
             val context = LocalContext.current
             val prefs = remember { AppPreferences(context) }
@@ -96,7 +70,6 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     var currentScreen by rememberSaveable { mutableStateOf("splash") }
-                    val user = com.example.adshield.data.UserRepository.getCurrentUser()
 
                     // -- TOAST STATE (Lifted to onCreate for access in callbacks) --
                     var toastVisible by remember { mutableStateOf(false) }
@@ -106,7 +79,7 @@ class MainActivity : ComponentActivity() {
                     LaunchedEffect(Unit) {
                         val sharedPrefs = context.getSharedPreferences(
                             "adshield_prefs",
-                            android.content.Context.MODE_PRIVATE
+                            MODE_PRIVATE
                         )
                         val onboardingComplete =
                             sharedPrefs.getBoolean("onboarding_complete", false)
@@ -123,15 +96,12 @@ class MainActivity : ComponentActivity() {
                                 onFinish = {
                                     val sharedPrefs = context.getSharedPreferences(
                                         "adshield_prefs",
-                                        android.content.Context.MODE_PRIVATE
+                                        MODE_PRIVATE
                                     )
-                                    sharedPrefs.edit()
-                                        .putBoolean("onboarding_complete", true)
-                                        .putBoolean(
-                                            "disclosure_accepted",
-                                            true
-                                        ) // Implicit acceptance
-                                        .apply()
+                                    sharedPrefs.edit {
+                                        putBoolean("onboarding_complete", true)
+                                        putBoolean("disclosure_accepted", true)
+                                    }
                                     currentScreen = "dashboard"
                                 }
                             )
@@ -142,25 +112,28 @@ class MainActivity : ComponentActivity() {
                                 onWhitelistApp = { packageName ->
                                     val prefs = AppPreferences(this@MainActivity)
                                     val currentExcluded = prefs.getExcludedApps()
+                                    // Update Toast via State
+
+                                    // WAS INCLUDED in list -> Now removing? No.
+                                    // getExcludedApps() returns list of EXCLUDED apps.
+                                    // if contains(pkg) -> it IS excluded (whitelisted). Removing it -> INCLUDE (PROTECT).
+
                                     if (currentExcluded.contains(packageName)) {
-                                        // WAS EXCLUDED -> NOW INCLUDE (PROTECT)
                                         prefs.removeExcludedApp(packageName)
                                         toastMessage = "PROTECTED: $packageName"
                                         toastType = CyberToastType.SUCCESS
-                                        toastVisible = true
                                     } else {
-                                        // WAS INCLUDED -> NOW EXCLUDE (WHITELIST)
                                         prefs.addExcludedApp(packageName)
                                         toastMessage = "WHITELISTED: $packageName"
-                                        toastType = CyberToastType.INFO // Info/Warning color
-                                        toastVisible = true
+                                        toastType = CyberToastType.INFO
                                     }
+                                    toastVisible = true
 
                                     // Restart VPN if running to apply changes
                                     if (VpnStats.isRunning.value) {
                                         stopVpnService()
                                         lifecycleScope.launch {
-                                            kotlinx.coroutines.delay(500)
+                                            delay(500)
                                             startVpnService()
                                         }
                                     }
@@ -184,7 +157,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-
     }
 
     private fun checkPermissionsAndStart() {
@@ -238,12 +210,11 @@ fun DashboardScreen(
 
     val isRunning = VpnStats.isRunning.value
     val blockedCount = VpnStats.blockedCount.value
-    val totalCount = VpnStats.totalCount.value
     val recentLogs = VpnStats.recentLogs
     val dataSaved = VpnStats.dataSavedBytes.value
     val bpm = VpnStats.blocksPerMinute.value
 
-    var filterCount by remember { mutableStateOf(FilterEngine.getRuleCount()) }
+    var filterCount by remember { mutableIntStateOf(FilterEngine.getRuleCount()) }
     var isUpdatingFilters by remember { mutableStateOf(false) }
 
     val preferences = remember { AppPreferences(context) }
@@ -282,12 +253,10 @@ fun DashboardScreen(
         }
     }
 
-    val scrollState = rememberScrollState()
-
     // Load states on startup
     LaunchedEffect(Unit) {
         val prefs =
-            context.getSharedPreferences("adshield_prefs", android.content.Context.MODE_PRIVATE)
+            context.getSharedPreferences("adshield_prefs", MODE_PRIVATE)
         hasAcceptedDisclosure = prefs.getBoolean("disclosure_accepted", false)
 
         // Initialize Persistent Stats
@@ -324,8 +293,6 @@ fun DashboardScreen(
         filterUpdateTrigger++ // Increment to trigger UI refresh
     }
 
-
-
     if (showDisclosureDialog) {
         AlertDialog(
             onDismissRequest = { showDisclosureDialog = false },
@@ -338,9 +305,10 @@ fun DashboardScreen(
                         hasAcceptedDisclosure = true
                         context.getSharedPreferences(
                             "adshield_prefs",
-                            android.content.Context.MODE_PRIVATE
-                        )
-                            .edit().putBoolean("disclosure_accepted", true).apply()
+                            MODE_PRIVATE
+                        ).edit {
+                            putBoolean("disclosure_accepted", true)
+                        }
                         showDisclosureDialog = false
                         onStartClick()
                     },
@@ -373,7 +341,6 @@ fun DashboardScreen(
     ) {
         GridBackground()
 
-
         // Content Switcher
         when (currentScreen) {
             "HOME" -> HomeView(
@@ -386,8 +353,6 @@ fun DashboardScreen(
                 excludedApps = excludedApps, // Pass state
                 filterUpdateTrigger = filterUpdateTrigger, // Pass trigger
                 isUpdatingFilters = isUpdatingFilters,
-                onStartClick = onStartClick,
-                onStopClick = onStopClick,
                 onWhitelistClick = { navigateTo("APP_LIST") },
                 onReloadFilters = {
                     // Reload logic (moved from inline)
@@ -445,9 +410,9 @@ fun DashboardScreen(
 
             "APP_LIST" -> {
                 androidx.activity.compose.BackHandler { navigateBack() }
-                com.example.adshield.ui.AppListScreen(
+                AppListScreen(
                     onBackClick = { navigateBack() },
-                    onAppToggle = { pkg, isExcluded ->
+                    onAppToggle = { pkg, _ ->
                         // If isExcluded == true, we want to EXCLUDE it (add to list).
                         // MainActivity's onWhitelistApp toggles state smartly based on current state.
                         // Let's check MainActivity logic again.
@@ -484,8 +449,6 @@ fun DashboardScreen(
                 excludedApps = excludedApps, // Pass state
                 filterUpdateTrigger = filterUpdateTrigger, // Pass trigger
                 isUpdatingFilters = isUpdatingFilters,
-                onStartClick = onStartClick,
-                onStopClick = onStopClick,
                 onWhitelistClick = { navigateTo("APP_LIST") },
                 onReloadFilters = {},
                 onLogClick = { onDomainToggle(it) },
@@ -497,7 +460,7 @@ fun DashboardScreen(
             )
         }
 
-        // FLOATING NAV BAR OVERYLAY
+        // FLOATING NAV BAR OVERLAY
         if (currentScreen in listOf("HOME", "LOGS", "STATS")) {
             CyberNavBar(
                 isRunning = isRunning,

@@ -1,6 +1,5 @@
 package com.example.adshield.ui.screens
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -13,7 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -21,7 +20,9 @@ import com.example.adshield.data.VpnLogEntry
 import com.example.adshield.data.VpnStats
 import com.example.adshield.filter.FilterEngine
 import com.example.adshield.ui.components.*
-import com.example.adshield.ui.theme.AdShieldTheme
+import java.util.Locale
+import kotlin.math.ln
+import kotlin.math.pow
 
 @Composable
 fun HomeView(
@@ -34,8 +35,6 @@ fun HomeView(
     excludedApps: Set<String>, // Added state
     filterUpdateTrigger: Long, // Added trigger for Domain/Filter UI refresh
     isUpdatingFilters: Boolean,
-    onStartClick: () -> Unit,
-    onStopClick: () -> Unit,
     onWhitelistClick: () -> Unit,
     onReloadFilters: () -> Unit,
     onLogClick: (String) -> Unit,
@@ -104,7 +103,7 @@ fun HomeView(
                 Text(
                     text = if (isRunning) "TUNNELING ACTIVE // IP MASKED" else "PROTECTION DISABLED // EXPOSED",
                     style = MaterialTheme.typography.labelMedium,
-                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                    fontFamily = FontFamily.Monospace,
                     letterSpacing = 1.sp,
                     color = if (isRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                 )
@@ -112,7 +111,7 @@ fun HomeView(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // STATUS SECTION (Redsigned)
+            // STATUS SECTION (Redesigned)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -129,7 +128,7 @@ fun HomeView(
                             label = "DATA SAVED",
                             value = formatBytes(dataSaved),
                             progress = (dataSaved / (100 * 1024 * 1024f)).coerceIn(0.01f, 1f),
-                            iconVector = androidx.compose.material.icons.Icons.Default.ThumbUp,
+                            iconVector = Icons.Default.ThumbUp,
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight()
@@ -138,16 +137,16 @@ fun HomeView(
                         val timeMs = VpnStats.timeSavedMs.value
                         val timeString = when {
                             timeMs < 1000 -> "${timeMs}ms"
-                            timeMs < 60000 -> String.format("%.1fs", timeMs / 1000f)
+                            timeMs < 60000 -> String.format(Locale.US, "%.1fs", timeMs / 1000f)
                             else -> "${timeMs / 60000}m"
                         }
 
                         CyberStatCard(
-                            label = "FASTER LOAD",
+                            label = "TIME SAVED",
                             value = timeString,
                             progress = (timeMs / (5 * 60 * 1000f)).coerceIn(0.01f, 1f),
                             progressSegments = 3,
-                            iconVector = androidx.compose.material.icons.Icons.Default.Speed,
+                            iconVector = Icons.Default.Speed,
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight()
@@ -226,7 +225,8 @@ fun HomeView(
                         data = VpnStats.domainBlockedStatsMap,
                         onAllowClick = { onLogClick(it) },
                         isWhitelisted = { domain ->
-                            val tick = filterUpdateTrigger // Force Recomp reading
+                            // Force Recomp using trigger read
+                            filterUpdateTrigger.let { }
                             FilterEngine.checkDomain(domain) == FilterEngine.FilterStatus.ALLOWED_USER
                         },
                         onSettingsClick = onDomainManagerClick // Go to Domain Manager
@@ -234,7 +234,7 @@ fun HomeView(
                 }
             }
 
-            // PRORITY 6: TERMINAL LOG (Deep Details)
+            // PRIORITY 6: TERMINAL LOG (Deep Details)
             Spacer(modifier = Modifier.height(24.dp))
             CyberTerminal(logs = recentLogs, onLogClick = { onLogClick(it) })
 
@@ -246,7 +246,7 @@ fun HomeView(
                 onReload = onReloadFilters
             )
 
-            Spacer(modifier = Modifier.height(150.dp))
+            Spacer(modifier = Modifier.height(130.dp))
         }
     }
 }
@@ -254,12 +254,12 @@ fun HomeView(
 // Utils (moved helper here or make it public in MainActivity/Utils)
 fun formatBytes(bytes: Long): String {
     if (bytes < 1024) return "$bytes B"
-    val exp = (Math.log(bytes.toDouble()) / Math.log(1024.0)).toInt()
+    val exp = (ln(bytes.toDouble()) / ln(1024.0)).toInt()
     val pre = "KMGTPE"[exp - 1]
     return String.format(
-        java.util.Locale.US,
+        Locale.US,
         "%.1f %cB",
-        bytes / Math.pow(1024.0, exp.toDouble()),
+        bytes / 1024.0.pow(exp.toDouble()),
         pre
     )
 }

@@ -13,7 +13,6 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.automirrored.filled.List
-import com.example.adshield.ui.theme.AdShieldTheme
 
 @Composable
 fun CyberNavBar(
@@ -68,7 +67,7 @@ fun CyberNavBar(
 
                 // 4. STATS
                 NavBarItem(
-                    icon = androidx.compose.material.icons.Icons.Default.Info,
+                    icon = Icons.Default.Info,
                     label = "Stats",
                     isSelected = currentScreen == "STATS",
                     onClick = { onNavigate("STATS") }

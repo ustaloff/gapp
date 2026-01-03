@@ -1,4 +1,4 @@
-package com.example.adshield.ui
+package com.example.adshield.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -28,7 +28,9 @@ import com.example.adshield.data.AppPreferences
 import com.example.adshield.filter.FilterEngine
 import com.example.adshield.ui.components.CyberChip
 import com.example.adshield.ui.components.GridBackground
-import com.example.adshield.ui.theme.AdShieldTheme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
 
 enum class DomainTab {
     ALL, BLOCKED, ALLOWED
@@ -53,27 +55,29 @@ fun DomainListScreen(
 
     // Fetch lists dynamically
     // We use a key to force refresh when tab changes or after an operation
-    var refreshTrigger by remember { mutableStateOf(0) }
+    var refreshTrigger by remember { mutableIntStateOf(0) }
 
     val domains by produceState(
-        initialValue = emptyList<DomainUiModel>(),
+        initialValue = emptyList(),
         key1 = currentTab,
         key2 = refreshTrigger,
         key3 = searchQuery
     ) {
-        val blockedList = preferences.getUserBlocklist().map { DomainUiModel(it, true) }
-        val allowedList = preferences.getUserAllowlist().map { DomainUiModel(it, false) }
+        value = withContext(Dispatchers.IO) {
+            val blockedList = preferences.getUserBlocklist().map { DomainUiModel(it, true) }
+            val allowedList = preferences.getUserAllowlist().map { DomainUiModel(it, false) }
 
-        val combinedList = when (currentTab) {
-            DomainTab.ALL -> blockedList + allowedList
-            DomainTab.BLOCKED -> blockedList
-            DomainTab.ALLOWED -> allowedList
+            val combinedList = when (currentTab) {
+                DomainTab.ALL -> blockedList + allowedList
+                DomainTab.BLOCKED -> blockedList
+                DomainTab.ALLOWED -> allowedList
+            }
+
+            // Filter and Sort
+            combinedList
+                .filter { it.domain.contains(searchQuery, ignoreCase = true) }
+                .sortedBy { it.domain }
         }
-
-        // Filter and Sort
-        value = combinedList
-            .filter { it.domain.contains(searchQuery, ignoreCase = true) }
-            .sortedBy { it.domain }
     }
 
     val emptyText = if (searchQuery.isNotEmpty()) "> NO MATCHES FOUND"
@@ -248,7 +252,7 @@ fun DomainListScreen(
         // ADD DIALOG
         if (showAddDialog) {
             AddDomainDialog(
-                initialIsBlocked = if (currentTab == DomainTab.ALLOWED) false else true, // Default to blocked unless explicitly in Allowed tab
+                initialIsBlocked = currentTab != DomainTab.ALLOWED, // Default to blocked unless explicitly in Allowed tab
                 allowTypeSelection = currentTab == DomainTab.ALL,
                 onDismiss = { showAddDialog = false },
                 onAdd = { domain, isBlocked ->

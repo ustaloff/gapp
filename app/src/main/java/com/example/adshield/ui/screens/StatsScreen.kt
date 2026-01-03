@@ -1,15 +1,14 @@
 package com.example.adshield.ui.screens
 
-import android.content.pm.PackageManager
+import java.util.Locale
 import android.graphics.drawable.Drawable
-import android.widget.ImageView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,7 +19,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.foundation.Image
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.core.graphics.drawable.toBitmap
 import com.example.adshield.data.VpnStats
 import com.example.adshield.ui.components.CyberGraphSection
 import com.example.adshield.ui.components.CyberStatCard
@@ -48,15 +50,19 @@ fun StatsView(
     // Convert bytes to readable string
     val dataSavedBytes = VpnStats.dataSavedBytes.value
     val dataSavedStr = remember(dataSavedBytes) {
-        if (dataSavedBytes > 1024 * 1024) String.format("%.1f MB", dataSavedBytes / (1024f * 1024f))
-        else String.format("%.1f KB", dataSavedBytes / 1024f)
+        if (dataSavedBytes > 1024 * 1024) String.format(
+            Locale.US,
+            "%.1f MB",
+            dataSavedBytes / (1024f * 1024f)
+        )
+        else String.format(Locale.US, "%.1f KB", dataSavedBytes / 1024f)
     }
 
     // Convert ms to readable time (Seconds/Minutes)
     val timeSavedMs = VpnStats.timeSavedMs.value
     val timeSavedStr = remember(timeSavedMs) {
-        if (timeSavedMs > 60000) String.format("%d MIN", timeSavedMs / 60000)
-        else String.format("%d SEC", timeSavedMs / 1000)
+        if (timeSavedMs > 60000) String.format(Locale.US, "%d MIN", timeSavedMs / 60000)
+        else String.format(Locale.US, "%d SEC", timeSavedMs / 1000)
     }
 
     // Load Top Offenders Async
@@ -74,7 +80,7 @@ fun StatsView(
                     val appInfo = pm.getApplicationInfo(entry.key, 0)
                     name = pm.getApplicationLabel(appInfo).toString()
                     icon = pm.getApplicationIcon(appInfo)
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     // Packet name fallback
                 }
                 AppStatItem(entry.key, name, entry.value, icon)
@@ -126,15 +132,17 @@ fun StatsView(
                 CyberStatCard(
                     label = "DATA SAVED",
                     value = dataSavedStr,
-                    progress = 1.0f,
+                    progress = (dataSavedBytes / (100 * 1024 * 1024f)).coerceIn(0.01f, 1f),
                     progressSegments = 1,
+                    iconVector = Icons.Default.ThumbUp,
                     modifier = Modifier.weight(1f)
                 )
                 CyberStatCard(
                     label = "TIME SAVED",
                     value = timeSavedStr,
-                    progress = 0.8f, // Decorative
-                    progressSegments = 5,
+                    progress = (timeSavedMs / (5 * 60 * 1000f)).coerceIn(0.01f, 1f),
+                    progressSegments = 3, // Match HomeScreen's 3 segments (was 5)
+                    iconVector = Icons.Default.Speed,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -166,7 +174,7 @@ fun StatsView(
                 }
             }
 
-            Spacer(modifier = Modifier.height(150.dp))
+            Spacer(modifier = Modifier.height(130.dp))
         }
     }
 }
@@ -190,14 +198,14 @@ fun OffenderItem(app: AppStatItem) {
     ) {
         // App Icon
         if (app.icon != null) {
-            AndroidView(
-                factory = { ctx ->
-                    ImageView(ctx).apply {
-                        setImageDrawable(app.icon)
-                        scaleType = ImageView.ScaleType.FIT_CENTER
-                    }
-                },
-                modifier = Modifier.size(40.dp)
+            val imageBitmap = remember(app.icon) {
+                app.icon.toBitmap().asImageBitmap()
+            }
+            Image(
+                bitmap = imageBitmap,
+                contentDescription = null,
+                modifier = Modifier.size(40.dp),
+                contentScale = ContentScale.Fit
             )
         } else {
             Box(
@@ -245,3 +253,5 @@ fun OffenderItem(app: AppStatItem) {
         }
     }
 }
+
+

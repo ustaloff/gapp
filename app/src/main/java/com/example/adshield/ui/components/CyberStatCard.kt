@@ -9,18 +9,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.adshield.ui.theme.AdShieldTheme
 import kotlin.math.roundToInt
 
 @Composable
 fun CyberStatCard(
     label: String,
     value: String,
+    modifier: Modifier = Modifier,
     progress: Float? = null,
     progressSegments: Int = 1,
     iconVector: androidx.compose.ui.graphics.vector.ImageVector? = null,
-    valueColor: Color = MaterialTheme.colorScheme.onSurface,
-    modifier: Modifier = Modifier
+    valueColor: Color = MaterialTheme.colorScheme.onSurface
 ) {
     NeonCard(
         modifier = modifier,

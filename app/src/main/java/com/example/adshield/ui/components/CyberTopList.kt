@@ -5,7 +5,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Lock
@@ -28,7 +27,6 @@ import androidx.core.graphics.drawable.toBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.Image
-import com.example.adshield.ui.theme.AdShieldTheme
 
 @Composable
 fun CyberTopList(
@@ -121,7 +119,7 @@ fun CyberTopList(
                                     appName = label
                                     appIcon = bitmap
                                 }
-                            } catch (e: Exception) {
+                            } catch (_: Exception) {
                                 // Keep default
                             }
                         }
