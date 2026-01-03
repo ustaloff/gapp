@@ -52,9 +52,11 @@ fun LogsView(
         }
     }
 
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .background(MaterialTheme.colorScheme.background)) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
         GridBackground()
 
         Column(
@@ -98,17 +100,20 @@ fun LogsView(
                 CyberChip(
                     text = "ALL",
                     selected = filterType == "ALL",
-                    onClick = { filterType = "ALL" }
+                    onClick = { filterType = "ALL" },
+                    modifier = Modifier.weight(1f)
                 )
                 CyberChip(
                     text = "BLOCKED",
                     selected = filterType == "BLOCKED",
-                    onClick = { filterType = "BLOCKED" }
+                    onClick = { filterType = "BLOCKED" },
+                    modifier = Modifier.weight(1f)
                 )
                 CyberChip(
                     text = "ALLOWED",
                     selected = filterType == "ALLOWED",
-                    onClick = { filterType = "ALLOWED" }
+                    onClick = { filterType = "ALLOWED" },
+                    modifier = Modifier.weight(1f)
                 )
             }
             Spacer(Modifier.height(16.dp))

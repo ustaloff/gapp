@@ -26,12 +26,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.adshield.data.AppPreferences
 import com.example.adshield.filter.FilterEngine
+import com.example.adshield.ui.components.CyberChip
 import com.example.adshield.ui.components.GridBackground
 import com.example.adshield.ui.theme.AdShieldTheme
 
 enum class DomainTab {
-    ALLOWED, BLOCKED
+    ALL, BLOCKED, ALLOWED
 }
+
+data class DomainUiModel(
+    val domain: String,
+    val isBlocked: Boolean
+)
 
 @Composable
 fun DomainListScreen(
@@ -41,7 +47,7 @@ fun DomainListScreen(
     val preferences = remember { AppPreferences(context) }
 
     // State
-    var currentTab by remember { mutableStateOf(DomainTab.ALLOWED) }
+    var currentTab by remember { mutableStateOf(DomainTab.ALL) }
     var searchQuery by remember { mutableStateOf("") }
     var showAddDialog by remember { mutableStateOf(false) }
 
@@ -50,24 +56,32 @@ fun DomainListScreen(
     var refreshTrigger by remember { mutableStateOf(0) }
 
     val domains by produceState(
-        initialValue = emptyList<String>(),
+        initialValue = emptyList<DomainUiModel>(),
         key1 = currentTab,
         key2 = refreshTrigger,
         key3 = searchQuery
     ) {
-        val list = if (currentTab == DomainTab.BLOCKED) {
-            preferences.getUserBlocklist().toList()
-        } else {
-            preferences.getUserAllowlist().toList()
+        val blockedList = preferences.getUserBlocklist().map { DomainUiModel(it, true) }
+        val allowedList = preferences.getUserAllowlist().map { DomainUiModel(it, false) }
+
+        val combinedList = when (currentTab) {
+            DomainTab.ALL -> blockedList + allowedList
+            DomainTab.BLOCKED -> blockedList
+            DomainTab.ALLOWED -> allowedList
         }
 
-        // Filter
-        value = list.filter { it.contains(searchQuery, ignoreCase = true) }.sorted()
+        // Filter and Sort
+        value = combinedList
+            .filter { it.domain.contains(searchQuery, ignoreCase = true) }
+            .sortedBy { it.domain }
     }
 
     val emptyText = if (searchQuery.isNotEmpty()) "> NO MATCHES FOUND"
-    else if (currentTab == DomainTab.BLOCKED) "> NO BANNED DOMAINS"
-    else "> NO ALLOWED DOMAINS"
+    else when (currentTab) {
+        DomainTab.ALL -> "> NO DOMAINS CONFIGURED"
+        DomainTab.BLOCKED -> "> NO BANNED DOMAINS"
+        DomainTab.ALLOWED -> "> NO ALLOWED DOMAINS"
+    }
 
     Box(
         modifier = Modifier
@@ -156,71 +170,31 @@ fun DomainListScreen(
                 singleLine = true
             )
 
-            // TABS (Filters)
+            // UNIFIED FILTER CHIPS (Like LogsScreen)
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // ALLOWED TAB
-                FilterChip(
-                    selected = currentTab == DomainTab.ALLOWED,
-                    onClick = { currentTab = DomainTab.ALLOWED },
-                    label = { Text("ALLOWED") },
-                    leadingIcon = {
-                        if (currentTab == DomainTab.ALLOWED) Icon(
-                            Icons.Default.CheckCircle,
-                            null,
-                            Modifier.size(16.dp)
-                        )
-                    },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primary, // Green
-                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.1f),
-                        labelColor = MaterialTheme.colorScheme.onSurface
-                    ),
-                    shape = MaterialTheme.shapes.small,
-                    border = FilterChipDefaults.filterChipBorder(
-                        borderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                        enabled = true,
-                        selected = currentTab == DomainTab.ALLOWED
-                    ),
+                CyberChip(
+                    text = "ALL",
+                    selected = currentTab == DomainTab.ALL,
+                    onClick = { currentTab = DomainTab.ALL },
                     modifier = Modifier.weight(1f)
                 )
-
-                // BLOCKED TAB
-                FilterChip(
+                CyberChip(
+                    text = "BLOCKED",
                     selected = currentTab == DomainTab.BLOCKED,
                     onClick = { currentTab = DomainTab.BLOCKED },
-                    label = { Text("BLOCKED") },
-                    leadingIcon = {
-                        if (currentTab == DomainTab.BLOCKED) Icon(
-                            Icons.Default.Close,
-                            null,
-                            Modifier.size(16.dp)
-                        )
-                    },
-                    colors = FilterChipDefaults.filterChipColors(
-                        // Use Error color for blocked tab when selected? Or keep uniform primary?
-                        // Let's use Error color for distinctiveness
-                        selectedContainerColor = MaterialTheme.colorScheme.error,
-                        selectedLabelColor = MaterialTheme.colorScheme.onError,
-                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.1f),
-                        labelColor = MaterialTheme.colorScheme.onSurface
-                    ),
-                    shape = MaterialTheme.shapes.small,
-                    border = FilterChipDefaults.filterChipBorder(
-                        borderColor = if (currentTab == DomainTab.BLOCKED) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary.copy(
-                            alpha = 0.5f
-                        ),
-                        enabled = true,
-                        selected = currentTab == DomainTab.BLOCKED
-                    ),
+                    modifier = Modifier.weight(1f)
+                )
+                CyberChip(
+                    text = "ALLOWED",
+                    selected = currentTab == DomainTab.ALLOWED,
+                    onClick = { currentTab = DomainTab.ALLOWED },
                     modifier = Modifier.weight(1f)
                 )
             }
+            Spacer(modifier = Modifier.height(16.dp))
 
             // LIST
             if (domains.isEmpty()) {
@@ -239,15 +213,14 @@ fun DomainListScreen(
                     contentPadding = PaddingValues(bottom = 80.dp), // Space for FAB
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(domains, key = { it }) { domain ->
+                    items(domains, key = { it.domain }) { item ->
                         DomainItem(
-                            domain = domain,
-                            isBlocked = currentTab == DomainTab.BLOCKED,
+                            item = item,
                             onDelete = {
-                                if (currentTab == DomainTab.BLOCKED) {
-                                    FilterEngine.removeFromBlocklist(context, domain)
+                                if (item.isBlocked) {
+                                    FilterEngine.removeFromBlocklist(context, item.domain)
                                 } else {
-                                    FilterEngine.removeFromAllowlist(context, domain)
+                                    FilterEngine.removeFromAllowlist(context, item.domain)
                                 }
                                 refreshTrigger++ // Refresh list
                                 // Force stats refresh
@@ -265,8 +238,8 @@ fun DomainListScreen(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(24.dp),
-            containerColor = if (currentTab == DomainTab.BLOCKED) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-            contentColor = if (currentTab == DomainTab.BLOCKED) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onPrimary,
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
             shape = MaterialTheme.shapes.medium
         ) {
             Icon(Icons.Default.Add, contentDescription = "Add Domain")
@@ -275,13 +248,14 @@ fun DomainListScreen(
         // ADD DIALOG
         if (showAddDialog) {
             AddDomainDialog(
-                title = if (currentTab == DomainTab.BLOCKED) "BLOCK DOMAIN" else "ALLOW DOMAIN",
+                initialIsBlocked = if (currentTab == DomainTab.ALLOWED) false else true, // Default to blocked unless explicitly in Allowed tab
+                allowTypeSelection = currentTab == DomainTab.ALL,
                 onDismiss = { showAddDialog = false },
-                onAdd = { newDomain ->
-                    if (currentTab == DomainTab.BLOCKED) {
-                        FilterEngine.addToBlocklist(context, newDomain)
+                onAdd = { domain, isBlocked ->
+                    if (isBlocked) {
+                        FilterEngine.addToBlocklist(context, domain)
                     } else {
-                        FilterEngine.addToAllowlist(context, newDomain)
+                        FilterEngine.addToAllowlist(context, domain)
                     }
                     refreshTrigger++
                     showAddDialog = false
@@ -295,14 +269,17 @@ fun DomainListScreen(
 
 @Composable
 fun DomainItem(
-    domain: String,
-    isBlocked: Boolean,
+    item: DomainUiModel,
     onDelete: () -> Unit
 ) {
     val borderColor =
-        if (isBlocked) MaterialTheme.colorScheme.error.copy(alpha = 0.5f) else MaterialTheme.colorScheme.primary.copy(
+        if (item.isBlocked) MaterialTheme.colorScheme.error.copy(alpha = 0.5f) else MaterialTheme.colorScheme.primary.copy(
             alpha = 0.5f
         )
+
+    val icon = if (item.isBlocked) Icons.Default.Close else Icons.Default.CheckCircle
+    val iconTint =
+        if (item.isBlocked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
 
     Row(
         modifier = Modifier
@@ -318,16 +295,15 @@ fun DomainItem(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-            // Optional: Icon based on status
             Icon(
-                if (isBlocked) Icons.Default.Close else Icons.Default.CheckCircle,
+                icon,
                 contentDescription = null,
-                tint = if (isBlocked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                tint = iconTint,
                 modifier = Modifier.size(16.dp)
             )
             Spacer(modifier = Modifier.width(12.dp))
             Text(
-                text = domain,
+                text = item.domain,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 fontFamily = FontFamily.Monospace,
@@ -348,36 +324,65 @@ fun DomainItem(
 
 @Composable
 fun AddDomainDialog(
-    title: String,
+    initialIsBlocked: Boolean,
+    allowTypeSelection: Boolean,
     onDismiss: () -> Unit,
-    onAdd: (String) -> Unit
+    onAdd: (String, Boolean) -> Unit
 ) {
     var text by remember { mutableStateOf("") }
+    var isBlocked by remember { mutableStateOf(initialIsBlocked) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(title, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
+            Text(
+                if (allowTypeSelection) "ADD DOMAIN" else if (isBlocked) "BLOCK DOMAIN" else "ALLOW DOMAIN",
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold
+            )
         },
         text = {
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it },
-                label = { Text("Domain (e.g. google.com)") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = {
-                    if (text.isNotBlank()) onAdd(text)
-                }),
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.small
-            )
+            Column {
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { text = it },
+                    label = { Text("Domain (e.g. google.com)") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = {
+                        if (text.isNotBlank()) onAdd(text, isBlocked)
+                    }),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.small
+                )
+
+                if (allowTypeSelection) {
+                    Spacer(Modifier.height(16.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        CyberChip(
+                            text = "BLOCK",
+                            selected = isBlocked,
+                            onClick = { isBlocked = true },
+                            modifier = Modifier.weight(1f)
+                        )
+                        CyberChip(
+                            text = "ALLOW",
+                            selected = !isBlocked,
+                            onClick = { isBlocked = false },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
         },
         confirmButton = {
             Button(
-                onClick = { if (text.isNotBlank()) onAdd(text) },
+                onClick = { if (text.isNotBlank()) onAdd(text, isBlocked) },
                 enabled = text.isNotBlank(),
-                shape = MaterialTheme.shapes.small
+                shape = MaterialTheme.shapes.small,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isBlocked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                )
             ) {
                 Text("ADD")
             }

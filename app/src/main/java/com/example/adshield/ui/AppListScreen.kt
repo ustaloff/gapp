@@ -27,9 +27,14 @@ import androidx.core.graphics.drawable.toBitmap
 import com.example.adshield.data.AppInfo
 import com.example.adshield.data.AppPreferences
 import com.example.adshield.data.AppsRepository
+import com.example.adshield.ui.components.CyberChip
 import com.example.adshield.ui.components.GridBackground
 import kotlinx.coroutines.launch
 import com.example.adshield.ui.theme.AdShieldTheme
+
+enum class AppListTab {
+    ALL, BLOCKED, ALLOWED
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,6 +52,7 @@ fun AppListScreen(
     var excludedApps by remember { mutableStateOf(setOf<String>()) }
     var searchQuery by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(true) }
+    var currentTab by remember { mutableStateOf(AppListTab.ALL) }
 
     // Load data
     LaunchedEffect(Unit) {
@@ -142,53 +148,30 @@ fun AppListScreen(
                 singleLine = true
             )
 
-            // FILTERS (2 Toggles)
-            var showWhitelistedOnly by remember { mutableStateOf(false) }
-            var showSystemApps by remember { mutableStateOf(false) } // Default hidden
-
+            // UNIFIED FILTER CHIPS
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Left: Whitelist Filter
-                FilterChip(
-                    selected = showWhitelistedOnly,
-                    onClick = { showWhitelistedOnly = !showWhitelistedOnly },
-                    label = { Text(if (showWhitelistedOnly) "WHITELISTED ONLY" else "SHOW ALL") },
-                    leadingIcon = {
-                        if (showWhitelistedOnly) Icon(
-                            Icons.Default.CheckCircle,
-                            null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primary,
-                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                    ),
-                    shape = MaterialTheme.shapes.small
+                CyberChip(
+                    text = "ALL",
+                    selected = currentTab == AppListTab.ALL,
+                    onClick = { currentTab = AppListTab.ALL },
+                    modifier = Modifier.weight(1f)
                 )
-
-                // Right: System Filter
-                FilterChip(
-                    selected = showSystemApps,
-                    onClick = { showSystemApps = !showSystemApps },
-                    label = { Text("SYSTEM APPS") },
-                    leadingIcon = {
-                        if (showSystemApps) Icon(
-                            Icons.Default.Settings,
-                            null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
-                    ),
-                    shape = MaterialTheme.shapes.small
+                CyberChip(
+                    text = "BLOCKED",
+                    selected = currentTab == AppListTab.BLOCKED,
+                    onClick = { currentTab = AppListTab.BLOCKED },
+                    modifier = Modifier.weight(1f)
+                )
+                CyberChip(
+                    text = "ALLOWED",
+                    selected = currentTab == AppListTab.ALLOWED,
+                    onClick = { currentTab = AppListTab.ALLOWED },
+                    modifier = Modifier.weight(1f)
                 )
             }
 
@@ -203,16 +186,15 @@ fun AppListScreen(
                     val matchesSearch = app.name.contains(searchQuery, ignoreCase = true) ||
                             app.packageName.contains(searchQuery, ignoreCase = true)
 
-                    // 2. Whitelist Filter
+                    // 2. Tab Filter
                     val isExcluded = excludedApps.contains(app.packageName)
-                    val matchesWhitelist = if (showWhitelistedOnly) isExcluded else true
+                    val matchesTab = when (currentTab) {
+                        AppListTab.ALL -> true
+                        AppListTab.BLOCKED -> !isExcluded // NOT in whitelist = Blocked/Protected
+                        AppListTab.ALLOWED -> isExcluded  // IN whitelist = Allowed/Bypass
+                    }
 
-                    // 3. System Filter
-                    // If showSystemApps is FALSE, we hide system apps (isSystem=true)
-                    // If showSystemApps is TRUE, we show everything
-                    val matchesSystem = if (showSystemApps) true else !app.isSystem
-
-                    matchesSearch && matchesWhitelist && matchesSystem
+                    matchesSearch && matchesTab
                 }
 
                 if (filteredApps.isEmpty()) {
