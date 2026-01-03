@@ -67,7 +67,10 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            startVpnService()
+            val intent = Intent(this, LocalVpnService::class.java).apply {
+                action = LocalVpnService.ACTION_START
+            }
+            startService(intent)
         }
     }
 
@@ -80,7 +83,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         com.example.adshield.filter.FilterEngine.initialize(this)
-        com.example.adshield.data.BillingManager.initialize(this)
         com.example.adshield.data.BillingManager.initialize(this)
         setContent {
             val context = LocalContext.current
@@ -102,60 +104,87 @@ class MainActivity : ComponentActivity() {
                     var toastType by remember { mutableStateOf(CyberToastType.INFO) }
 
                     LaunchedEffect(Unit) {
-                        // Always go to dashboard
+                        val sharedPrefs = context.getSharedPreferences(
+                            "adshield_prefs",
+                            android.content.Context.MODE_PRIVATE
+                        )
+                        val onboardingComplete =
+                            sharedPrefs.getBoolean("onboarding_complete", false)
+
+                        // Navigate based on onboarding state
                         if (currentScreen == "splash") {
-                            currentScreen = "dashboard"
+                            currentScreen = if (onboardingComplete) "dashboard" else "ONBOARDING"
                         }
                     }
 
-                    if (currentScreen == "dashboard") {
-                        DashboardScreen(
-                            onStartClick = { checkPermissionsAndStart() },
-                            onStopClick = { stopVpnService() },
-                            onWhitelistApp = { packageName ->
-                                val prefs = AppPreferences(this@MainActivity)
-                                val currentExcluded = prefs.getExcludedApps()
-                                if (currentExcluded.contains(packageName)) {
-                                    // WAS EXCLUDED -> NOW INCLUDE (PROTECT)
-                                    prefs.removeExcludedApp(packageName)
-                                    toastMessage = "PROTECTED: $packageName"
-                                    toastType = CyberToastType.SUCCESS
-                                    toastVisible = true
-                                } else {
-                                    // WAS INCLUDED -> NOW EXCLUDE (WHITELIST)
-                                    prefs.addExcludedApp(packageName)
-                                    toastMessage = "WHITELISTED: $packageName"
-                                    toastType = CyberToastType.INFO // Info/Warning color
-                                    toastVisible = true
+                    if (currentScreen == "dashboard" || currentScreen == "ONBOARDING") {
+                        if (currentScreen == "ONBOARDING") {
+                            OnboardingScreen(
+                                onFinish = {
+                                    val sharedPrefs = context.getSharedPreferences(
+                                        "adshield_prefs",
+                                        android.content.Context.MODE_PRIVATE
+                                    )
+                                    sharedPrefs.edit()
+                                        .putBoolean("onboarding_complete", true)
+                                        .putBoolean(
+                                            "disclosure_accepted",
+                                            true
+                                        ) // Implicit acceptance
+                                        .apply()
+                                    currentScreen = "dashboard"
                                 }
-
-                                // Restart VPN if running to apply changes
-                                if (VpnStats.isRunning.value) {
-                                    stopVpnService()
-                                    lifecycleScope.launch {
-                                        kotlinx.coroutines.delay(500)
-                                        startVpnService()
+                            )
+                        } else {
+                            DashboardScreen(
+                                onStartClick = { checkPermissionsAndStart() },
+                                onStopClick = { stopVpnService() },
+                                onWhitelistApp = { packageName ->
+                                    val prefs = AppPreferences(this@MainActivity)
+                                    val currentExcluded = prefs.getExcludedApps()
+                                    if (currentExcluded.contains(packageName)) {
+                                        // WAS EXCLUDED -> NOW INCLUDE (PROTECT)
+                                        prefs.removeExcludedApp(packageName)
+                                        toastMessage = "PROTECTED: $packageName"
+                                        toastType = CyberToastType.SUCCESS
+                                        toastVisible = true
+                                    } else {
+                                        // WAS INCLUDED -> NOW EXCLUDE (WHITELIST)
+                                        prefs.addExcludedApp(packageName)
+                                        toastMessage = "WHITELISTED: $packageName"
+                                        toastType = CyberToastType.INFO // Info/Warning color
+                                        toastVisible = true
                                     }
+
+                                    // Restart VPN if running to apply changes
+                                    if (VpnStats.isRunning.value) {
+                                        stopVpnService()
+                                        lifecycleScope.launch {
+                                            kotlinx.coroutines.delay(500)
+                                            startVpnService()
+                                        }
+                                    }
+                                },
+                                // Pass State
+                                toastVisible = toastVisible,
+                                toastMessage = toastMessage,
+                                toastType = toastType,
+                                onToastChange = { v, m, t ->
+                                    toastVisible = v
+                                    if (m != null) toastMessage = m
+                                    if (t != null) toastType = t
+                                },
+                                onThemeChange = {
+                                    appTheme = it
+                                    prefs.setAppTheme(it) // Save to Prefs
                                 }
-                            },
-                            // Pass State
-                            toastVisible = toastVisible,
-                            toastMessage = toastMessage,
-                            toastType = toastType,
-                            onToastChange = { v, m, t ->
-                                toastVisible = v
-                                if (m != null) toastMessage = m
-                                if (t != null) toastType = t
-                            },
-                            onThemeChange = {
-                                appTheme = it
-                                prefs.setAppTheme(it) // Save to Prefs
-                            }
-                        )
+                            )
+                        }
                     }
                 }
             }
         }
+
     }
 
     private fun checkPermissionsAndStart() {

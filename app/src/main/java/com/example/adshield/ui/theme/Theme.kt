@@ -31,7 +31,7 @@ private fun getAdShieldScheme(theme: AppTheme): androidx.compose.material3.Color
     return when (theme) {
         AppTheme.CyberGreen -> darkColorScheme(
             // === Main Accents ===
-            primary = NeonGreenPrimary,
+            primary = NeonGreenPrimary.copy(alpha = 0.4f),
             onPrimary = NeonGreenSurface, // Black-ish text on Green button is readable
             primaryContainer = NeonGreenPrimary.copy(alpha = 0.2f),
             onPrimaryContainer = NeonGreenPrimary,
@@ -51,7 +51,7 @@ private fun getAdShieldScheme(theme: AppTheme): androidx.compose.material3.Color
             onSurfaceVariant = NeonGreenSecondary.copy(alpha = 0.7f),
 
             // === Errors & Status ===
-            error = NeonGreenError,
+            error = NeonGreenError.copy(alpha = 0.7f),
             onError = NeonGreenSurface,
 
             // === Borders ===
@@ -61,7 +61,7 @@ private fun getAdShieldScheme(theme: AppTheme): androidx.compose.material3.Color
 
         AppTheme.CyberBlue -> darkColorScheme(
             // === Main Accents ===
-            primary = NeonBluePrimary,
+            primary = NeonBluePrimary.copy(alpha = 0.4f),
             onPrimary = NeonBlueSurface,
             primaryContainer = NeonBluePrimary.copy(alpha = 0.2f),
             onPrimaryContainer = NeonBluePrimary,
@@ -81,7 +81,7 @@ private fun getAdShieldScheme(theme: AppTheme): androidx.compose.material3.Color
             onSurfaceVariant = NeonBlueSecondary.copy(alpha = 0.7f),
 
             // === Errors & Status ===
-            error = NeonBlueError,
+            error = NeonBlueError.copy(alpha = 0.7f),
             onError = NeonBlueSurface,
 
             // === Borders ===
@@ -91,7 +91,7 @@ private fun getAdShieldScheme(theme: AppTheme): androidx.compose.material3.Color
 
         AppTheme.CyberAmber -> darkColorScheme(
             // === Main Accents ===
-            primary = NeonAmberPrimary,
+            primary = NeonAmberPrimary.copy(alpha = 0.4f),
             onPrimary = NeonAmberSurface,
             primaryContainer = NeonAmberPrimary.copy(alpha = 0.2f),
             onPrimaryContainer = NeonAmberPrimary,
@@ -111,7 +111,7 @@ private fun getAdShieldScheme(theme: AppTheme): androidx.compose.material3.Color
             onSurfaceVariant = NeonAmberSecondary.copy(alpha = 0.7f),
 
             // === Errors & Status ===
-            error = NeonAmberError,
+            error = NeonAmberError.copy(alpha = 0.7f),
             onError = NeonAmberSurface,
 
             // === Borders ===

@@ -90,9 +90,12 @@ class AppPreferences(context: Context) {
     // --- Theme Configuration ---
 
     fun getAppTheme(): com.example.adshield.ui.theme.AppTheme {
-        val themeName = prefs.getString(KEY_APP_THEME, com.example.adshield.ui.theme.AppTheme.CyberGreen.name)
+        val themeName =
+            prefs.getString(KEY_APP_THEME, com.example.adshield.ui.theme.AppTheme.CyberGreen.name)
         return try {
-            com.example.adshield.ui.theme.AppTheme.valueOf(themeName ?: com.example.adshield.ui.theme.AppTheme.CyberGreen.name)
+            com.example.adshield.ui.theme.AppTheme.valueOf(
+                themeName ?: com.example.adshield.ui.theme.AppTheme.CyberGreen.name
+            )
         } catch (e: Exception) {
             com.example.adshield.ui.theme.AppTheme.CyberGreen
         }

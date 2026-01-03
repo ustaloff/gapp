@@ -32,7 +32,7 @@ fun CyberNavBar(
         // Floating Pill Container
         Surface(
             modifier = Modifier
-                .height(72.dp) // Height for the bar
+                .height(64.dp) // Height for the bar 72
                 .fillMaxWidth(),
             shape = MaterialTheme.shapes.extraLarge,
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.80f),
