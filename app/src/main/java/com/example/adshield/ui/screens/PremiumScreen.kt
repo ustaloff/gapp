@@ -1,27 +1,32 @@
 package com.example.adshield.ui.screens
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.adshield.data.BillingManager
-import com.example.adshield.ui.theme.AdShieldTheme
 import android.app.Activity
 
 @Composable
@@ -29,28 +34,25 @@ fun PremiumScreen(
     onBackClick: () -> Unit
 ) {
     val context = LocalContext.current
-
     val isPremium by BillingManager.isPremium.collectAsState()
-
     var isLoading by remember { mutableStateOf(false) }
-    // Hardcoded Offline Package
-    val offlinePackage = remember {
-        BillingManager.MockPackage(
-            "pro_lifetime",
-            BillingManager.MockProduct(
-                "$4.99",
-                "AdShield Pro (Lifetime)",
-                "Unlock full protection forever"
-            )
-        )
-    }
 
-    var selectedPackage by remember { mutableStateOf<BillingManager.MockPackage?>(offlinePackage) }
+    // Mock Pricing
+    val packageMonthly = BillingManager.MockPackage("pro_monthly", BillingManager.MockProduct("$2.49", "Monthly", "Billed monthly"))
+    val packageYearly = BillingManager.MockPackage("pro_yearly", BillingManager.MockProduct("$11.99", "Yearly", "Billed annually"))
+    
+    var selectedPackage by remember { mutableStateOf<BillingManager.MockPackage?>(packageYearly) }
+
+    // Colors
+    val neonGreen = Color(0xFF1BFF80) // Toxic Green
+    val darkBg = Color(0xFF050505) // Vantablack-ish
+    val surfaceColor = Color(0xFF111111)
+    val warningColor = Color(0xFFFFAB40) // Amber for 68%
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(darkBg)
     ) {
         Column(
             modifier = Modifier
@@ -59,164 +61,225 @@ fun PremiumScreen(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Header
+            // Header: Close Button
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 IconButton(onClick = onBackClick) {
-                    Icon(
-                        androidx.compose.material.icons.Icons.Default.Close,
-                        contentDescription = "Close"
-                    )
+                    Icon(androidx.compose.material.icons.Icons.Default.Close, contentDescription = "Close", tint = Color.Gray)
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
-            Icon(
-                androidx.compose.material.icons.Icons.Default.Star,
-                contentDescription = null,
-                tint = AdShieldTheme.colors.premium,
-                modifier = Modifier.size(64.dp)
-            )
-            Spacer(Modifier.height(16.dp))
+            // Headline
             Text(
-                "ADSHIELD PRO",
-                style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.Black,
-                color = MaterialTheme.colorScheme.primary
+                "Your traffic is visible.\nMake it invisible.",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                textAlign = TextAlign.Center
             )
+            
+            Spacer(Modifier.height(8.dp))
+            
             Text(
-                "UNLOCK FULL PROTECTION",
-                style = MaterialTheme.typography.labelLarge,
-                letterSpacing = 2.sp
+                "Upgrade to Premium to unlock full protection and encrypted DNS tunnels.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.Gray,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 16.dp)
             )
 
             Spacer(Modifier.height(32.dp))
 
-            // Comparison Table
-            FeatureRow("Custom Blocklists", false, true)
-            FeatureRow("Faster DNS Proxy", false, true)
-            FeatureRow("Priority Support", false, true)
-            FeatureRow("Support Development", false, true)
+            // SECURITY SCORES
+            // Current (Free)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("CURRENT PROTECTION", color = Color.Gray, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                Text("68% - VULNERABLE", color = Color.Gray, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+            }
+            Spacer(Modifier.height(4.dp))
+            LinearProgressIndicator(
+                progress = { 0.68f },
+                modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
+                color = warningColor,
+                trackColor = surfaceColor
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            // Premium (Target)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                     Icon(androidx.compose.material.icons.Icons.Default.Lock, null, tint = neonGreen, modifier = Modifier.size(12.dp))
+                     Spacer(Modifier.width(4.dp))
+                     Text("PREMIUM PROTECTION", color = neonGreen, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                }
+                Text("100% - ENCRYPTED", color = neonGreen, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+            }
+            Spacer(Modifier.height(4.dp))
+            // Animated Glow Effect (Simulated via Brush)
+            Box(Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)).background(
+                brush = Brush.horizontalGradient(
+                    colors = listOf(neonGreen.copy(alpha=0.8f), neonGreen)
+                )
+            ))
 
             Spacer(Modifier.height(32.dp))
 
+            // BENEFITS CARDS
+            BenefitCard("Hide activity from ISP", "Mask your digital footprint completely", androidx.compose.material.icons.Icons.Default.VisibilityOff, neonGreen, surfaceColor)
+            Spacer(Modifier.height(12.dp))
+            BenefitCard("Block ads in apps", "Stop trackers & popups system-wide", androidx.compose.material.icons.Icons.Default.Security, neonGreen, surfaceColor)
+            Spacer(Modifier.height(12.dp))
+            BenefitCard("2x Faster Loading", "Optimized DNS for speed", androidx.compose.material.icons.Icons.Default.Speed, neonGreen, surfaceColor)
+
+            Spacer(Modifier.height(32.dp))
+
+            // PRICING
             if (isPremium) {
-                Text(
-                    "YOU ARE PREMIUM!",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    "Thank you for your support.",
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                Text("PREMIUM ACTIVE", color = neonGreen, style = MaterialTheme.typography.headlineLarge)
             } else {
-                val packages = listOf(offlinePackage)
+                Row(
+                    Modifier.fillMaxWidth(), 
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Monthly
+                    PricingCard(
+                        modifier = Modifier.weight(1f),
+                        title = "MONTHLY",
+                        price = "$2.49",
+                        sub = "/ month",
+                        selected = selectedPackage == packageMonthly,
+                        onClick = { selectedPackage = packageMonthly },
+                        surfaceColor = surfaceColor,
+                        accentColor = neonGreen
+                    )
 
-                packages.forEach { pkg ->
-                    val isSelected = selectedPackage == pkg
-                    val price = pkg.product.price
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp)
-                            .border(
-                                width = if (isSelected) 2.dp else 1.dp,
-                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                            .background(
-                                if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else Color.Transparent,
-                                RoundedCornerShape(12.dp)
-                            )
-                            .clickable { selectedPackage = pkg }
-                            .padding(16.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column {
-                                Text(pkg.product.title, fontWeight = FontWeight.Bold)
-                                Text(
-                                    pkg.product.description,
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                            }
-                            Text(
-                                price,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
+                    // Yearly
+                    PricingCard(
+                        modifier = Modifier.weight(1f),
+                        title = "YEARLY",
+                        price = "$11.99",
+                        sub = "/ year",
+                        badge = "BEST VALUE -60%",
+                        selected = selectedPackage == packageYearly,
+                        onClick = { selectedPackage = packageYearly },
+                        surfaceColor = surfaceColor,
+                        accentColor = neonGreen
+                    )
                 }
 
                 Spacer(Modifier.height(24.dp))
 
+                // CTA BUTTON
                 Button(
                     onClick = {
                         selectedPackage?.let { pkg ->
-                            BillingManager.purchase(context as Activity, pkg) { loading ->
-                                isLoading = loading
-                            }
+                            BillingManager.purchase(context as Activity, pkg) { loading -> isLoading = loading }
                         }
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    enabled = !isLoading && selectedPackage != null,
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = neonGreen),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    if (isLoading) CircularProgressIndicator(
-                        color = Color.White,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    else Text("UNLOCK NOW (OFFLINE)", fontWeight = FontWeight.Bold)
+                    if (isLoading) {
+                        CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(24.dp))
+                    } else {
+                        Text("Start 14-Day Free Trial", color = Color.Black, fontWeight = FontWeight.Black, fontSize = 18.sp)
+                    }
                 }
-
-                TextButton(onClick = {
-                    BillingManager.restorePurchases(context) { loading -> isLoading = loading }
-                }) {
-                    Text("Restore Purchases", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                
+                Spacer(Modifier.height(12.dp))
+                Text("No commitment. Cancel anytime.", color = Color.Gray, style = MaterialTheme.typography.labelSmall)
+                
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Text("RESTORE", color = Color.DarkGray, style = MaterialTheme.typography.labelSmall, modifier = Modifier.clickable { BillingManager.restorePurchases(context) {} })
+                    Text("TERMS", color = Color.DarkGray, style = MaterialTheme.typography.labelSmall)
+                    Text("PRIVACY", color = Color.DarkGray, style = MaterialTheme.typography.labelSmall)
                 }
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-            Text(
-                "Terms of Service | Privacy Policy",
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.Gray
-            )
         }
     }
 }
 
 @Composable
-fun FeatureRow(text: String, free: Boolean, pro: Boolean) {
+fun BenefitCard(title: String, subtitle: String, icon: ImageVector, accent: Color, bg: Color) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+            .background(bg, RoundedCornerShape(12.dp))
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text, modifier = Modifier.weight(1f))
-        Row(modifier = Modifier.width(80.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            Icon(
-                if (free) androidx.compose.material.icons.Icons.Default.Check else androidx.compose.material.icons.Icons.Default.Close,
-                contentDescription = null,
-                tint = if (free) MaterialTheme.colorScheme.primary else Color.Gray.copy(alpha = 0.5f),
-                modifier = Modifier.size(20.dp)
-            )
-            Icon(
-                if (pro) androidx.compose.material.icons.Icons.Default.Check else androidx.compose.material.icons.Icons.Default.Close,
-                contentDescription = null,
-                tint = if (pro) MaterialTheme.colorScheme.primary else Color.Gray.copy(alpha = 0.5f),
-                modifier = Modifier.size(20.dp)
-            )
+        Surface(color = accent.copy(alpha = 0.1f), shape = RoundedCornerShape(8.dp), modifier = Modifier.size(40.dp)) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(icon, null, tint = accent, modifier = Modifier.size(24.dp))
+            }
+        }
+        Spacer(Modifier.width(16.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
+            Text(subtitle, color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+        }
+        Icon(androidx.compose.material.icons.Icons.Default.Lock, null, tint = Color.DarkGray, modifier = Modifier.size(16.dp))
+    }
+}
+
+@Composable
+fun PricingCard(
+    modifier: Modifier,
+    title: String,
+    price: String,
+    sub: String,
+    badge: String? = null,
+    selected: Boolean,
+    onClick: () -> Unit,
+    surfaceColor: Color,
+    accentColor: Color
+) {
+    Box(modifier = modifier) {
+        // Card Content
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = if (badge != null) 12.dp else 0.dp) // Space for badge
+                .border(if (selected) 2.dp else 0.dp, if (selected) accentColor else Color.Transparent, RoundedCornerShape(16.dp))
+                .background(surfaceColor, RoundedCornerShape(16.dp))
+                .clickable { onClick() }
+                .padding(16.dp)
+        ) {
+            Text(title, color = Color.Gray, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(8.dp))
+            Text(price, color = Color.White, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            Text(sub, color = Color.Gray, style = MaterialTheme.typography.labelSmall)
+            Spacer(Modifier.height(24.dp))
+            // Radio Circle
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .border(2.dp, if (selected) accentColor else Color.Gray, CircleShape)
+                    .padding(4.dp)
+            ) {
+                if (selected) {
+                    Box(Modifier.fillMaxSize().background(accentColor, CircleShape))
+                }
+            }
+        }
+        
+        // Badge Overlay
+        if (badge != null) {
+            Surface(
+                color = accentColor,
+                shape = RoundedCornerShape(50),
+                modifier = Modifier.align(Alignment.TopCenter)
+            ) {
+                Text(
+                    badge,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                    color = Color.Black,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }
