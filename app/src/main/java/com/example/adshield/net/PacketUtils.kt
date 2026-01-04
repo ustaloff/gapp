@@ -14,12 +14,10 @@ object PacketUtils {
         if (packet.remaining() < 1) return 0
         val firstByte = packet.get(0).toInt()
         val version = (firstByte shr 4) and 0x0F
-        return if (version == 4) {
-            (firstByte and 0x0F) * 4
-        } else if (version == 6) {
-            40
-        } else {
-            0
+        return when (version) {
+            4 -> (firstByte and 0x0F) * 4
+            6 -> 40
+            else -> 0
         }
     }
 
@@ -64,7 +62,7 @@ object PacketUtils {
         response.put(dstIp)
         response.put(srcIp)
 
-        response.putShort(10, calculateChecksum(response, 0, responseIpHeaderLen))
+        response.putShort(10, calculateIpv4HeaderChecksum(response))
 
         // UDP Header
         val udpHeaderAndPayload = ByteArray(UDP_HEADER_SIZE + payload.size)
@@ -95,7 +93,7 @@ object PacketUtils {
 
         // IPv6 Header
         // Version 6, Traffic Class 0, Flow Label 0
-        response.putInt(0x60000000.toInt())
+        response.putInt(0x60000000)
         response.putShort((UDP_HEADER_SIZE + payload.size).toShort()) // Payload length
         response.put(17) // Next Header: UDP
         response.put(64) // Hop Limit
@@ -177,20 +175,19 @@ object PacketUtils {
         return if (final == 0.toShort()) 0xFFFF.toShort() else final
     }
 
-    private fun calculateChecksum(buffer: ByteBuffer, offset: Int, length: Int): Short {
+    private fun calculateIpv4HeaderChecksum(buffer: ByteBuffer): Short {
         var sum = 0L
-        var i = offset
+        val length = 20 // Fixed IPv4 Header length
+        var i = 0
 
-        while (i < offset + length - 1) {
+        while (i < length - 1) {
             val word =
                 (buffer.get(i).toInt() and 0xFF shl 8) or (buffer.get(i + 1).toInt() and 0xFF)
             sum += word.toLong()
             i += 2
         }
 
-        if (i < offset + length) {
-            sum += (buffer.get(i).toInt() and 0xFF shl 8).toLong()
-        }
+
 
         while ((sum shr 16) > 0) {
             sum = (sum and 0xFFFF) + (sum shr 16)

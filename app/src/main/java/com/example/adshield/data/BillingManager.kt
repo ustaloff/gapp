@@ -3,10 +3,13 @@ package com.example.adshield.data
 import android.content.Context
 import android.util.Log
 import android.app.Activity
+import androidx.core.content.edit
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.Dispatchers
 
 // import com.revenuecat.purchases.* // Disabled for Offline Mode
 
@@ -18,12 +21,14 @@ object BillingManager {
     // State to observe in UI
     private val _isPremium = MutableStateFlow(false)
     val isPremium = _isPremium.asStateFlow()
-
-    // Mock offerings for UI
+    
+    // Mock offerings for UI (Public types)
     data class MockPackage(val identifier: String, val product: MockProduct)
     data class MockProduct(val price: String, val title: String, val description: String)
 
-    private val _currentOfferings = MutableStateFlow<List<MockPackage>>(emptyList())
+
+    // Mock offerings for UI
+
     // We use Any to avoid depending on RC Package, but UI expects Package.
     // To avoid breaking UI imports, we might need a wrapper or just mock it carefully.
     // UI uses `packageToBuy: Package` in `purchase`.
@@ -57,19 +62,17 @@ object BillingManager {
         Log.i("BillingManager", "Offline Mode Initialized. Premium: ${_isPremium.value}")
     }
 
-    fun purchase(activity: Activity, packageToBuy: Any?, onLoaders: (Boolean) -> Unit) {
+    fun purchase(activity: Activity, @Suppress("UNUSED_PARAMETER") packageToBuy: Any?, onLoaders: (Boolean) -> Unit) {
         onLoaders(true)
         // Simulate network delay
-        kotlinx.coroutines.CoroutineScope(Dispatchers.Main).launch {
-            kotlinx.coroutines.delay(1000)
+        CoroutineScope(Dispatchers.Main).launch {
+            delay(1000)
             val prefs = activity.getSharedPreferences("adshield_prefs", Context.MODE_PRIVATE)
-            prefs.edit().putBoolean("is_premium_unlocked", true).apply()
+            prefs.edit { putBoolean("is_premium_unlocked", true) }
             _isPremium.value = true
 
             // Sync with Firestore (Keep existing logic)
-            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
-                UserRepository.updatePremiumStatus(true)
-            }
+            UserRepository.updatePremiumStatus(true)
 
             onLoaders(false)
             Log.i("BillingManager", "Offline Purchase Successful")
@@ -78,8 +81,8 @@ object BillingManager {
 
     fun restorePurchases(context: Context, onLoaders: (Boolean) -> Unit) {
         onLoaders(true)
-        kotlinx.coroutines.CoroutineScope(Dispatchers.Main).launch {
-            kotlinx.coroutines.delay(1000)
+        CoroutineScope(Dispatchers.Main).launch {
+            delay(1000)
             val prefs = context.getSharedPreferences("adshield_prefs", Context.MODE_PRIVATE)
             if (prefs.getBoolean("is_premium_unlocked", false)) {
                 _isPremium.value = true
@@ -88,10 +91,5 @@ object BillingManager {
         }
     }
 
-    // Helper to manually set premium (Debug/Admin)
-    fun setPremiumStatus(context: Context, isPro: Boolean) {
-        val prefs = context.getSharedPreferences("adshield_prefs", Context.MODE_PRIVATE)
-        prefs.edit().putBoolean("is_premium_unlocked", isPro).apply()
-        _isPremium.value = isPro
-    }
+
 }

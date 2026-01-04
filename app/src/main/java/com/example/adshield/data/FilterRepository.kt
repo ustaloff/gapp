@@ -71,6 +71,8 @@ object FilterRepository {
      * - [Adblock Plus 2.0] headers
      * - cosmetic rules (##, #@#)
      */
+
+    @Suppress("SpellCheckingInspection")
     private fun parseLine(line: String): Pair<String, Boolean>? {
         var trimmed = line.trim()
 
@@ -125,7 +127,7 @@ object FilterRepository {
         // Remove trailing ^ or /
         val separatorIndex = trimmed.indexOfAny(charArrayOf('^', '/'))
         if (separatorIndex != -1) {
-            trimmed = trimmed.substring(0, separatorIndex)
+            trimmed = trimmed.take(separatorIndex)
         }
 
         trimmed = trimmed.lowercase().trim()

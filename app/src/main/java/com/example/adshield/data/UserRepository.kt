@@ -3,7 +3,7 @@ package com.example.adshield.data
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.flow.asStateFlow
+
 import kotlinx.coroutines.tasks.await
 import android.util.Log
 
@@ -23,9 +23,7 @@ object UserRepository {
         }
     }
 
-    fun getCurrentUser(): FirebaseUser? {
-        return auth.currentUser
-    }
+
 
     suspend fun signInWithGoogle(idToken: String): Result<FirebaseUser> {
         val credential = com.google.firebase.auth.GoogleAuthProvider.getCredential(idToken, null)
@@ -44,6 +42,8 @@ object UserRepository {
             Result.failure(e)
         }
     }
+
+
 
     suspend fun isUserPremium(): Boolean {
         val user = auth.currentUser ?: return false
@@ -86,6 +86,12 @@ object UserRepository {
         } catch (e: Exception) {
             Log.e("UserRepository", "Error updating user doc", e)
         }
+    }
+
+
+
+    fun getCurrentUser(): FirebaseUser? {
+        return auth.currentUser
     }
 
     fun signOut() {

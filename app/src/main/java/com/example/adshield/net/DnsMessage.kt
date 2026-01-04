@@ -127,21 +127,5 @@ class DnsMessage(private val rawData: ByteArray) {
         return finalResponse
     }
 
-    fun getQTypeName(): String {
-        return when (qType) {
-            1 -> "A"
-            2 -> "NS"
-            5 -> "CNAME"
-            6 -> "SOA"
-            12 -> "PTR"
-            15 -> "MX"
-            16 -> "TXT"
-            28 -> "AAAA"
-            33 -> "SRV"
-            64 -> "SVCB"
-            65 -> "HTTPS"
-            255 -> "ANY"
-            else -> "TYPE_$qType"
-        }
-    }
+
 }

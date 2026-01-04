@@ -8,7 +8,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import java.io.IOException
+import kotlinx.coroutines.isActive
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
@@ -23,7 +23,7 @@ class DnsProxy(private val vpnService: VpnService) {
     // Socket Pool for high-performance reuse
     private val socketPool = mutableListOf<DatagramSocket>()
     private val poolMutex = Mutex()
-    private val MAX_POOL_SIZE = 10
+    private val maxPoolSize = 10
 
     private suspend fun getPooledSocket(): DatagramSocket {
         poolMutex.withLock {
@@ -38,7 +38,7 @@ class DnsProxy(private val vpnService: VpnService) {
 
     private suspend fun returnToPool(socket: DatagramSocket) {
         poolMutex.withLock {
-            if (socketPool.size < MAX_POOL_SIZE) {
+            if (socketPool.size < maxPoolSize) {
                 socketPool.add(socket)
             } else {
                 socket.close()
@@ -78,7 +78,7 @@ class DnsProxy(private val vpnService: VpnService) {
                 val inPacket = DatagramPacket(responseBuffer, responseBuffer.size)
 
                 // Read until we get the matching transaction ID or timeout
-                while (true) {
+                while (isActive) {
                     socket.receive(inPacket)
                     if (inPacket.length >= 2) {
                         val responseId =
@@ -118,7 +118,7 @@ class DnsProxy(private val vpnService: VpnService) {
 
             val status = FilterEngine.checkDomain(domain)
 
-            var (dnsResponse, statusString) = when {
+            var (dnsResponse, _) = when {
                 FilterEngine.isDohBypass(domain) -> {
                     // Treat DoH bypass as BLOCKED for now, or create new status
                     VpnStats.increment(

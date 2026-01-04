@@ -111,14 +111,14 @@ class MainActivity : ComponentActivity() {
                                 onStopClick = { stopVpnService() },
                                 onWhitelistApp = { packageName ->
                                     val prefs = AppPreferences(this@MainActivity)
-                                    val currentExcluded = prefs.getExcludedApps()
+
                                     // Update Toast via State
 
                                     // WAS INCLUDED in list -> Now removing? No.
                                     // getExcludedApps() returns list of EXCLUDED apps.
                                     // if contains(pkg) -> it IS excluded (whitelisted). Removing it -> INCLUDE (PROTECT).
 
-                                    if (currentExcluded.contains(packageName)) {
+                                    if (prefs.isAppExcluded(packageName)) {
                                         prefs.removeExcludedApp(packageName)
                                         toastMessage = "PROTECTED: $packageName"
                                         toastType = CyberToastType.SUCCESS

@@ -277,8 +277,14 @@ fun SettingsView(
                             Spacer(modifier = Modifier.height(8.dp))
                             Button(
                                 onClick = {
-                                    FirebaseAuth.getInstance().signOut()
-                                    googleSignInClient.signOut()
+                                    UserRepository.signOut()
+                                    try {
+                                        googleSignInClient.signOut().addOnFailureListener {
+                                            // Ignore GMS errors during sign-out (e.g. if service is unreachable)
+                                        }
+                                    } catch (_: Exception) {
+                                        // Prevent crash if GMS process is dead
+                                    }
                                 },
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                             ) {

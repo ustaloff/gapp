@@ -3,6 +3,9 @@ package com.example.adshield.data
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.core.content.edit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
@@ -17,20 +20,18 @@ data class VpnLogEntry(
 
 object VpnStats {
     val isRunning = mutableStateOf(false)
-    val blockedCount = mutableStateOf(0)
-    val totalCount = mutableStateOf(0)
-    val dataSavedBytes = mutableStateOf(0L)
+    val blockedCount = mutableIntStateOf(0)
+    val totalCount = mutableIntStateOf(0)
+    val dataSavedBytes = mutableLongStateOf(0L)
 
-    val blockedToday = mutableStateOf(0)
-    val blockedWeekly = mutableStateOf(0) // Sum of last 7 days
+    val blockedToday = mutableIntStateOf(0)
+    val blockedWeekly = mutableIntStateOf(0) // Sum of last 7 days
 
     // Professional Metrics
-    val blocksPerMinute = mutableStateOf(0)
-    val growthToday = mutableStateOf(0) // Percentage vs yesterday
-    val timeSavedMs = mutableStateOf(0L) // Estimated time saved in ms
+    val blocksPerMinute = mutableIntStateOf(0)
+    val growthToday = mutableIntStateOf(0) // Percentage vs yesterday
+    val timeSavedMs = mutableLongStateOf(0L) // Estimated time saved in ms
 
-    val appBlockedStats =
-        mutableStateListOf<Pair<String, Int>>() // Simplified for sorting: actually let's use map and convert in UI, or stateMap
     val appBlockedStatsMap = mutableStateMapOf<String, Int>()
     val domainBlockedStatsMap = mutableStateMapOf<String, Int>()
 
@@ -49,18 +50,18 @@ object VpnStats {
     // ...
 
     private fun updatePublicMetrics() {
-        blockedToday.value = dailyBuckets[0]
-        blockedWeekly.value = dailyBuckets.sum()
+        blockedToday.intValue = dailyBuckets[0]
+        blockedWeekly.intValue = dailyBuckets.sum()
 
         // Calculate Growth (Today vs Yesterday)
         val today = dailyBuckets[0]
         val yesterday = dailyBuckets[1]
 
         if (yesterday > 0) {
-            growthToday.value = ((today - yesterday).toFloat() / yesterday.toFloat() * 100).toInt()
+            growthToday.intValue = ((today - yesterday).toFloat() / yesterday.toFloat() * 100).toInt()
         } else {
             // If yesterday was 0, growth is technically infinite, but let's cap it or just show 100% if today > 0
-            growthToday.value = if (today > 0) 100 else 0
+            growthToday.intValue = if (today > 0) 100 else 0
         }
     }
 
@@ -85,15 +86,15 @@ object VpnStats {
         if (!running) {
             _recentLogs.clear()
             repeat(60) { _blockedHistory[it] = 0 }
-            blocksPerMinute.value = 0
+            blocksPerMinute.intValue = 0
         }
     }
 
     fun initialize(context: android.content.Context) {
         val prefs = context.getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE)
-        blockedCount.value = prefs.getInt(KEY_TOTAL, 0)
-        dataSavedBytes.value = prefs.getLong(KEY_DATA_SAVED, 0L)
-        timeSavedMs.value = prefs.getLong(KEY_TIME_SAVED, 0L)
+        blockedCount.intValue = prefs.getInt(KEY_TOTAL, 0)
+        dataSavedBytes.longValue = prefs.getLong(KEY_DATA_SAVED, 0L)
+        timeSavedMs.longValue = prefs.getLong(KEY_TIME_SAVED, 0L)
 
         val savedCounts = prefs.getString(KEY_DAILY_COUNTS, "") ?: ""
         if (savedCounts.isNotEmpty()) {
@@ -125,7 +126,7 @@ object VpnStats {
                     dailyBuckets[i] = 0
                 }
             }
-            prefs.edit().putLong(KEY_LAST_DAY, currentDay).apply()
+            prefs.edit { putLong(KEY_LAST_DAY, currentDay) }
             saveStats(context)
         }
     }
@@ -133,27 +134,13 @@ object VpnStats {
     private fun saveStats(context: android.content.Context) {
         val prefs = context.getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE)
         val csv = dailyBuckets.joinToString(",")
-        prefs.edit()
-            .putInt(KEY_TOTAL, blockedCount.value)
-            .putLong(KEY_DATA_SAVED, dataSavedBytes.value)
-            .putLong(KEY_TIME_SAVED, timeSavedMs.value)
-            .putString(KEY_DAILY_COUNTS, csv)
-            .apply()
-    }
 
-
-    suspend fun incrementBlocked(
-        context: android.content.Context,
-        domain: String,
-        appName: String? = null
-    ) {
-        // Technically this is only called for BLOCKED status in legacy, but we'll genericize it or call generic increment
-        increment(
-            context,
-            domain,
-            com.example.adshield.filter.FilterEngine.FilterStatus.BLOCKED,
-            appName
-        )
+        prefs.edit {
+            putInt(KEY_TOTAL, blockedCount.intValue)
+            putLong(KEY_DATA_SAVED, dataSavedBytes.longValue)
+            putLong(KEY_TIME_SAVED, timeSavedMs.longValue)
+            putString(KEY_DAILY_COUNTS, csv)
+        }
     }
 
     suspend fun increment(
@@ -165,18 +152,18 @@ object VpnStats {
         withContext(Dispatchers.Main) {
             statsLock.withLock {
                 if (status == com.example.adshield.filter.FilterEngine.FilterStatus.BLOCKED) {
-                    blockedCount.value++
-                    dataSavedBytes.value += 30 * 1024
-                    timeSavedMs.value += 300
+                    blockedCount.intValue++
+                    dataSavedBytes.longValue += 30 * 1024
+                    timeSavedMs.longValue += 300
                     checkDayReset(context)
                     dailyBuckets[0]++
                     saveStats(context)
                     updatePublicMetrics()
                     updateHistory()
                     _blockedHistory[59]++
-                    blocksPerMinute.value = _blockedHistory[59]
+                    blocksPerMinute.intValue = _blockedHistory[59]
                 } else {
-                    totalCount.value++
+                    totalCount.intValue++
                     updateHistory()
                 }
 
@@ -193,19 +180,6 @@ object VpnStats {
         }
     }
 
-    // Deprecated or simplified
-    suspend fun incrementTotal(
-        context: android.content.Context,
-        domain: String,
-        appName: String? = null
-    ) {
-        increment(
-            context,
-            domain,
-            com.example.adshield.filter.FilterEngine.FilterStatus.ALLOWED_DEFAULT,
-            appName
-        )
-    }
 
     private fun updateHistory() {
         val currentMinute = System.currentTimeMillis() / 60000

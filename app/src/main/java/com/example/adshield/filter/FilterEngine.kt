@@ -141,7 +141,7 @@ object FilterEngine {
                     }
                     newRegexList.add(Regex(pattern))
                     count++
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     // Log error but continue
                 }
             } else {
@@ -243,6 +243,7 @@ object FilterEngine {
         return FilterStatus.ALLOWED_DEFAULT
     }
 
+    @Suppress("SpellCheckingInspection")
     private fun analyzeHeuristics(domain: String): Boolean {
         // 1. Keywords check
         val keywords = listOf(
@@ -282,10 +283,7 @@ object FilterEngine {
         return false
     }
 
-    fun shouldBlock(domain: String?): Boolean {
-        val status = checkDomain(domain)
-        return status == FilterStatus.BLOCKED || status == FilterStatus.BLOCKED_USER
-    }
+
 
     // OPTIMIZED: Traverses segments from right-to-left without splitting into a List
     private fun checkTrie(targetRoot: TrieNode, domain: String, startIndex: Int): String? {

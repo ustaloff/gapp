@@ -3,7 +3,8 @@ package com.example.adshield.service
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.content.Context
+
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.net.VpnService
@@ -23,6 +24,7 @@ import java.net.InetSocketAddress
 import java.net.InetAddress
 import java.nio.ByteBuffer
 
+@SuppressLint("VpnServicePolicy")
 class LocalVpnService : VpnService() {
 
     private var vpnInterface: ParcelFileDescriptor? = null
@@ -116,6 +118,15 @@ class LocalVpnService : VpnService() {
                 // 1. Always exclude AdShield itself (Network Loop prevention)
                 addDisallowedApplication(packageName)
 
+                // 2. Exclude Critical System Components (Fixes SecurityException & Auth issues)
+                try {
+                    addDisallowedApplication("com.google.android.gms") // Google Play Services
+                    addDisallowedApplication("com.android.vending")    // Google Play Store
+                    addDisallowedApplication("com.google.android.gsf") // Google Services Framework
+                } catch (_: Exception) {
+                    Log.w("LocalVpnService", "Failed to exclude GMS/Vending")
+                }
+
                 // 2. Exclude user-selected apps (Split Tunneling)
                 val prefs = com.example.adshield.data.AppPreferences(this@LocalVpnService)
                 val excludedApps = prefs.getExcludedApps()
@@ -153,7 +164,7 @@ class LocalVpnService : VpnService() {
                         }
                     }
                 }
-            } catch (e: CancellationException) {
+            } catch (_: CancellationException) {
                 Log.i("LocalVpnService", "Writer loop cancelled normally")
             } catch (e: Exception) {
                 if (isActive) Log.e("LocalVpnService", "Writer loop crashed", e)
@@ -217,9 +228,9 @@ class LocalVpnService : VpnService() {
                         }
                     }
                 }
-            } catch (e: InterruptedIOException) {
+            } catch (_: InterruptedIOException) {
                 Log.i("LocalVpnService", "Packet loop interrupted (normal shutdown)")
-            } catch (e: CancellationException) {
+            } catch (_: CancellationException) {
                 Log.i("LocalVpnService", "Packet loop cancelled (normal shutdown)")
             } catch (e: IOException) {
                 if (isActive) Log.w("LocalVpnService", "Packet loop closed unexpected.", e)
@@ -234,7 +245,7 @@ class LocalVpnService : VpnService() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return null
 
         return try {
-            val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            val cm = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
             val srcAddr: InetAddress
             val dstAddr: InetAddress
 
@@ -267,23 +278,21 @@ class LocalVpnService : VpnService() {
                     packages[0]
                 } else null
             } else null
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
 
     private fun startForegroundWithNotification() {
         val channelId = "adshield_vpn_status"
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                channelId,
-                "AdShield Status",
-                NotificationManager.IMPORTANCE_LOW
-            )
-            (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).createNotificationChannel(
-                channel
-            )
-        }
+        val channel = NotificationChannel(
+            channelId,
+            "AdShield Status",
+            NotificationManager.IMPORTANCE_LOW
+        )
+        (getSystemService(NOTIFICATION_SERVICE) as NotificationManager).createNotificationChannel(
+            channel
+        )
 
         val pendingIntent = PendingIntent.getActivity(
             this,
@@ -292,12 +301,7 @@ class LocalVpnService : VpnService() {
             PendingIntent.FLAG_IMMUTABLE
         )
 
-        val notification = (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            android.app.Notification.Builder(this, channelId)
-        } else {
-            @Suppress("DEPRECATION")
-            android.app.Notification.Builder(this)
-        })
+        val notification = android.app.Notification.Builder(this, channelId)
             .setContentTitle("AdShield is protecting you")
             .setContentText("Filtering DNS traffic")
             .setSmallIcon(android.R.drawable.ic_secure)

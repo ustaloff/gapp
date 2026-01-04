@@ -2,6 +2,7 @@ package com.example.adshield.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 
 class AppPreferences(context: Context) {
 
@@ -23,18 +24,20 @@ class AppPreferences(context: Context) {
     fun addExcludedApp(packageName: String) {
         val current = getExcludedApps().toMutableSet()
         current.add(packageName)
-        prefs.edit().putStringSet(KEY_EXCLUDED_APPS, current).apply()
+        prefs.edit { putStringSet(KEY_EXCLUDED_APPS, current) }
     }
 
     fun removeExcludedApp(packageName: String) {
         val current = getExcludedApps().toMutableSet()
         current.remove(packageName)
-        prefs.edit().putStringSet(KEY_EXCLUDED_APPS, current).apply()
+        prefs.edit { putStringSet(KEY_EXCLUDED_APPS, current) }
     }
 
     fun isAppExcluded(packageName: String): Boolean {
         return getExcludedApps().contains(packageName)
     }
+
+
 
     // --- User-Defined Domain Allowlist ---
 
@@ -45,13 +48,13 @@ class AppPreferences(context: Context) {
     fun addToUserAllowlist(domain: String) {
         val current = getUserAllowlist().toMutableSet()
         current.add(domain.lowercase())
-        prefs.edit().putStringSet(KEY_USER_ALLOWLIST, current).apply()
+        prefs.edit { putStringSet(KEY_USER_ALLOWLIST, current) }
     }
 
     fun removeFromUserAllowlist(domain: String) {
         val current = getUserAllowlist().toMutableSet()
         current.remove(domain.lowercase())
-        prefs.edit().putStringSet(KEY_USER_ALLOWLIST, current).apply()
+        prefs.edit { putStringSet(KEY_USER_ALLOWLIST, current) }
     }
 
     // --- User-Defined Domain Blocklist ---
@@ -63,13 +66,13 @@ class AppPreferences(context: Context) {
     fun addToUserBlocklist(domain: String) {
         val current = getUserBlocklist().toMutableSet()
         current.add(domain.lowercase())
-        prefs.edit().putStringSet(KEY_USER_BLOCKLIST, current).apply()
+        prefs.edit { putStringSet(KEY_USER_BLOCKLIST, current) }
     }
 
     fun removeFromUserBlocklist(domain: String) {
         val current = getUserBlocklist().toMutableSet()
         current.remove(domain.lowercase())
-        prefs.edit().putStringSet(KEY_USER_BLOCKLIST, current).apply()
+        prefs.edit { putStringSet(KEY_USER_BLOCKLIST, current) }
     }
 
     // --- Blocklist Source Configuration ---
@@ -84,7 +87,7 @@ class AppPreferences(context: Context) {
     }
 
     fun setFilterSourceUrl(url: String) {
-        prefs.edit().putString(KEY_FILTER_SOURCE, url).apply()
+        prefs.edit { putString(KEY_FILTER_SOURCE, url) }
     }
 
     // --- Theme Configuration ---
@@ -96,12 +99,12 @@ class AppPreferences(context: Context) {
             com.example.adshield.ui.theme.AppTheme.valueOf(
                 themeName ?: com.example.adshield.ui.theme.AppTheme.CyberGreen.name
             )
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             com.example.adshield.ui.theme.AppTheme.CyberGreen
         }
     }
 
     fun setAppTheme(theme: com.example.adshield.ui.theme.AppTheme) {
-        prefs.edit().putString(KEY_APP_THEME, theme.name).apply()
+        prefs.edit { putString(KEY_APP_THEME, theme.name) }
     }
 }

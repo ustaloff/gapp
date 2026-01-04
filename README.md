@@ -84,3 +84,15 @@ This project is private and intended for personal use and development.
 
 ---
 *Built with ❤️ for Privacy and Style.*
+
+## 📱 Publishing to Google Play
+
+> [!IMPORTANT]
+> **VpnService Declaration Requirement**
+> 
+> When uploading this application to the Google Play Store, you will be required to declare the use of `VpnService` permission.
+> 
+> 1.  Navigate to **App Content** -> **VPN Service declaration form**.
+> 2.  You must explicitly state that the app uses `VpnService` to implement its core functionality (DNS Filtering/Blocking).
+> 3.  You must confirm that `LocalVpnService` is the class extending `VpnService`.
+> 4.  Failure to declare this properly will result in app rejection. The code has been annotated with `@SuppressLint("VpnServicePolicy")` to suppress the IDE warning, but the Console form is mandatory.
