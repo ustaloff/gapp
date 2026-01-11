@@ -186,49 +186,66 @@ fun CyberGraphSection(data: List<Int>, bpm: Int, isRunning: Boolean) {
             }
         }
 
+        // Time Axis Labels
+        Spacer(Modifier.height(8.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            val labels = listOf("-60m", "-45m", "-30m", "-15m", "NOW")
+            labels.forEach { label ->
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = (if (isRunning) primaryColor else offlineColor).copy(alpha = 0.5f),
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                    fontSize = 10.sp
+                )
+            }
+        }
+        
         Spacer(Modifier.height(12.dp))
+
+        // Threat Line (Progress Bar)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(4.dp)
+                .background(
+                    color = (if (isRunning) threatColor else offlineColor).copy(alpha = 0.2f), // Track color
+                    shape = MaterialTheme.shapes.extraSmall
+                )
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(progress) // Fill based on BPM progress
+                    .fillMaxHeight()
+                    .background(
+                        color = if (isRunning) threatColor else offlineColor.copy(alpha = 0.5f),
+                        shape = MaterialTheme.shapes.extraSmall
+                    )
+            )
+        }
+
+        Spacer(Modifier.height(8.dp))
 
         // Footer: Analysis Stats
         Row(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Load Level Indicator
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    //text = "SYSTEM LOAD: $level",
-                    text = if (isRunning) "THREAT: $level" else "SYSTEM: STANDBY",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = threatColor,
-                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                    fontSize = 10.sp
-                )
-                Spacer(Modifier.width(8.dp))
-                // Simple stacked bar for load
-                Row(
-                    modifier = Modifier
-                        .height(4.dp)
-                        .width(40.dp)
-                ) {
-                    val segments = 4
-                    val filled = (progress * segments).toInt().coerceIn(0, segments)
-                    for (i in 0 until segments) {
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                                .padding(horizontal = 1.dp)
-                                .background(
-                                    if (i < filled) threatColor else threatColor.copy(alpha = 0.2f),
-                                    CircleShape
-                                )
-                        )
-                    }
-                }
-            }
+            // Load Level Indicator Text
+            Text(
+                text = if (isRunning) "THREAT: $level" else "SYSTEM: STANDBY",
+                style = MaterialTheme.typography.labelSmall,
+                color = threatColor,
+                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                fontSize = 12.sp, // Slightly bigger
+                fontWeight = FontWeight.Bold
+            )
 
             // BPM / Rate
             Text(
@@ -237,7 +254,7 @@ fun CyberGraphSection(data: List<Int>, bpm: Int, isRunning: Boolean) {
                 color = if (isRunning) primaryColor else offlineColor,
                 fontWeight = FontWeight.Bold,
                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                fontSize = 10.sp
+                fontSize = 12.sp // Slightly bigger
             )
         }
     }
