@@ -46,7 +46,8 @@ fun HomeView(
     onReloadFilters: () -> Unit,
     onLogClick: (String) -> Unit,
     onAppClick: (String) -> Unit,
-    onDomainManagerClick: () -> Unit // Added callback
+    onDomainManagerClick: () -> Unit, // Added callback
+    onSettingsClick: () -> Unit // Added callback for Settings navigation
 ) {
     val scrollState = rememberScrollState()
 
@@ -103,12 +104,14 @@ fun HomeView(
                     }
                 }
 
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "Config",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(24.dp)
-                )
+                IconButton(onClick = onSettingsClick) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "Config",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
 
                 //CyberMiniPowerButton()
             }
