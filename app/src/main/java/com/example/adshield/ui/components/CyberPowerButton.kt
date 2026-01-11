@@ -132,35 +132,39 @@ fun CyberMiniPowerButton(
         }
 
         // --- LAYER 1: OUTER RING (Slow Rotate) ---
-        Canvas(
-            modifier = Modifier
-                .size(72.dp)
-                .graphicsLayer { rotationZ = rotationSlow }
-        ) {
-            drawCircle(
-                color = primaryColor.copy(alpha = 0.3f),
-                radius = size.minDimension / 2,
-                style = androidx.compose.ui.graphics.drawscope.Stroke(
-                    width = outerStrokeWidth,
-                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(30f, 15f), 0f)
+        if (isRunning) {
+            Canvas(
+                modifier = Modifier
+                    .size(72.dp)
+                    .graphicsLayer { rotationZ = rotationSlow }
+            ) {
+                drawCircle(
+                    color = primaryColor.copy(alpha = 0.3f),
+                    radius = size.minDimension / 2,
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(
+                        width = outerStrokeWidth,
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(30f, 15f), 0f)
+                    )
                 )
-            )
+            }
         }
 
         // --- LAYER 2: INNER RING (Fast Rotate) ---
-        Canvas(
-            modifier = Modifier
-                .size(56.dp)
-                .graphicsLayer { rotationZ = rotationFast }
-        ) {
-            drawCircle(
-                color = primaryColor.copy(alpha = 0.5f),
-                radius = size.minDimension / 2,
-                style = androidx.compose.ui.graphics.drawscope.Stroke(
-                    width = innerStrokeWidth,
-                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 15f), 0f)
+        if (isRunning) {
+            Canvas(
+                modifier = Modifier
+                    .size(56.dp)
+                    .graphicsLayer { rotationZ = rotationFast }
+            ) {
+                drawCircle(
+                    color = primaryColor.copy(alpha = 0.5f),
+                    radius = size.minDimension / 2,
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(
+                        width = innerStrokeWidth,
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 15f), 0f)
+                    )
                 )
-            )
+            }
         }
 
         // --- LAYER 3: CORE (Pulsing Heart) ---
@@ -171,21 +175,44 @@ fun CyberMiniPowerButton(
                 .background(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            primaryColor.copy(alpha = if (isRunning) 0.9f else 0.2f),
-                            primaryColor.copy(alpha = if (isRunning) 0.4f else 0.1f)
+                            primaryColor.copy(alpha = if (isRunning) 0.9f else 0.0f),
+                            primaryColor.copy(alpha = if (isRunning) 0.4f else 0.0f)
                         )
                     ),
                     shape = CircleShape
                 )
                 .border(
                     width = 2.dp,
-                    color = primaryColor.copy(alpha = 0.8f),
+                    color = primaryColor.copy(alpha = if (isRunning) 0.8f else 0.0f),
                     shape = CircleShape
                 ),
             contentAlignment = Alignment.Center
         ) {
+            val iconColor = MaterialTheme.colorScheme.onSurfaceVariant
+            
+            Canvas(modifier = Modifier.size(20.dp)) {
+                val center = Offset(size.width / 2, size.height / 2)
+                drawArc(
+                    color = iconColor,
+                    startAngle = -60f,
+                    sweepAngle = 300f,
+                    useCenter = false,
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(
+                        width = iconStrokeWidth,
+                        cap = StrokeCap.Round
+                    )
+                )
+                drawLine(
+                    color = iconColor,
+                    start = Offset(center.x, 0f + iconStrokeWidth),
+                    end = Offset(center.x, center.y),
+                    strokeWidth = iconStrokeWidth,
+                    cap = StrokeCap.Round
+                )
+            }
+
             // Icon
-            if (isRunning) {
+            /*if (isRunning) {
                 CyberLogo(
                     size = 28.dp,
                     color = Color.White // White icon looks better on neon background
@@ -212,7 +239,7 @@ fun CyberMiniPowerButton(
                         cap = StrokeCap.Round
                     )
                 }
-            }
+            }*/
         }
     }
 }

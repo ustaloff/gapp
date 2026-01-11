@@ -13,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -47,7 +48,8 @@ fun HomeView(
     onLogClick: (String) -> Unit,
     onAppClick: (String) -> Unit,
     onDomainManagerClick: () -> Unit, // Added callback
-    onSettingsClick: () -> Unit // Added callback for Settings navigation
+    onSettingsClick: () -> Unit, // Added callback for Settings navigation
+    onPowerClick: () -> Unit // Added callback for Power logic
 ) {
     val scrollState = rememberScrollState()
 
@@ -104,16 +106,22 @@ fun HomeView(
                     }
                 }
 
-                IconButton(onClick = onSettingsClick) {
-                    Icon(
-                        imageVector = Icons.Default.Settings,
-                        contentDescription = "Config",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(24.dp)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CyberMiniPowerButton(
+                        isRunning = isRunning,
+                        onClick = onPowerClick,
+                        modifier = Modifier.scale(1.0f) // Scale down to fit header
                     )
-                }
 
-                //CyberMiniPowerButton()
+                    IconButton(onClick = onSettingsClick) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Config",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))

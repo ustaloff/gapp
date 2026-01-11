@@ -427,7 +427,12 @@ fun DashboardScreen(
                         excludedApps =
                             preferences.getExcludedApps() // Update state to trigger UI refresh
                     },
-                    onSettingsClick = { navigateTo("SETTINGS") }
+                    onSettingsClick = { navigateTo("SETTINGS") },
+                    onPowerClick = {
+                        if (isRunning) onStopClick()
+                        else if (!hasAcceptedDisclosure) showDisclosureDialog = true
+                        else onStartClick()
+                    }
                 )
 
                 "LOGS" -> {
@@ -510,7 +515,12 @@ fun DashboardScreen(
                     onWhitelistApp(packageName)
                     excludedApps = preferences.getExcludedApps()
                 },
-                onSettingsClick = { navigateTo("SETTINGS") }
+                onSettingsClick = { navigateTo("SETTINGS") },
+                onPowerClick = {
+                    if (isRunning) onStopClick()
+                    else if (!hasAcceptedDisclosure) showDisclosureDialog = true
+                    else onStartClick()
+                }
             )
         }
 
