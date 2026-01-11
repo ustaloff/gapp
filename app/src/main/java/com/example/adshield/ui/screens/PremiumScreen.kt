@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.adshield.data.BillingManager
+import com.example.adshield.ui.theme.NeonGreenWarning
 import android.app.Activity
 
 @Composable
@@ -34,7 +35,9 @@ fun PremiumScreen(
     onBackClick: () -> Unit
 ) {
     val context = LocalContext.current
-    val isPremium by BillingManager.isPremium.collectAsState()
+    val userAccessState by BillingManager.userAccessState.collectAsState(initial = com.example.adshield.data.UserAccessState.FREE)
+    val isPremium = userAccessState == com.example.adshield.data.UserAccessState.PREMIUM || 
+                   userAccessState == com.example.adshield.data.UserAccessState.TRIAL
     var isLoading by remember { mutableStateOf(false) }
 
     // Mock Pricing
@@ -43,16 +46,10 @@ fun PremiumScreen(
     
     var selectedPackage by remember { mutableStateOf<BillingManager.MockPackage?>(packageYearly) }
 
-    // Colors
-    val neonGreen = Color(0xFF1BFF80) // Toxic Green
-    val darkBg = Color(0xFF050505) // Vantablack-ish
-    val surfaceColor = Color(0xFF111111)
-    val warningColor = Color(0xFFFFAB40) // Amber for 68%
-
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(darkBg)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Column(
             modifier = Modifier
@@ -99,8 +96,8 @@ fun PremiumScreen(
             LinearProgressIndicator(
                 progress = { 0.68f },
                 modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
-                color = warningColor,
-                trackColor = surfaceColor
+                color = NeonGreenWarning,
+                trackColor = MaterialTheme.colorScheme.surface
             )
 
             Spacer(Modifier.height(16.dp))
@@ -108,34 +105,34 @@ fun PremiumScreen(
             // Premium (Target)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                     Icon(androidx.compose.material.icons.Icons.Default.Lock, null, tint = neonGreen, modifier = Modifier.size(12.dp))
+                     Icon(androidx.compose.material.icons.Icons.Default.Lock, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(12.dp))
                      Spacer(Modifier.width(4.dp))
-                     Text("PREMIUM PROTECTION", color = neonGreen, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                     Text("PREMIUM PROTECTION", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                 }
-                Text("100% - ENCRYPTED", color = neonGreen, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                Text("100% - ENCRYPTED", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
             }
             Spacer(Modifier.height(4.dp))
             // Animated Glow Effect (Simulated via Brush)
             Box(Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)).background(
                 brush = Brush.horizontalGradient(
-                    colors = listOf(neonGreen.copy(alpha=0.8f), neonGreen)
+                    colors = listOf(MaterialTheme.colorScheme.primary.copy(alpha=0.8f), MaterialTheme.colorScheme.primary)
                 )
             ))
 
             Spacer(Modifier.height(32.dp))
 
             // BENEFITS CARDS
-            BenefitCard("Hide activity from ISP", "Mask your digital footprint completely", androidx.compose.material.icons.Icons.Default.VisibilityOff, neonGreen, surfaceColor)
+            BenefitCard("Hide activity from ISP", "Mask your digital footprint completely", androidx.compose.material.icons.Icons.Default.VisibilityOff, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.surface)
             Spacer(Modifier.height(12.dp))
-            BenefitCard("Block ads in apps", "Stop trackers & popups system-wide", androidx.compose.material.icons.Icons.Default.Security, neonGreen, surfaceColor)
+            BenefitCard("Block ads in apps", "Stop trackers & popups system-wide", androidx.compose.material.icons.Icons.Default.Security, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.surface)
             Spacer(Modifier.height(12.dp))
-            BenefitCard("2x Faster Loading", "Optimized DNS for speed", androidx.compose.material.icons.Icons.Default.Speed, neonGreen, surfaceColor)
+            BenefitCard("2x Faster Loading", "Optimized DNS for speed", androidx.compose.material.icons.Icons.Default.Speed, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.surface)
 
             Spacer(Modifier.height(32.dp))
 
             // PRICING
             if (isPremium) {
-                Text("PREMIUM ACTIVE", color = neonGreen, style = MaterialTheme.typography.headlineLarge)
+                Text("PREMIUM ACTIVE", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.headlineLarge)
             } else {
                 Row(
                     Modifier.fillMaxWidth(), 
@@ -149,8 +146,8 @@ fun PremiumScreen(
                         sub = "/ month",
                         selected = selectedPackage == packageMonthly,
                         onClick = { selectedPackage = packageMonthly },
-                        surfaceColor = surfaceColor,
-                        accentColor = neonGreen
+                        surfaceColor = MaterialTheme.colorScheme.surface,
+                        accentColor = MaterialTheme.colorScheme.primary
                     )
 
                     // Yearly
@@ -162,14 +159,16 @@ fun PremiumScreen(
                         badge = "BEST VALUE -60%",
                         selected = selectedPackage == packageYearly,
                         onClick = { selectedPackage = packageYearly },
-                        surfaceColor = surfaceColor,
-                        accentColor = neonGreen
+                        surfaceColor = MaterialTheme.colorScheme.surface,
+                        accentColor = MaterialTheme.colorScheme.primary
                     )
                 }
 
                 Spacer(Modifier.height(24.dp))
 
                 // CTA BUTTON
+                val isTrialEligible = remember { BillingManager.isTrialEligible(context) }
+                
                 Button(
                     onClick = {
                         selectedPackage?.let { pkg ->
@@ -177,13 +176,17 @@ fun PremiumScreen(
                         }
                     },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = neonGreen),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     if (isLoading) {
                         CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(24.dp))
                     } else {
-                        Text("Start 14-Day Free Trial", color = Color.Black, fontWeight = FontWeight.Black, fontSize = 18.sp)
+                        if (isTrialEligible) {
+                            Text("Start ${com.example.adshield.data.AppConfig.TRIAL_DURATION_DAYS}-Day Free Trial", color = Color.Black, fontWeight = FontWeight.Black, fontSize = 18.sp)
+                        } else {
+                            Text("SUBSCRIBE NOW", color = Color.Black, fontWeight = FontWeight.Black, fontSize = 18.sp)
+                        }
                     }
                 }
                 

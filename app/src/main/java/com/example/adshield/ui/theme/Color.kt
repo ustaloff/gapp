@@ -48,8 +48,8 @@ val NeonAmberWarning = Color(0xFFFFAB40)
 val NeonAmberSuccess = Color(0xFF66BB6A)
 val NeonAmberInfo = Color(0xFFFFD600)
 
-// Premium
 // Premium (Amber Theme Variant)
 val NeonAmberPremium = Color(0xFF00E5FF) // Cyan accent for Amber theme
 val NeonAmberPremiumStart = Color(0xFF2979FF) // Amber
 val NeonAmberPremiumEnd = Color(0xFF00B0FF) // Light Amber
+

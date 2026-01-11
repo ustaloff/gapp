@@ -23,9 +23,13 @@ import com.example.adshield.ui.components.*
 import java.util.Locale
 import kotlin.math.ln
 import kotlin.math.pow
+import com.example.adshield.data.UserAccess
+import com.example.adshield.data.UserAccessState
+import com.example.adshield.ui.components.UserStatusBadge
 
 @Composable
 fun HomeView(
+    userAccess: UserAccess,
     isRunning: Boolean,
     blockedCount: Int,
     bpm: Int,
@@ -33,6 +37,7 @@ fun HomeView(
     dataSaved: Long,
     recentLogs: List<VpnLogEntry>,
     excludedApps: Set<String>, // Added state
+    effectiveWhitelist: Set<String>, // Added state
     filterUpdateTrigger: Long, // Added trigger for Domain/Filter UI refresh
     isUpdatingFilters: Boolean,
     onWhitelistClick: () -> Unit,
@@ -60,54 +65,36 @@ fun HomeView(
             Spacer(modifier = Modifier.height(16.dp))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Start,
+                horizontalArrangement = Arrangement.SpaceBetween, // Changed to SpaceBetween
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 16.dp)
             ) {
-                CyberLogo(
-                    modifier = Modifier.size(48.dp),
-                    size = 48.dp,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                GlitchText(
-                    text = "ADSHIELD",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                // Left: Logo + Title
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CyberLogo(
+                        modifier = Modifier.size(48.dp),
+                        size = 48.dp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    GlitchText(
+                        text = "ADSHIELD",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                // Right: Status Badge
+                UserStatusBadge(userAccess = userAccess)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-                modifier = Modifier
-                    .border(
-                        1.dp,
-                        if (isRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                        MaterialTheme.shapes.small
-                    )
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .background(
-                            if (isRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                            CircleShape
-                        )
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = if (isRunning) "TUNNELING ACTIVE // IP MASKED" else "PROTECTION DISABLED // EXPOSED",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontFamily = FontFamily.Monospace,
-                    letterSpacing = 1.sp,
-                    color = if (isRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-                )
-            }
+            CyberStatusCapsule(
+                isRunning = isRunning,
+                userAccess = userAccess
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -215,7 +202,8 @@ fun HomeView(
                         title = "TOP APPS",
                         data = VpnStats.appBlockedStatsMap,
                         onAllowClick = { onAppClick(it) },
-                        isWhitelisted = { pkg -> excludedApps.contains(pkg) }, // Use State
+                        isExcluded = { pkg -> excludedApps.contains(pkg) }, // Use State
+                        isEffective = { pkg -> effectiveWhitelist.contains(pkg) }, // Use State for limit check
                         onSettingsClick = onWhitelistClick // Go to App Whitelist
                     )
                 }
@@ -224,11 +212,12 @@ fun HomeView(
                         title = "TOP DOMAINS",
                         data = VpnStats.domainBlockedStatsMap,
                         onAllowClick = { onLogClick(it) },
-                        isWhitelisted = { domain ->
+                        isExcluded = { domain ->
                             // Force Recomp using trigger read
                             filterUpdateTrigger.let { }
                             FilterEngine.checkDomain(domain) == FilterEngine.FilterStatus.ALLOWED_USER
                         },
+                        // Default isEffective = true, so no grey/red issue here
                         onSettingsClick = onDomainManagerClick // Go to Domain Manager
                     )
                 }

@@ -3,6 +3,7 @@ package com.example.adshield.net
 import android.net.VpnService
 import android.util.Log
 import com.example.adshield.data.VpnStats
+import com.example.adshield.data.BillingManager
 import com.example.adshield.filter.FilterEngine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -46,8 +47,8 @@ class DnsProxy(private val vpnService: VpnService) {
         }
     }
 
-    // Privacy Feature: DoH is enabled by default
-    var useDoh = true
+    // Privacy Feature: DoH is enabled by default (controlled by Premium)
+    // var useDoh = true // Removed: controlled by BillingManager directly
 
     private suspend fun resolveViaUdp(
         dnsQuery: ByteArray,
@@ -149,9 +150,13 @@ class DnsProxy(private val vpnService: VpnService) {
 
                     var response: ByteArray? = null
 
-                    // 1. Attempt DNS-over-HTTPS (if enabled)
-                    if (useDoh) {
+                    // 1. Attempt DNS-over-HTTPS (if enabled and Premium)
+                    // RESTRICTION: DoH is a Premium-only feature (Invisibility Mode)
+                    val entitlements = BillingManager.getCurrentEntitlements()
+                    if (entitlements.dohEnabled) {
                         response = DohClient.resolve(dnsQuery)
+                    } else {
+                        Log.v("DnsProxy", "Premium required for DoH. Fallback to UDP.")
                     }
 
                     // 2. Fallback or use standard UDP Pooling

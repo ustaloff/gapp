@@ -30,4 +30,28 @@ class AppsRepository(private val context: Context) {
             )
         }.sortedBy { it.name.lowercase() }
     }
+
+    suspend fun getEffectiveWhitelist(
+        excludedApps: Set<String>,
+        isUnlimited: Boolean
+    ): Set<String> = withContext(Dispatchers.IO) {
+        if (isUnlimited) {
+            excludedApps
+        } else {
+            val pm = context.packageManager
+            excludedApps.map { pkg ->
+                val label = try {
+                    val appInfo = pm.getApplicationInfo(pkg, 0)
+                    pm.getApplicationLabel(appInfo).toString()
+                } catch (e: Exception) {
+                    pkg
+                }
+                pkg to label
+            }
+                .sortedBy { it.second.lowercase() }
+                .take(AppConfig.FREE_WHITELIST_LIMIT)
+                .map { it.first }
+                .toSet()
+        }
+    }
 }

@@ -3,7 +3,11 @@ package com.example.adshield.data
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withContext
 import java.net.URL
+import com.example.adshield.data.AppConfig // Ensure AppConfig is imported if not already, though used in previous step
+import com.example.adshield.data.BillingManager
+import com.example.adshield.data.UserAccessState
 
 object FilterRepository {
 
@@ -15,8 +19,7 @@ object FilterRepository {
     private const val TAG = "FilterRepository"
 
     // Default fallback (Custom AdShield Blocklist)
-    const val DEFAULT_URL =
-        "https://raw.githubusercontent.com/ustaloff/adshield-lists/refs/heads/master/blocklist.txt"
+    // moved to AppConfig.DEFAULT_FILTER_URL
 
     suspend fun downloadAndParseFilters(context: android.content.Context): FilterData =
         withContext(Dispatchers.IO) {
@@ -26,7 +29,14 @@ object FilterRepository {
 
             // Load URL from Preferences
             val prefs = AppPreferences(context)
-            val targetUrl = prefs.getFilterSourceUrl()
+            // ENFORCEMENT: If User is FREE, always use Default URL (Paywall Logic)
+            val userAccess = BillingManager.currentUserAccess.value
+            val targetUrl = if (userAccess.state == UserAccessState.FREE) {
+                Log.i(TAG, "User is FREE. Enforcing Default Filter URL.")
+                AppConfig.DEFAULT_FILTER_URL
+            } else {
+                prefs.getFilterSourceUrl()
+            }
 
             Log.i(TAG, "Starting filter download from: $targetUrl")
 
@@ -56,8 +66,72 @@ object FilterRepository {
                 TAG,
                 "Loaded ${blockRules.size} block rules and ${exceptionRules.size} exception rules in ${System.currentTimeMillis() - start}ms"
             )
+            
+            // Record success timestamp
+            prefs.setLastFilterUpdate(System.currentTimeMillis())
+            
             return@withContext FilterData(blockRules, exceptionRules)
         }
+
+    /**
+     * Verifies a custom filter URL by attempting to download and parse it.
+     * Enforces strict safety checks:
+     * 1. Must be HTTP/HTTPS (no file://).
+     * 2. Must be < 5MB (prevent OOM).
+     * 3. Must contain valid rules.
+     *
+     * @return Result<Int> containing the count of valid rules found, or an exception.
+     */
+    suspend fun verifyUrl(urlString: String): Result<Int> = withContext(Dispatchers.IO) {
+        try {
+            // 1. Protocol Check
+            if (!urlString.startsWith("http://") && !urlString.startsWith("https://")) {
+                return@withContext Result.failure(IllegalArgumentException("Only http/https URLs are supported"))
+            }
+
+            // 2. Download and Size Check
+            val url = URL(urlString)
+            val connection = url.openConnection()
+            connection.connectTimeout = AppConfig.FILTER_DOWNLOAD_TIMEOUT_MS
+            connection.readTimeout = AppConfig.FILTER_DOWNLOAD_TIMEOUT_MS
+            // Note: contentLength might be -1 if unknown, so we also limit the read loop
+            val length = connection.contentLength
+            if (length > AppConfig.FILTER_MAX_SIZE_BYTES) { // 5MB Limit
+                return@withContext Result.failure(IllegalArgumentException("File too large (Max 5MB)"))
+            }
+
+            val stream = url.openStream()
+            val savedContent = StringBuilder()
+            val buffer = ByteArray(8 * 1024)
+            var bytesRead: Int
+            var totalRead = 0
+
+            stream.use { input ->
+                while (input.read(buffer).also { bytesRead = it } != -1) {
+                    totalRead += bytesRead
+                    if (totalRead > AppConfig.FILTER_MAX_SIZE_BYTES) {
+                        return@withContext Result.failure(IllegalArgumentException("File too large (Max 5MB)"))
+                    }
+                    savedContent.append(String(buffer, 0, bytesRead))
+                }
+            }
+
+            // 3. Parse and Count
+            var validRules = 0
+            savedContent.toString().lineSequence().forEach { line ->
+                if (parseLine(line) != null) validRules++
+            }
+
+            if (validRules == 0) {
+                return@withContext Result.failure(Exception("No valid rules found in file"))
+            }
+
+            return@withContext Result.success(validRules)
+
+        } catch (e: Exception) {
+            return@withContext Result.failure(e)
+        }
+    }
 
     /**
      * Extracts a domain from an AdBlock/EasyList rule.

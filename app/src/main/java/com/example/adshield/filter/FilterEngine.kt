@@ -169,6 +169,10 @@ object FilterEngine {
         ALLOWED_DEFAULT
     }
 
+    // Flag to enable/disable custom rules (synced from entitlement)
+    @Volatile
+    var isCustomRulesEnabled: Boolean = false
+
     fun checkDomain(domain: String?): FilterStatus {
         if (domain.isNullOrBlank()) return FilterStatus.ALLOWED_DEFAULT
         val currentDomain = domain.lowercase().trim().trimEnd('.')
@@ -184,12 +188,15 @@ object FilterEngine {
             // However, we CAN optimize the loop to only create the substring when needed for the Set lookup.
             val subDomain = currentDomain.substring(startIndex)
 
-            if (userAllowlist.contains(subDomain)) {
-                return FilterStatus.ALLOWED_USER
-            }
-            // User Blocklist (Moved Up: User Ban overrides System Allow)
-            if (userBlocklist.contains(subDomain)) {
-                return FilterStatus.BLOCKED_USER
+            // CUSTOM RULES ENFORCEMENT: Only check if entitled
+            if (isCustomRulesEnabled) {
+                if (userAllowlist.contains(subDomain)) {
+                    return FilterStatus.ALLOWED_USER
+                }
+                // User Blocklist (Moved Up: User Ban overrides System Allow)
+                if (userBlocklist.contains(subDomain)) {
+                    return FilterStatus.BLOCKED_USER
+                }
             }
 
             // System/Dynamic Exceptions

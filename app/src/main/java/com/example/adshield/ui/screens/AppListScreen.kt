@@ -6,6 +6,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
@@ -47,12 +48,38 @@ fun AppListScreen(
     var searchQuery by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(true) }
     var currentTab by remember { mutableStateOf(AppListTab.ALL) }
+    
+    // UI State for list scrolling
+    val listState = rememberLazyListState()
+
+    // Observe Entitlements for Limit Logic
+    val userAccess by com.example.adshield.data.BillingManager.currentUserAccess.collectAsState()
+    val entitlements = com.example.adshield.data.AccessControl.entitlementsFor(userAccess.state)
+
+    // Calculate EFFECTIVE Whitelist (Who actually bypasses VPN)
+    // Matches logic in LocalVpnService.kt (Sorted by Label/Name)
+    val effectiveExcludedApps = remember(excludedApps, entitlements, apps) { // Added apps dependency
+        if (entitlements.unlimitedWhitelist) {
+            excludedApps
+        } else {
+            // We need to sort by NAME to match the Service logic and UI sorting
+            // We can look up names from the 'apps' list which is already loaded
+            excludedApps.sortedBy { pkg ->
+                 apps.find { it.packageName == pkg }?.name?.lowercase() ?: pkg
+            }.take(com.example.adshield.data.AppConfig.FREE_WHITELIST_LIMIT).toSet()
+        }
+    }
 
     // Load data
     LaunchedEffect(Unit) {
         excludedApps = preferences.getExcludedApps()
         apps = repository.getInstalledApps()
         isLoading = false
+    }
+
+    // Reset scroll to top when Tab or Search changes
+    LaunchedEffect(currentTab, searchQuery) {
+        listState.scrollToItem(0)
     }
 
     Box(
@@ -96,14 +123,24 @@ fun AppListScreen(
                     )
                 }
                 Spacer(modifier = Modifier.width(16.dp))
-                Text(
-                    text = "WHITELIST CONFIG",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
-                )
+                Column {
+                    Text(
+                        text = "WHITELIST CONFIG",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                    )
+                    if (!entitlements.unlimitedWhitelist) {
+                        Text(
+                            text = "Free Limit: ${excludedApps.size}/${com.example.adshield.data.AppConfig.FREE_WHITELIST_LIMIT}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                        )
+                    }
+                }
             }
 
             // SEARCH
@@ -189,7 +226,7 @@ fun AppListScreen(
                     }
 
                     matchesSearch && matchesTab
-                }
+                }.sortedBy { it.name.lowercase() } // Sort by Name for UI usability (Case Insensitive)
 
                 if (filteredApps.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -201,6 +238,7 @@ fun AppListScreen(
                     }
                 } else {
                     LazyColumn(
+                        state = listState,
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxWidth(),
@@ -211,6 +249,7 @@ fun AppListScreen(
                             AppListItem(
                                 app = app,
                                 isExcluded = excludedApps.contains(app.packageName),
+                                isEffective = effectiveExcludedApps.contains(app.packageName),
                                 onToggle = { isChecked ->
                                     if (isChecked) {
                                         onAppToggle(app.packageName, true)
@@ -233,13 +272,28 @@ fun AppListScreen(
 fun AppListItem(
     app: AppInfo,
     isExcluded: Boolean,
+    isEffective: Boolean,
     onToggle: (Boolean) -> Unit
 ) {
-    val borderColor =
-        if (isExcluded) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(
-            alpha = 0.2f
-        )
-    val alpha = if (isExcluded) 1f else 0.7f
+    // Logic for Colors:
+    // Excluded & Effective -> Primary (Green)
+    // Excluded & NOT Effective (Overflow) -> Grey/Dim
+    // Not Excluded -> Very dim / default
+    
+    val isActive = isExcluded && isEffective
+    val isOverflow = isExcluded && !isEffective
+
+    val borderColor = when {
+        isActive -> MaterialTheme.colorScheme.primary
+        isOverflow -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f) // Grey for Overflow
+        else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f)
+    }
+    
+    val alpha = when {
+        isActive -> 1f
+        isOverflow -> 0.6f // Dimmed for overflow
+        else -> 0.7f
+    }
 
     Row(
         modifier = Modifier
@@ -287,8 +341,8 @@ fun AppListItem(
             checked = isExcluded,
             onCheckedChange = onToggle,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = MaterialTheme.colorScheme.background,
-                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                checkedThumbColor = if (isOverflow) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.background,
+                checkedTrackColor = if (isOverflow) MaterialTheme.colorScheme.onSurface.copy(alpha=0.3f) else MaterialTheme.colorScheme.primary,
                 uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 uncheckedTrackColor = MaterialTheme.colorScheme.surface
             )

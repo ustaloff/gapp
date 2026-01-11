@@ -11,10 +11,10 @@ import androidx.compose.ui.graphics.Color
 
 
 // Enum to define available themes
-enum class AppTheme {
-    CyberGreen,
-    CyberBlue,
-    CyberAmber
+enum class AppTheme(val isPremium: Boolean) {
+    CyberGreen(false),
+    CyberBlue(true),
+    CyberAmber(true)
 }
 
 // Helper to generate ColorScheme based on selected theme
@@ -25,7 +25,7 @@ private fun getAdShieldScheme(theme: AppTheme): androidx.compose.material3.Color
     return when (theme) {
         AppTheme.CyberGreen -> darkColorScheme(
             // === Main Accents ===
-            primary = NeonGreenPrimary.copy(alpha = 0.4f),
+            primary = NeonGreenPrimary,
             onPrimary = NeonGreenSurface, // Black-ish text on Green button is readable
             primaryContainer = NeonGreenPrimary.copy(alpha = 0.2f),
             onPrimaryContainer = NeonGreenPrimary,

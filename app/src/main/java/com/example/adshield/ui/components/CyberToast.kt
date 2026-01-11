@@ -22,12 +22,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Warning
 import com.example.adshield.ui.theme.AdShieldTheme
 
 enum class CyberToastType {
     SUCCESS,
     ERROR,
-    INFO
+    INFO,
+    WARNING
 }
 
 @Composable
@@ -41,18 +43,21 @@ fun CyberToast(
         CyberToastType.SUCCESS -> AdShieldTheme.colors.success // Green
         CyberToastType.ERROR -> MaterialTheme.colorScheme.error // Error (Red) - Sticking to standard Error
         CyberToastType.INFO -> AdShieldTheme.colors.info // Info (Yellow/Gold)
+        CyberToastType.WARNING -> Color(0xFFFFA000) // Amber/Orange
     }
 
     val icon = when (type) {
         CyberToastType.SUCCESS -> Icons.Filled.CheckCircle
         CyberToastType.ERROR -> Icons.Filled.Close
         CyberToastType.INFO -> Icons.Filled.Info
+        CyberToastType.WARNING -> Icons.Filled.Warning
     }
 
     val title = when (type) {
         CyberToastType.SUCCESS -> "ACCESS GRANTED"
         CyberToastType.ERROR -> "ACCESS DENIED"
         CyberToastType.INFO -> "SYSTEM NOTICE"
+        CyberToastType.WARNING -> "SYSTEM ALERT"
     }
 
     AnimatedVisibility(

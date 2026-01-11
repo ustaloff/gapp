@@ -132,7 +132,7 @@ fun LogsView(
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(bottom = 16.dp)
+                    //contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
                     // Show newest first if list is chronological (assuming logs are appended)
                     // If logs is already reversed, remove .reversed()
@@ -141,7 +141,7 @@ fun LogsView(
                         LogItemCard(entry, onLogClick)
                     }
                     item {
-                        Spacer(modifier = Modifier.height(130.dp))
+                        Spacer(modifier = Modifier.height(122.dp))
                     }
                 }
             }

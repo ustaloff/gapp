@@ -3,6 +3,10 @@ package com.example.adshield.data
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import com.example.adshield.ui.theme.AppTheme
 
 class AppPreferences(context: Context) {
 
@@ -15,6 +19,40 @@ class AppPreferences(context: Context) {
         private const val KEY_USER_BLOCKLIST = "user_blocklist"
         private const val KEY_FILTER_SOURCE = "filter_source_url"
         private const val KEY_APP_THEME = "app_theme"
+        private const val KEY_ONBOARDING_COMPLETE = "onboarding_complete"
+        private const val KEY_TRIAL_CONSUMED = "trial_consumed"
+        private const val KEY_LAST_FILTER_UPDATE = "last_filter_update"
+    }
+
+    fun setTrialConsumed(consumed: Boolean) {
+        prefs.edit { putBoolean(KEY_TRIAL_CONSUMED, consumed) }
+    }
+
+    fun isTrialConsumed(): Boolean {
+        return prefs.getBoolean(KEY_TRIAL_CONSUMED, false)
+    }
+
+    fun getLastFilterUpdate(): Long {
+        return prefs.getLong(KEY_LAST_FILTER_UPDATE, 0)
+    }
+
+    fun setLastFilterUpdate(timestamp: Long) {
+        prefs.edit { putLong(KEY_LAST_FILTER_UPDATE, timestamp) }
+    }
+
+    fun setOnboardingComplete(complete: Boolean) {
+        prefs.edit { putBoolean(KEY_ONBOARDING_COMPLETE, complete) }
+    }
+    
+    fun isOnboardingComplete(): Boolean {
+        return prefs.getBoolean(KEY_ONBOARDING_COMPLETE, false)
+    }
+
+    fun resetOnboarding() {
+        prefs.edit { 
+            remove(KEY_ONBOARDING_COMPLETE)
+            remove(KEY_TRIAL_CONSUMED)
+        }
     }
 
     fun getExcludedApps(): Set<String> {
@@ -81,9 +119,9 @@ class AppPreferences(context: Context) {
         // Default to AdShield Custom Blocklist if not set
         return prefs.getString(
             KEY_FILTER_SOURCE,
-            "https://raw.githubusercontent.com/ustaloff/adshield-lists/refs/heads/master/blocklist.txt"
+            AppConfig.DEFAULT_FILTER_URL
         )
-            ?: "https://raw.githubusercontent.com/ustaloff/adshield-lists/refs/heads/master/blocklist.txt"
+            ?: AppConfig.DEFAULT_FILTER_URL
     }
 
     fun setFilterSourceUrl(url: String) {
@@ -94,17 +132,30 @@ class AppPreferences(context: Context) {
 
     fun getAppTheme(): com.example.adshield.ui.theme.AppTheme {
         val themeName =
-            prefs.getString(KEY_APP_THEME, com.example.adshield.ui.theme.AppTheme.CyberGreen.name)
+            prefs.getString(KEY_APP_THEME, AppConfig.DEFAULT_THEME.name)
         return try {
             com.example.adshield.ui.theme.AppTheme.valueOf(
-                themeName ?: com.example.adshield.ui.theme.AppTheme.CyberGreen.name
+                themeName ?: AppConfig.DEFAULT_THEME.name
             )
         } catch (_: Exception) {
-            com.example.adshield.ui.theme.AppTheme.CyberGreen
+            AppConfig.DEFAULT_THEME
         }
     }
 
     fun setAppTheme(theme: com.example.adshield.ui.theme.AppTheme) {
         prefs.edit { putString(KEY_APP_THEME, theme.name) }
+    }
+
+    val themeFlow: Flow<AppTheme> = callbackFlow {
+        // Emit initial value
+        trySend(getAppTheme())
+
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == KEY_APP_THEME) {
+                trySend(getAppTheme())
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
     }
 }

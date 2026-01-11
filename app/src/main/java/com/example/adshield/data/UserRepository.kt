@@ -45,29 +45,44 @@ object UserRepository {
 
 
 
-    suspend fun isUserPremium(): Boolean {
-        val user = auth.currentUser ?: return false
+    suspend fun fetchUserAccess(): UserAccess {
+        val user = auth.currentUser ?: return UserAccess(UserAccessState.FREE)
         return try {
             val doc = db.collection("users").document(user.uid).get().await()
-            val isPremium = doc.getBoolean("isPremium") ?: false
+            val stateName = doc.getString("userAccessState") ?: UserAccessState.FREE.name
+            val trialEndsAt = if (doc.contains("trialEndsAt")) doc.getLong("trialEndsAt") else null
+            val premiumExpiresAt = if (doc.contains("premiumExpiresAt")) doc.getLong("premiumExpiresAt") else null
 
-            // TODO: Check expiration date logic here
-            isPremium
+            val state = try {
+                UserAccessState.valueOf(stateName)
+            } catch (_: Exception) { 
+                UserAccessState.FREE
+            }
+            UserAccess(state, trialEndsAt, premiumExpiresAt)
         } catch (e: Exception) {
-            Log.e("UserRepository", "Error checking premium status", e)
-            false
+            Log.e("UserRepository", "Error fetching user access", e)
+            UserAccess(UserAccessState.FREE)
         }
     }
 
-    suspend fun updatePremiumStatus(isPremium: Boolean) {
+    suspend fun updateUserAccess(access: UserAccess) {
         val user = auth.currentUser ?: return
         try {
-            val data = hashMapOf("isPremium" to isPremium)
+            val data = hashMapOf(
+                "userAccessState" to access.state.name,
+                "trialEndsAt" to access.trialEndsAt,
+                "premiumExpiresAt" to access.premiumExpiresAt,
+                "lastUpdated" to com.google.firebase.Timestamp.now()
+            )
+            // Remove legacy field to avoid confusion in future
+            val updates = data as MutableMap<String, Any?>
+            updates["isPremium"] = com.google.firebase.firestore.FieldValue.delete()
+            
             db.collection("users").document(user.uid)
-                .set(data, com.google.firebase.firestore.SetOptions.merge())
+                .set(updates, com.google.firebase.firestore.SetOptions.merge())
                 .await()
         } catch (e: Exception) {
-            Log.e("UserRepository", "Error updating premium status", e)
+            Log.e("UserRepository", "Error updating user access", e)
         }
     }
 

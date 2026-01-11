@@ -14,7 +14,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -29,9 +28,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.adshield.R
+import com.example.adshield.data.AppConfig
 import com.example.adshield.data.AppPreferences
 import com.example.adshield.data.FilterRepository
 import com.example.adshield.data.UserRepository
+import com.example.adshield.data.UserAccessState
 import com.example.adshield.ui.components.GridBackground
 import com.example.adshield.ui.theme.AdShieldTheme
 import com.example.adshield.ui.theme.AppTheme
@@ -40,10 +41,9 @@ import com.example.adshield.ui.theme.NeonBluePrimary
 import com.example.adshield.ui.theme.NeonGreenPrimary
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
-// import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-// import com.google.android.gms.common.api.ApiException
-import com.google.firebase.auth.FirebaseAuth
+import com.example.adshield.data.BillingManager
+import com.example.adshield.BuildConfig
 import kotlinx.coroutines.launch
 
 @Composable
@@ -52,11 +52,17 @@ fun SettingsView(
     onWhitelistClick: () -> Unit,
     onDomainConfigClick: () -> Unit,
     onPremiumClick: () -> Unit,
-    onThemeChange: (AppTheme) -> Unit
+    onThemeChange: (AppTheme) -> Unit,
+    whitelistCount: Int // Added param
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val prefs = remember { AppPreferences(context) }
+    val userAccessState by BillingManager.userAccessState.collectAsState(initial = UserAccessState.FREE)
+    val isPremium = userAccessState == UserAccessState.PREMIUM || 
+                   userAccessState == UserAccessState.TRIAL
+    
+    var isUpdatingFilters by remember { mutableStateOf(false) }
 
     @Suppress("UNUSED_VALUE") // False positive: Variable is assigned but analyzer thinks it's unused
     var showUrlDialog by remember { mutableStateOf(false) }
@@ -123,8 +129,14 @@ fun SettingsView(
         @Suppress("UNUSED_VALUE")
         var isError by remember { mutableStateOf(false) }
 
+        var isValidating by remember { mutableStateOf(false) }
+        var validationResult by remember { mutableStateOf<String?>(null) }
+        val scope = rememberCoroutineScope()
+
         AlertDialog(
-            onDismissRequest = { showUrlDialog = false },
+            onDismissRequest = { 
+                if (!isValidating) showUrlDialog = false 
+            },
             title = {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -133,61 +145,149 @@ fun SettingsView(
                 ) {
                     Text("FILTER SOURCE URL")
                     // RESET BUTTON
-                    TextButton(onClick = {
-                        tempUrl = FilterRepository.DEFAULT_URL
-                        isError = false
-                    }) {
-                        Text("RESET", color = MaterialTheme.colorScheme.primary)
+                    if (tempUrl.trim() != AppConfig.DEFAULT_FILTER_URL.trim() && !tempUrl.contains("ustaloff/adshield-lists")) {
+                         TextButton(
+                            onClick = {
+                                tempUrl = AppConfig.DEFAULT_FILTER_URL
+                                isError = false
+                                validationResult = null
+                            },
+                            enabled = !isValidating
+                        ) {
+                            Text("RESET", color = MaterialTheme.colorScheme.primary)
+                        }
                     }
                 }
             },
             text = {
-                Column {
-                    OutlinedTextField(
-                        value = tempUrl,
-                        onValueChange = {
-                            tempUrl = it.trim()
-                            isError = false
-                        },
-                        label = { Text("https://...") },
-                        singleLine = true,
-                        shape = MaterialTheme.shapes.small,
-                        isError = isError,
-                        supportingText = {
-                            if (isError) Text(
-                                "Invalid URL (Must start with http/https)",
-                                color = MaterialTheme.colorScheme.error
-                            )
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val isDefault = tempUrl.trim() == AppConfig.DEFAULT_FILTER_URL.trim() || 
+                                    (tempUrl.contains("ustaloff/adshield-lists") && tempUrl.endsWith("blocklist.txt"))
+
+                    if (isDefault) {
+                        // MASKED VIEW
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), MaterialTheme.shapes.small)
+                                .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha=0.3f), MaterialTheme.shapes.small)
+                                .padding(16.dp)
+                        ) {
+                            Column {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("✅", fontSize = 16.sp)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("AdShield Official List (Recommended)", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+                                }
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    "This is the default, curated blocklist for maximum protection. Click 'Custom' below to use a third-party list.",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
-                    )
+                        
+                        TextButton(
+                            onClick = {
+                                tempUrl = "" // Clear to let user type
+                                isError = false
+                            },
+                             modifier = Modifier.align(Alignment.End)
+                        ) {
+                            Text("USE CUSTOM URL", color = MaterialTheme.colorScheme.primary)
+                        }
+
+                    } else {
+                        // CUSTOM EDIT VIEW
+                        OutlinedTextField(
+                            value = tempUrl,
+                            onValueChange = {
+                                tempUrl = it.trim()
+                                isError = false
+                                validationResult = null
+                            },
+                            label = { Text("https://...") },
+                            singleLine = true,
+                            shape = MaterialTheme.shapes.small,
+                            isError = isError || validationResult != null,
+                            enabled = !isValidating,
+                            supportingText = {
+                                if (isError) {
+                                    Text("Invalid URL (Must start with http/https)", color = MaterialTheme.colorScheme.error)
+                                } else if (validationResult != null) {
+                                    val isSuccess = validationResult!!.startsWith("✅")
+                                    Text(
+                                        validationResult!!,
+                                        color = if (isSuccess) Color(0xFF4CAF50) else MaterialTheme.colorScheme.error,
+                                        fontWeight = if (isSuccess) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                }
+                            }
+                        )
+                    }
                 }
             },
             confirmButton = {
-                Button(
-                    onClick = {
-                        if (isValidUrl) {
-                            currentUrl = tempUrl
-                            prefs.setFilterSourceUrl(tempUrl)
-                            showUrlDialog = false
+                val isDefault = tempUrl.trim() == AppConfig.DEFAULT_FILTER_URL.trim() || 
+                                (tempUrl.contains("ustaloff/adshield-lists") && tempUrl.endsWith("blocklist.txt"))
+                                
+                if (!isDefault) {
+                    Button(
+                        onClick = {
+                            if (isValidUrl) {
+                                isValidating = true
+                                validationResult = null
+                                scope.launch {
+                                    val result = FilterRepository.verifyUrl(tempUrl)
+                                    if (result.isSuccess) {
+                                        val count = result.getOrNull() ?: 0
+                                        validationResult = "✅ Success! Found $count rules."
+                                        // Save and Close after brief delay to show success
+                                        prefs.setFilterSourceUrl(tempUrl)
+                                        currentUrl = tempUrl
+                                        Toast.makeText(context, "Filter Source Updated!", Toast.LENGTH_SHORT).show()
+                                        kotlinx.coroutines.delay(1000)
+                                        showUrlDialog = false
+                                    } else {
+                                        validationResult = "❌ Error: ${result.exceptionOrNull()?.message}"
+                                    }
+                                    isValidating = false
+                                }
+                            } else {
+                                isError = true
+                            }
+                        },
+                        enabled = !isValidating,
+                        shape = MaterialTheme.shapes.small,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        if (isValidating) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text("CHECKING...")
                         } else {
-                            isError = true
+                            Text("VERIFY & SAVE")
                         }
-                    },
-                    shape = MaterialTheme.shapes.small,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-                    )
-                ) { Text("SAVE") }
+                    }
+                }
             },
             dismissButton = {
                 Button(
                     onClick = { showUrlDialog = false },
+                    enabled = !isValidating,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant,
                         contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                     ),
                     shape = MaterialTheme.shapes.small
-                ) { Text("CANCEL") }
+                ) { Text("CLOSE") }
             },
             shape = MaterialTheme.shapes.medium
         )
@@ -320,42 +420,48 @@ fun SettingsView(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                if (!isPremium) {
+                    Spacer(modifier = Modifier.height(24.dp))
 
-                // PREMIUM BANNER
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            brush = Brush.horizontalGradient(
-                                colors = listOf(
-                                    AdShieldTheme.colors.premiumStart,
-                                    AdShieldTheme.colors.premiumEnd
-                                )
-                            ),
-                            shape = MaterialTheme.shapes.large
-                        )
-                        .clickable(onClick = onPremiumClick)
-                        .padding(20.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth()
+                    // PREMIUM BANNER
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                brush = Brush.horizontalGradient(
+                                    colors = listOf(
+                                        AdShieldTheme.colors.premiumStart,
+                                        AdShieldTheme.colors.premiumEnd
+                                    )
+                                ),
+                                shape = MaterialTheme.shapes.large
+                            )
+                            .clickable(onClick = onPremiumClick)
+                            .padding(20.dp)
                     ) {
-                        Column {
-                            Text("GO PREMIUM", fontWeight = FontWeight.Bold, color = Color.White)
-                            Text(
-                                "Unlock full power & support devs",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color.White.copy(alpha = 0.8f)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column {
+                                Text(
+                                    "GO PREMIUM",
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                                Text(
+                                    "Unlock full power & support devs",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color.White.copy(alpha = 0.8f)
+                                )
+                            }
+                            Icon(
+                                Icons.Filled.Star,
+                                contentDescription = null,
+                                tint = Color.Yellow
                             )
                         }
-                        Icon(
-                            Icons.Filled.Star,
-                            contentDescription = null,
-                            tint = Color.Yellow
-                        )
                     }
                 }
 
@@ -372,7 +478,7 @@ fun SettingsView(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // Green Button
+                    // Green Button (Free)
                     Button(
                         onClick = { onThemeChange(AppTheme.CyberGreen) },
                         modifier = Modifier.weight(1f),
@@ -388,36 +494,50 @@ fun SettingsView(
                         Text("GREEN", color = NeonGreenPrimary)
                     }
 
-                    // Blue Button
-                    Button(
-                        onClick = { onThemeChange(AppTheme.CyberBlue) },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        ),
-                        border = BorderStroke(
-                            1.dp,
-                            NeonBluePrimary
-                        ),
-                        shape = MaterialTheme.shapes.small
-                    ) {
-                        Text("BLUE", color = NeonBluePrimary)
+                    // Blue Button (Premium)
+                    Box(modifier = Modifier.weight(1f)) {
+                        Button(
+                            onClick = { 
+                                if (isPremium) onThemeChange(AppTheme.CyberBlue) else onPremiumClick()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                            ),
+                            border = BorderStroke(
+                                1.dp,
+                                if (isPremium) NeonBluePrimary else Color.Gray
+                            ),
+                            shape = MaterialTheme.shapes.small
+                        ) {
+                            Text("BLUE", color = if (isPremium) NeonBluePrimary else Color.Gray)
+                        }
+                        if (!isPremium) {
+                            Icon(Icons.Default.Lock, null, tint = Color.Gray, modifier = Modifier.align(Alignment.Center).size(16.dp))
+                        }
                     }
 
-                    // Amber Button
-                    Button(
-                        onClick = { onThemeChange(AppTheme.CyberAmber) },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        ),
-                        border = BorderStroke(
-                            1.dp,
-                            NeonAmberPrimary
-                        ),
-                        shape = MaterialTheme.shapes.small
-                    ) {
-                        Text("AMBER", color = NeonAmberPrimary)
+                    // Amber Button (Premium)
+                    Box(modifier = Modifier.weight(1f)) {
+                        Button(
+                            onClick = { 
+                                if (isPremium) onThemeChange(AppTheme.CyberAmber) else onPremiumClick()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                            ),
+                            border = BorderStroke(
+                                1.dp,
+                                if (isPremium) NeonAmberPrimary else Color.Gray
+                            ),
+                            shape = MaterialTheme.shapes.small
+                        ) {
+                            Text("AMBER", color = if (isPremium) NeonAmberPrimary else Color.Gray)
+                        }
+                        if (!isPremium) {
+                            Icon(Icons.Default.Lock, null, tint = Color.Gray, modifier = Modifier.align(Alignment.Center).size(16.dp))
+                        }
                     }
                 }
 
@@ -427,6 +547,10 @@ fun SettingsView(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .background(
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.01f),
+                            MaterialTheme.shapes.medium
+                        )
                         .border(
                             1.dp,
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
@@ -446,11 +570,22 @@ fun SettingsView(
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
-                            Text(
-                                "Exclude apps from VPN",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    "Exclude apps from VPN",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                if (!isPremium) {
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        "(Free Limit: $whitelistCount/${AppConfig.FREE_WHITELIST_LIMIT})",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.error,
+                                        fontSize = 10.sp
+                                    )
+                                }
+                            }
                         }
                         Icon(
                             Icons.Default.Lock,
@@ -466,12 +601,18 @@ fun SettingsView(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(
-                            1.dp,
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                        .background(
+                            MaterialTheme.colorScheme.primary.copy(alpha = if (isPremium) 0.01f else 0.005f),
                             MaterialTheme.shapes.medium
                         )
-                        .clickable(onClick = onDomainConfigClick)
+                        .border(
+                            1.dp,
+                            MaterialTheme.colorScheme.primary.copy(alpha = if (isPremium) 0.3f else 0.1f),
+                            MaterialTheme.shapes.medium
+                        )
+                        .clickable(onClick = {
+                            if (!isPremium) onPremiumClick() else onDomainConfigClick()
+                        })
                         .padding(16.dp)
                 ) {
                     Row(
@@ -483,34 +624,45 @@ fun SettingsView(
                             Text(
                                 "DOMAIN MANAGER",
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (isPremium) 1f else 0.5f)
                             )
                             Text(
                                 "Manage allowed & banned domains",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isPremium) 1f else 0.5f)
                             )
                         }
                         Icon(
                             Icons.AutoMirrored.Filled.List,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = MaterialTheme.colorScheme.primary.copy(alpha = if (isPremium) 1f else 0.5f)
                         )
                     }
                 }
 
                 Spacer(Modifier.height(16.dp))
 
-                // Item 2: Filter Source
+                // Item 3: Filter Source
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(
-                            1.dp,
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                        .background(
+                            MaterialTheme.colorScheme.primary.copy(alpha = if (isPremium) 0.01f else 0.005f),
                             MaterialTheme.shapes.medium
                         )
-                        .clickable(onClick = { tempUrl = currentUrl; showUrlDialog = true })
+                        .border(
+                            1.dp,
+                            MaterialTheme.colorScheme.primary.copy(alpha = if (isPremium) 0.3f else 0.1f),
+                            MaterialTheme.shapes.medium
+                        )
+                        .clickable(onClick = { 
+                            if (userAccessState == UserAccessState.FREE) {
+                                onPremiumClick()
+                            } else {
+                                tempUrl = currentUrl
+                                showUrlDialog = true 
+                            }
+                        })
                         .padding(16.dp)
                 ) {
                     Row(
@@ -525,21 +677,108 @@ fun SettingsView(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                currentUrl,
+                                if (userAccessState == UserAccessState.FREE) "AdShield Recommended (Official) 🔒" 
+                                else if (currentUrl.trim() == AppConfig.DEFAULT_FILTER_URL.trim() || 
+                                    currentUrl.contains("ustaloff/adshield-lists") && currentUrl.endsWith("blocklist.txt")) "AdShield Recommended (Official)" else currentUrl,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
                         }
-                        Icon(
-                            Icons.Default.Refresh,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+
+                        Button(
+                            onClick = {
+                                val lastUpdate = AppPreferences(context).getLastFilterUpdate()
+                                val now = System.currentTimeMillis()
+                                val cooldownMs = AppConfig.FILTER_UPDATE_COOLDOWN_HOURS * 60 * 60 * 1000L
+                                
+                                if (userAccessState == UserAccessState.FREE && (now - lastUpdate) < cooldownMs) {
+                                    val remainingTime = cooldownMs - (now - lastUpdate)
+                                    val hours = remainingTime / (1000 * 60 * 60)
+                                    val minutes = (remainingTime % (1000 * 60 * 60)) / (1000 * 60)
+                                    Toast.makeText(context, "Free Limit: Update available in ${hours}h ${minutes}m", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    scope.launch {
+                                        isUpdatingFilters = true
+                                        FilterRepository.downloadAndParseFilters(context)
+                                        isUpdatingFilters = false
+                                    }
+                                }
+                            },
+                            enabled = !isUpdatingFilters,
+                            shape = MaterialTheme.shapes.small,
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
+                            modifier = Modifier.height(32.dp)
+                        ) {
+                            if (isUpdatingFilters) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(12.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                            } else {
+                                Text("RELOAD", fontSize = 12.sp)
+                            }
+                        }
                     }
                 }
 
+                if (BuildConfig.DEBUG) {
+                    Spacer(Modifier.height(32.dp))
+                    Text(
+                        "QA / DEBUG ZONE",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.Red,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, Color.Red.copy(alpha=0.5f), MaterialTheme.shapes.medium)
+                            .padding(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text("Current State: ${userAccessState.name}", color = Color.White, fontSize = 12.sp)
+                        
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(
+                                onClick = { BillingManager.resetToFree(context) },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
+                                contentPadding = PaddingValues(0.dp)
+                            ) { Text("FREE", fontSize=10.sp) }
+                            
+                            Button(
+                                onClick = { BillingManager.activateTrial(context) },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
+                                contentPadding = PaddingValues(0.dp)
+                            ) { Text("TRIAL", fontSize=10.sp) }
+                            
+                            Button(
+                                onClick = { BillingManager.activatePremium(context) },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
+                                contentPadding = PaddingValues(0.dp)
+                            ) { Text("PREMIUM", fontSize=10.sp) }
+                        }
+                        
+                        Button(
+                            onClick = { 
+                                prefs.resetOnboarding()
+                                Toast.makeText(context, "Onboarding Reset. Restart App.", Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.Red.copy(alpha=0.3f))
+                        ) {
+                            Text("RESET ONBOARDING FLAG", color = Color.Red)
+                        }
+                    }
+                }
+                
                 Spacer(modifier = Modifier.height(150.dp))
             }
         }

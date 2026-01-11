@@ -23,6 +23,11 @@ import androidx.compose.foundation.Image
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.graphics.drawable.toBitmap
+import androidx.compose.ui.draw.alpha
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.CheckCircle
 import com.example.adshield.data.VpnStats
 import com.example.adshield.ui.components.CyberGraphSection
 import com.example.adshield.ui.components.CyberStatCard
@@ -42,35 +47,34 @@ data class AppStatItem(
 fun StatsView(
     data: List<Int>,
     bpm: Int,
-    isRunning: Boolean
+    isRunning: Boolean,
+    excludedApps: Set<String>, // Hoisted State
+    effectiveWhitelist: Set<String>, // Hoisted State
+    onAllowClick: (String, Boolean) -> Unit 
 ) {
     val context = LocalContext.current
+    // We still need repository ONLY for resolving names for Top Offenders list if we want, or do it here. 
+    // Ideally repository handles data fetching.
+    // The previous implementation instantiated repository just for effective whitelist AND name resolution?
+    // Looking at previous code... yes it fetched names in LaunchedEffect.
+    // So we keep repository for name resolution but NOT for whitelist logic.
+    
+    val appsRepository = remember { com.example.adshield.data.AppsRepository(context) }
+    // val preferences = remember { com.example.adshield.data.AppPreferences(context) } // No longer needed for internal state
+    
+    // Top Offenders State
     var topApps by remember { mutableStateOf<List<AppStatItem>>(emptyList()) }
 
-    // Convert bytes to readable string
-    val dataSavedBytes = VpnStats.dataSavedBytes.value
-    val dataSavedStr = remember(dataSavedBytes) {
-        if (dataSavedBytes > 1024 * 1024) String.format(
-            Locale.US,
-            "%.1f MB",
-            dataSavedBytes / (1024f * 1024f)
-        )
-        else String.format(Locale.US, "%.1f KB", dataSavedBytes / 1024f)
-    }
-
-    // Convert ms to readable time (Seconds/Minutes)
-    val timeSavedMs = VpnStats.timeSavedMs.value
-    val timeSavedStr = remember(timeSavedMs) {
-        if (timeSavedMs > 60000) String.format(Locale.US, "%d MIN", timeSavedMs / 60000)
-        else String.format(Locale.US, "%d SEC", timeSavedMs / 1000)
-    }
-
-    // Load Top Offenders Async
-    val updateTrigger = VpnStats.blockedCount.value // Subscribe to updates
-    LaunchedEffect(updateTrigger) { // Trigger when stats change
+    // Removed internal UserAccess observation, as effective whitelist is passed in.
+    
+    // ... (rest of code)
+    
+    // Ensure we trigger name resolution when blocked stats change
+    val updateTrigger = VpnStats.blockedCount.value
+    LaunchedEffect(updateTrigger) { 
         withContext(Dispatchers.IO) {
             val pm = context.packageManager
-            val rawMap = VpnStats.appBlockedStatsMap.toMap() // Copy
+            val rawMap = VpnStats.appBlockedStatsMap.toMap()
             val sorted = rawMap.entries.sortedByDescending { it.value }.take(10)
 
             val result = sorted.map { entry ->
@@ -88,6 +92,26 @@ fun StatsView(
             topApps = result
         }
     }
+    
+    // START RESTORE VARIABLES
+    // Convert bytes to readable string
+    val dataSavedBytes = VpnStats.dataSavedBytes.value
+    val dataSavedStr = remember(dataSavedBytes) {
+        if (dataSavedBytes > 1024 * 1024) String.format(
+            Locale.US,
+            "%.1f MB",
+            dataSavedBytes / (1024f * 1024f)
+        )
+        else String.format(Locale.US, "%.1f KB", dataSavedBytes / 1024f)
+    }
+
+    // Convert ms to readable time (Seconds/Minutes)
+    val timeSavedMs = VpnStats.timeSavedMs.value
+    val timeSavedStr = remember(timeSavedMs) {
+        if (timeSavedMs > 60000) String.format(Locale.US, "%d MIN", timeSavedMs / 60000)
+        else String.format(Locale.US, "%d SEC", timeSavedMs / 1000)
+    }
+    // END RESTORE VARIABLES
 
     Box(
         modifier = Modifier
@@ -169,7 +193,21 @@ fun StatsView(
             } else {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     topApps.forEach { app ->
-                        OffenderItem(app)
+                        OffenderItem(
+                            app = app,
+                            isExcluded = excludedApps.contains(app.packageName),
+                            isEffective = effectiveWhitelist.contains(app.packageName),
+                            onToggle = { 
+                                val isCurrentlyExcluded = excludedApps.contains(app.packageName)
+                                if (isCurrentlyExcluded) {
+                                    // Remove
+                                    onAllowClick(app.packageName, false)
+                                } else {
+                                    // Add
+                                    onAllowClick(app.packageName, true)
+                                }
+                            }
+                        )
                     }
                 }
             }
@@ -180,7 +218,25 @@ fun StatsView(
 }
 
 @Composable
-fun OffenderItem(app: AppStatItem) {
+fun OffenderItem(
+    app: AppStatItem,
+    isExcluded: Boolean,
+    isEffective: Boolean,
+    onToggle: () -> Unit
+) {
+    val isActive = isExcluded && isEffective
+    val isOverflow = isExcluded && !isEffective
+
+    val statusIcon = if (isExcluded) Icons.Filled.CheckCircle else Icons.Filled.Lock 
+    
+    val tint = when {
+        isActive -> MaterialTheme.colorScheme.primary // Green
+        isOverflow -> MaterialTheme.colorScheme.onSurfaceVariant // Grey
+        else -> MaterialTheme.colorScheme.error // Red
+    }
+    
+    val bgBorder = tint.copy(alpha = 0.5f)
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -204,7 +260,9 @@ fun OffenderItem(app: AppStatItem) {
             Image(
                 bitmap = imageBitmap,
                 contentDescription = null,
-                modifier = Modifier.size(40.dp),
+                modifier = Modifier
+                    .size(40.dp)
+                    .alpha(if (isOverflow) 0.5f else 1f), // Dim if overflow
                 contentScale = ContentScale.Fit
             )
         } else {
@@ -222,7 +280,7 @@ fun OffenderItem(app: AppStatItem) {
                 text = app.appName,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha=if(isOverflow) 0.5f else 1f),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -237,18 +295,19 @@ fun OffenderItem(app: AppStatItem) {
 
         Spacer(Modifier.width(8.dp))
 
-        // Badge
+        // Toggle Button (Lock/Unlock)
         Box(
             modifier = Modifier
-                .background(Color(0xFFFF2A6D).copy(alpha = 0.2f), MaterialTheme.shapes.small)
-                .border(1.dp, Color(0xFFFF2A6D).copy(alpha = 0.5f), MaterialTheme.shapes.small)
-                .padding(horizontal = 8.dp, vertical = 4.dp)
+                .size(32.dp)
+                .clickable { onToggle() }
+                .border(1.dp, bgBorder, CircleShape),
+            contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = "${app.blockCount}",
-                style = MaterialTheme.typography.labelMedium,
-                color = Color(0xFFFF2A6D), // Cyber Pink
-                fontWeight = FontWeight.Bold
+            Icon(
+                statusIcon,
+                contentDescription = "Toggle",
+                tint = tint,
+                modifier = Modifier.size(18.dp)
             )
         }
     }

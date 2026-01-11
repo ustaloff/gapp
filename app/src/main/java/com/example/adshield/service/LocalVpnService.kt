@@ -13,6 +13,8 @@ import android.os.ParcelFileDescriptor
 import android.util.Log
 import com.example.adshield.MainActivity
 import com.example.adshield.data.VpnStats
+import com.example.adshield.data.BillingManager
+import com.example.adshield.data.AppConfig
 import com.example.adshield.net.DnsProxy
 import kotlinx.coroutines.*
 import java.io.FileInputStream
@@ -61,6 +63,15 @@ class LocalVpnService : VpnService() {
 
         VpnStats.setStatus(true)
         startForegroundWithNotification()
+        
+        // Sync Entitlements immediately and listen
+        vpnScope.launch {
+            BillingManager.currentUserAccess.collect { access ->
+                val entitlements = com.example.adshield.data.AccessControl.entitlementsFor(access.state)
+                com.example.adshield.filter.FilterEngine.isCustomRulesEnabled = entitlements.customDns
+                Log.i("LocalVpnService", "Updated Engine Entitlements: CustomDNS=${entitlements.customDns}")
+            }
+        }
 
         // Start Reader and Writer
         vpnScope.launch { runPacketLoop(establishedInterface) }
@@ -130,12 +141,38 @@ class LocalVpnService : VpnService() {
                 // 2. Exclude user-selected apps (Split Tunneling)
                 val prefs = com.example.adshield.data.AppPreferences(this@LocalVpnService)
                 val excludedApps = prefs.getExcludedApps()
+                
+                // RESTRICTION: Limit whitelist to 3 apps for Free users
+                val entitlements = BillingManager.getCurrentEntitlements()
+                val finalExcludedApps = if (entitlements.unlimitedWhitelist) {
+                    excludedApps
+                } else {
+                    // Sort by App Label (Name) to match UI sorting
+                    val pm = packageManager
+                    excludedApps.map { pkg ->
+                        val label = try {
+                            pm.getApplicationInfo(pkg, 0).loadLabel(pm).toString()
+                        } catch (e: Exception) {
+                            pkg // Fallback to package name
+                        }
+                        pkg to label
+                    }
+                    .sortedBy { it.second.lowercase() } // Case-insensitive sort
+                    .take(AppConfig.FREE_WHITELIST_LIMIT)
+                    .map { it.first }
+                    .toSet()
+                }
+                
+                if (!entitlements.unlimitedWhitelist && excludedApps.size > 3) {
+                    Log.i("LocalVpnService", "Free Tier: Limiting whitelist to 3 apps (User has ${excludedApps.size})")
+                }
+
                 Log.i(
                     "LocalVpnService",
-                    "Excluding ${excludedApps.size} user-selected apps from VPN"
+                    "Excluding ${finalExcludedApps.size} user-selected apps from VPN"
                 )
 
-                excludedApps.forEach { excludedPackage ->
+                finalExcludedApps.forEach { excludedPackage ->
                     try {
                         addDisallowedApplication(excludedPackage)
                     } catch (e: Exception) {

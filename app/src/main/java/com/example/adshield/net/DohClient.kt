@@ -8,14 +8,14 @@ import java.io.BufferedOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 
+import com.example.adshield.data.AppConfig
+
 object DohClient {
     private const val TAG = "DohClient"
-    private const val PRIMARY_DOH = "https://cloudflare-dns.com/dns-query"
-    private const val BACKUP_DOH = "https://dns.google/dns-query"
 
     suspend fun resolve(dnsQuery: ByteArray): ByteArray? = withContext(Dispatchers.IO) {
         // Try Cloudflare first, then Google as fallback
-        return@withContext tryDoh(PRIMARY_DOH, dnsQuery) ?: tryDoh(BACKUP_DOH, dnsQuery)
+        return@withContext tryDoh(AppConfig.DOH_PRIMARY_URL, dnsQuery) ?: tryDoh(AppConfig.DOH_BACKUP_URL, dnsQuery)
     }
 
     private fun tryDoh(providerUrl: String, dnsQuery: ByteArray): ByteArray? {
@@ -28,8 +28,8 @@ object DohClient {
                 requestMethod = "POST"
                 doOutput = true
                 doInput = true
-                connectTimeout = 2000
-                readTimeout = 2000
+                connectTimeout = AppConfig.DNS_TIMEOUT_MS
+                readTimeout = AppConfig.DNS_TIMEOUT_MS
                 setRequestProperty("Content-Type", "application/dns-message")
                 setRequestProperty("Accept", "application/dns-message")
             }

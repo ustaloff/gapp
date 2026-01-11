@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.Image
 
 @Composable
@@ -33,7 +34,9 @@ fun CyberTopList(
     title: String,
     data: Map<String, Int>,
     onAllowClick: (String) -> Unit,
-    isWhitelisted: (String) -> Boolean, // Logic to check status
+    searchQuery: String = "",
+    isExcluded: (String) -> Boolean,
+    isEffective: (String) -> Boolean = { true }, // Default to always effective (for domains)
     onSettingsClick: (() -> Unit)? = null
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -125,15 +128,22 @@ fun CyberTopList(
                         }
                     }
 
-                    val isActive = isWhitelisted(packageName)
-                    val statusIcon = Icons.Filled.Lock
-                    val tint =
-                        if (isActive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-                    val bgBorder =
-                        if (isActive) MaterialTheme.colorScheme.error
-                            .copy(alpha = 0.5f) else MaterialTheme.colorScheme.primary.copy(
-                            alpha = 0.5f
-                        )
+                    // Logic for Colors:
+                    val excluded = isExcluded(packageName)
+                    val effective = isEffective(packageName)
+                    
+                    val isActive = excluded && effective
+                    val isOverflow = excluded && !effective
+
+                    val statusIcon = if (excluded) Icons.Filled.CheckCircle else Icons.Filled.Lock 
+                    
+                    val tint = when {
+                        isActive -> MaterialTheme.colorScheme.primary // Green
+                        isOverflow -> MaterialTheme.colorScheme.onSurfaceVariant // Grey
+                        else -> MaterialTheme.colorScheme.error // Red
+                    }
+                    
+                    val bgBorder = tint.copy(alpha = 0.5f)
 
                     Row(
                         modifier = Modifier
@@ -156,6 +166,7 @@ fun CyberTopList(
                                 modifier = Modifier
                                     .size(24.dp)
                                     .clip(MaterialTheme.shapes.extraLarge)
+                                    .alpha(if (isOverflow) 0.5f else 1f) // Dim icon if overflow
                             )
                         } else {
                             // Fallback Icon
@@ -174,7 +185,7 @@ fun CyberTopList(
                                 text = appName, // UPDATED: Shows Human Name
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Medium,
-                                color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha=if(isOverflow) 0.5f else 1f),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
@@ -216,17 +227,9 @@ fun CyberTopList(
                             )
                         }
                     }
-                    /*HorizontalDivider(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f),
-                        thickness = 0.5.dp
-                    )*/
                 }
             }
         }
-
-
-        //Spacer(Modifier.height(8.dp))
-
-
     }
 }
+
