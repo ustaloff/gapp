@@ -2,6 +2,7 @@ package com.example.adshield.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -13,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -71,22 +73,44 @@ fun HomeView(
                     .padding(vertical = 16.dp)
             ) {
                 // Left: Logo + Title
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(verticalAlignment = Alignment.Top) {
                     CyberLogo(
-                        modifier = Modifier.size(48.dp),
-                        size = 48.dp,
+                        modifier = Modifier.size(40.dp),
+                        size = 40.dp,
                         color = MaterialTheme.colorScheme.primary
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    GlitchText(
-                        text = "ADSHIELD",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+
+                    Spacer(modifier = Modifier.width(0.dp))
+
+                    Column(
+                        modifier = Modifier,
+                        horizontalAlignment = Alignment.End
+                    ) {
+                        UserStatusBadge(userAccess = userAccess)
+
+                        GlitchText(
+                            text = "ADSHIELD",
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontFamily = FontFamily.Monospace,
+                                fontWeight = FontWeight.ExtraBold,
+                                fontStyle = FontStyle.Normal,
+                                fontSize = 20.sp,
+                                lineHeight = 20.sp,
+                                letterSpacing = 1.sp
+                            ),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
 
-                // Right: Status Badge
-                UserStatusBadge(userAccess = userAccess)
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = "Config",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(24.dp)
+                )
+
+                //CyberMiniPowerButton()
             }
 
             Spacer(modifier = Modifier.height(16.dp))

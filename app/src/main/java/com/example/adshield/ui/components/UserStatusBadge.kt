@@ -29,106 +29,91 @@ fun UserStatusBadge(
     modifier: Modifier = Modifier
 ) {
     // Determine colors and text based on state
-    val (primaryColor, statusText, subText, shouldPulse) = when (userAccess.state) {
+    val (primaryColor, statusText, subText) = when (userAccess.state) {
         UserAccessState.FREE -> StatusConfig(
             color = NeonGreenError, // Warm crimson/red
-            status = "FREE MODE",
-            sub = "Limited protection",
-            pulse = false
+            status = "FREE",
+            sub = "LOW PROTECTION"
         )
         UserAccessState.TRIAL -> {
             val daysLeft = getDaysLeft(userAccess.trialEndsAt)
             StatusConfig(
                 color = NeonAmberPrimary,
-                status = "TRIAL ACTIVE",
-                sub = "Ends in $daysLeft days",
-                pulse = true
+                status = "TRIAL",
+                sub = daysLeft.toString() + "d left"
             )
         }
         UserAccessState.PREMIUM -> {
             val daysLeft = getDaysLeft(userAccess.premiumExpiresAt)
-            val sub = if (daysLeft <= 7 && daysLeft >= 0) "Renews in $daysLeft days" else null
+            val sub = if (daysLeft <= 7 && daysLeft >= 0) "{$daysLeft}d left" else null
             StatusConfig(
                 color = NeonGreenPrimary,
-                status = "PREMIUM ACTIVE",
-                sub = sub, // Null means hide second line
-                pulse = false
+                status = "PRO",
+                sub = sub // Null means hide second line
             )
         }
     }
 
     // Animation for pulsing glow (only if needed)
-    val alphaAnim by if (shouldPulse) {
-        rememberInfiniteTransition(label = "badgePulse").animateFloat(
-            initialValue = 0.5f,
-            targetValue = 1f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(1500),
-                repeatMode = RepeatMode.Reverse
-            ), label = "alpha"
-        )
-    } else {
-        rememberInfiniteTransition(label = "static").animateFloat(
-            initialValue = 0.8f, targetValue = 0.8f, animationSpec = infiniteRepeatable(tween(1000))
-        )
-    }
+    val alphaAnim by rememberInfiniteTransition(label = "badgePulse").animateFloat(
+        initialValue = 0.5f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500),
+            repeatMode = RepeatMode.Reverse
+        ), label = "alpha"
+    )
 
-    // MAIN BADGE CONTAINER
-    Box(
-        modifier = modifier
-            .border(
-                width = 1.dp,
-                brush = Brush.horizontalGradient(
-                    colors = listOf(
-                        primaryColor.copy(alpha = 0.2f),
-                        primaryColor.copy(alpha = 0.6f * alphaAnim),
-                        primaryColor.copy(alpha = 0.2f)
-                    )
-                ),
-                shape = RoundedCornerShape(8.dp)
-            )
-            .background(
-                color = primaryColor.copy(alpha = 0.05f),
-                shape = RoundedCornerShape(8.dp)
-            )
-            .padding(horizontal = 12.dp, vertical = 6.dp)
+    Row(
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Status Indicator Dot
-            Box(
-                modifier = Modifier
-                    .size(6.dp)
-                    .background(primaryColor.copy(alpha = if (shouldPulse) alphaAnim else 1f), MaterialTheme.shapes.small)
+        if (subText !== null) {
+            Text(
+                text = subText,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 7.sp,
+                    lineHeight = 5.sp,
+                    letterSpacing = 1.sp
+                ),
+                color = primaryColor.copy(alpha = alphaAnim)
             )
-            
-            Spacer(modifier = Modifier.width(8.dp))
 
-            Column {
-                // Top Line: STATUS
-                Text(
-                    text = statusText,
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
+            Spacer(Modifier.width(4.dp))
+        }
+
+        // MAIN BADGE CONTAINER
+        Box(
+            modifier = modifier
+                .border(
+                    width = 1.dp,
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            primaryColor.copy(alpha = 0.2f),
+                            primaryColor.copy(alpha = 0.6f * alphaAnim),
+                            primaryColor.copy(alpha = 0.2f)
+                        )
                     ),
-                    color = primaryColor,
-                    fontSize = 10.sp
+                    shape = RoundedCornerShape(2.dp)
                 )
-                
-                // Bottom Line: Secondary Info (if visible)
-                if (subText != null) {
-                    Text(
-                        text = subText,
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontSize = 9.sp
-                        ),
-                        color = primaryColor.copy(alpha = 0.7f)
-                    )
-                }
-            }
+                .background(
+                    color = primaryColor.copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(2.dp)
+                )
+                .padding(horizontal = 4.dp, vertical = 2.dp)
+        ) {
+            Text(
+                text = statusText,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 7.sp,
+                    lineHeight = 5.sp,
+                    letterSpacing = 1.sp
+                ),
+                color = primaryColor.copy(alpha = alphaAnim)
+            )
         }
     }
 }
@@ -143,6 +128,5 @@ private fun getDaysLeft(timestamp: Long?): Long {
 private data class StatusConfig(
     val color: Color,
     val status: String,
-    val sub: String?,
-    val pulse: Boolean
+    val sub: String?
 )
