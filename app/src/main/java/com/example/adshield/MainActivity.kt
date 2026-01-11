@@ -421,12 +421,13 @@ fun DashboardScreen(
                         }
                     },
                     onLogClick = handleLogClick, // Use Restricted Handler
-                    onDomainManagerClick = { navigateTo("DOMAIN_LIST") }, 
+                    onDomainManagerClick = { navigateTo("DOMAIN_LIST") },
                     onAppClick = { packageName ->
                         onWhitelistApp(packageName)
                         excludedApps =
                             preferences.getExcludedApps() // Update state to trigger UI refresh
-                    }
+                    },
+                    onSettingsClick = { navigateTo("SETTINGS") }
                 )
 
                 "LOGS" -> {
@@ -508,7 +509,8 @@ fun DashboardScreen(
                 onAppClick = { packageName ->
                     onWhitelistApp(packageName)
                     excludedApps = preferences.getExcludedApps()
-                }
+                },
+                onSettingsClick = { navigateTo("SETTINGS") }
             )
         }
 
