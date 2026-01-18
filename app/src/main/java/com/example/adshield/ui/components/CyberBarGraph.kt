@@ -154,7 +154,7 @@ fun CyberBarGraphSection(
             Canvas(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 4.dp, vertical = 8.dp)
+                    .padding(start = 4.dp, end = 4.dp, top = 8.dp, bottom = 0.dp)
             ) {
                 val width = size.width
                 val height = size.height
