@@ -15,16 +15,9 @@ fun CyberFilterCard(
     onReload: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    NeonCard(
         modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.small,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        ),
-        border = androidx.compose.foundation.BorderStroke(
-            1.dp,
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-        )
+        borderColor = MaterialTheme.colorScheme.primary
     ) {
         Row(
             modifier = Modifier

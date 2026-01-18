@@ -99,6 +99,12 @@ fun CyberStatusCapsule(
             .height(48.dp)
             .clip(MaterialTheme.shapes.small)
             .background(backgroundBrush)
+            .drawCyberCorners(
+                color = (if (isProtected) primaryColor else if (isAdBlockOnly) errorColor else errorColor).copy(alpha = 1.0f),
+                strokeWidth = 2.dp,
+                cornerLength = 10.dp,
+                cornerShape = MaterialTheme.shapes.small as? androidx.compose.foundation.shape.CornerBasedShape
+            )
             .border(1.dp, borderBrush, MaterialTheme.shapes.small)
             .padding(horizontal = 16.dp),
         contentAlignment = Alignment.Center

@@ -65,6 +65,12 @@ fun CyberBarGraphSection(
     Column(
         modifier = modifier
             .fillMaxWidth()
+            .drawCyberCorners(
+                color = (if (isRunning) primaryColor else offlineColor).copy(alpha = 0.4f),
+                strokeWidth = 2.dp,
+                cornerLength = 12.dp,
+                cornerShape = MaterialTheme.shapes.small as? androidx.compose.foundation.shape.CornerBasedShape
+            )
             .border(
                 1.dp,
                 (if (isRunning) primaryColor else offlineColor).copy(alpha = 0.2f),

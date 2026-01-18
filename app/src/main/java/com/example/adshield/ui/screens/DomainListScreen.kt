@@ -275,10 +275,12 @@ fun DomainItem(
     item: DomainUiModel,
     onDelete: () -> Unit
 ) {
-    val borderColor =
+    /*val borderColor =
         if (item.isBlocked) MaterialTheme.colorScheme.error.copy(alpha = 0.5f) else MaterialTheme.colorScheme.primary.copy(
             alpha = 0.5f
-        )
+        )*/
+
+    val borderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
 
     val icon = if (item.isBlocked) Icons.Default.Close else Icons.Default.CheckCircle
     val iconTint =

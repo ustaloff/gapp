@@ -1,9 +1,10 @@
 package com.example.adshield.ui.screens
 
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,6 +16,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Star
+
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -48,6 +50,7 @@ import kotlinx.coroutines.launch
 import com.example.adshield.ui.theme.ContentDescriptions
 import com.example.adshield.ui.components.UiAccessState
 import com.example.adshield.ui.components.applyAccessState
+import com.example.adshield.ui.components.drawCyberAccents
 
 @Composable
 fun SettingsView(
@@ -78,75 +81,7 @@ fun SettingsView(
 
     @Suppress("UNUSED_VALUE") // False positive on state delegation
     var tempUrl by remember { mutableStateOf(currentUrl) }
-// ... (start line 77 to 746 remains same, skipping to bottom) ...
-    // Item 3: Filter Source - DIM for FREE (custom URL locked)
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.01f),
-                MaterialTheme.shapes.medium
-            )
-            .border(
-                1.dp,
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                MaterialTheme.shapes.medium
-            )
-            .clickable(onClick = {
-                if (isFree) {
-                    onPremiumClick()
-                } else {
-                    tempUrl = currentUrl
-                    showUrlDialog = true
-                }
-            })
-            .padding(16.dp)
-            .applyAccessState(if (isFree) UiAccessState.DIM else UiAccessState.FULL)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    "FILTER SOURCE",
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    if (isFree) "AdShield Recommended (Official) 🔒"
-                    else if (currentUrl.trim() == AppConfig.DEFAULT_FILTER_URL.trim() ||
-                        currentUrl.contains("ustaloff/adshield-lists") && currentUrl.endsWith(
-                            "blocklist.txt"
-                        )
-                    ) "AdShield Recommended (Official)" else currentUrl,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
 
-            Button(
-                onClick = onReloadFilters,
-                enabled = !isUpdatingFilters,
-                shape = MaterialTheme.shapes.small,
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
-                modifier = Modifier.height(32.dp)
-            ) {
-                if (isUpdatingFilters) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(12.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                } else {
-                    Text("RELOAD", fontSize = 12.sp)
-                }
-            }
-        }
-    }
     // -- Google Sign In Setup --
     // We observe the user state to update UI immediately
     val currentUser by UserRepository.user.collectAsState()
@@ -670,9 +605,15 @@ fun SettingsView(
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.01f),
                             MaterialTheme.shapes.medium
                         )
+                        .drawCyberAccents(
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                            width = 3.dp,
+                            length = 30.dp,
+                            xOffset = 16.dp
+                        )
                         .border(
                             1.dp,
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), // Faint border
                             MaterialTheme.shapes.medium
                         )
                         .clickable(onClick = onWhitelistClick)
@@ -723,6 +664,12 @@ fun SettingsView(
                         .background(
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.01f),
                             MaterialTheme.shapes.medium
+                        )
+                        .drawCyberAccents(
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                            width = 3.dp,
+                            length = 30.dp,
+                            xOffset = 16.dp
                         )
                         .border(
                             1.dp,
@@ -780,6 +727,12 @@ fun SettingsView(
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.01f),
                             MaterialTheme.shapes.medium
                         )
+                        .drawCyberAccents(
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                            width = 3.dp,
+                            length = 30.dp,
+                            xOffset = 16.dp
+                        )
                         .border(
                             1.dp,
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
@@ -825,6 +778,12 @@ fun SettingsView(
                         .background(
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.01f),
                             MaterialTheme.shapes.medium
+                        )
+                        .drawCyberAccents(
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                            width = 3.dp,
+                            length = 30.dp,
+                            xOffset = 16.dp
                         )
                         .border(
                             1.dp,

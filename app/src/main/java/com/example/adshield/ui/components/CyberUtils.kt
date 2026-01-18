@@ -164,6 +164,12 @@ fun NeonCard(
                 ),
                 shape = shape
             )
+            .drawCyberCorners(
+                color = borderColor.copy(alpha = 0.4f), // Uses the card's accent color (primary/error)
+                strokeWidth = 2.dp,
+                cornerLength = 10.dp,
+                cornerShape = shape as? androidx.compose.foundation.shape.CornerBasedShape
+            )
             .border(
                 width = 1.dp,
                 color = borderColor.copy(alpha = 0.2f), // Solid border, slight alpha

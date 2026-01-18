@@ -3,7 +3,7 @@
 ## Current Focus
 - **Статус**: Access Control система реализована
 - **Режим**: Feature complete / Polish
-- **Последняя сессия**: Повышение качества UI и Accessibility, рефакторинг SettingsScreen
+- **Последняя сессия**: Реализация Cyber Accents, визуальный апгрейд настроек, аудит кода (cleanup)
 
 ## Recent Changes
 - ✅ Создан `AccessModifiers.kt` с модификаторами dim(), lock(), applyAccessState()
@@ -21,6 +21,9 @@
 - ✅ **LogsScreen**: Unification (removed tabs), added Icons & Back button
 - ✅ **SettingsScreen**: Restructured (Config vs Monitoring)
 - ✅ **Accessibility**: Created `ContentDescriptions.kt`, fixed all `contentDescription = null`
+- ✅ **Visual**: Реализованы `drawCyberAccents` (tech bracket style) для Settings блоков
+- ✅ **Code Quality**: Аудит `ui/` (удалены дубликаты блоков, неиспользуемые импорты)
+- ✅ **Components**: `drawCyberCorners` поддерживает rounded shapes
 - ✅ **UI Constants**: Created `Dimensions.kt` for padding standardization
 - (Older) Created `AccessModifiers.kt` with dim(), lock()
 - (Ранее) Создана структура Memory Bank

@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -31,7 +33,7 @@ import com.example.adshield.data.UserAccessState
 import com.example.adshield.ui.components.UiAccessState
 import com.example.adshield.ui.components.applyAccessState
 
-import com.example.adshield.ui.components.LockedContainer
+
 
 enum class LogTab {
     DOMAINS, APPS
@@ -183,28 +185,28 @@ fun LogItemCard(entry: VpnLogEntry, onClick: (String) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(MaterialTheme.shapes.small) // Clip the whole card including the drawn border
             .background(
-                MaterialTheme.colorScheme.surface.copy(alpha = 0.15f),
-                MaterialTheme.shapes.small
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.15f)
             )
+            .drawBehind {
+                // Draw wide left border
+                drawRect(
+                    color = style.color,
+                    topLeft = androidx.compose.ui.geometry.Offset.Zero,
+                    size = androidx.compose.ui.geometry.Size(width = 6.dp.toPx(), height = size.height)
+                )
+            }
             .border(
                 1.dp,
                 MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
                 MaterialTheme.shapes.small
             )
             .clickable(enabled = style.isClickable) { onClick(entry.domain) }
-            .padding(12.dp),
+            .padding(top = 12.dp, bottom = 12.dp, end = 12.dp, start = 12.dp) // Content padding
+            .padding(start = 6.dp), // Extra offset for the visual border (so text isn't too close)
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Status Bar
-        Box(
-            modifier = Modifier
-                .width(4.dp)
-                .height(30.dp)
-                .background(style.color, MaterialTheme.shapes.extraSmall)
-        )
-        Spacer(Modifier.width(12.dp))
-
         // App Icon (if available)
         if (appIcon != null) {
             androidx.compose.ui.viewinterop.AndroidView(
