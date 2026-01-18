@@ -21,17 +21,24 @@ This document lists the critical configurations required for AdShield to functio
 -   **SHA-1 Fingerprint:** Your debug keystore SHA-1 is registered in Firebase.
     -   *If you change computers:* Run `gradlew signingReport` to get your new SHA-1, then add it to Firebase Console -> Project Settings.
 
-## 4. RevenueCat (Subscriptions)
-**Status:** ⚠️ Partially Configured (App-side only)
--   **API Key:** Found in `MainActivity.kt`.
--   **Current State:** Subscriptions fail to load.
-    -   Error 1: "API Key not recognized" (Check `MainActivity.kt` vs Dashboard).
-    -   Error 2: Products (Monthly/Yearly) do not exist in Play Console.
--   **Fix:** 
-    1. Update API Key in `MainActivity.kt`.
-    2. Create products in Play Console.
+## 4. Premium / Billing
+**Status:** ✅ Local Simulation
+-   **Implementation:** Premium статус симулируется локально в `BillingManager.kt`.
+-   **No External SDK:** RevenueCat был удалён для упрощения разработки.
+-   **Future:** Для продакшена можно интегрировать Google Play Billing Library или RevenueCat.
 
 ## 5. Keystore (Signing)
 **Status:** ✅ Debug Mode
 -   App works in debug mode.
 -   For release, use `release-keystore.jks` and set environment variables `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`.
+## 6. Publishing (Play Store)
+**Status:** ℹ️ Information
+> [!IMPORTANT]
+> **VpnService Declaration Requirement**
+> 
+> When uploading this application to the Google Play Store, you will be required to declare the use of `VpnService` permission.
+> 
+> 1.  Navigate to **App Content** -> **VPN Service declaration form**.
+> 2.  You must explicitly state that the app uses `VpnService` to implement its core functionality (DNS Filtering/Blocking).
+> 3.  You must confirm that `LocalVpnService` is the class extending `VpnService`.
+> 4.  Failure to declare this properly will result in app rejection. The code has been annotated with `@SuppressLint("VpnServicePolicy")` to suppress the IDE warning, but the Console form is mandatory.

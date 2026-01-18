@@ -11,8 +11,18 @@ AdShield is a high-performance, cyberpunk-inspired Android application designed 
 - **🛡️ App Whitelisting**: Exclude specific applications from VPN protection to ensure compatibility with banking or local network apps.
 - **🔄 Dynamic Blocklists**: Automatic daily updates of filter lists via a custom GitHub-hosted aggregator.
 - **✨ Cyberpunk Aesthetics**: A premium, "neon-dark" UI with glitch animations and glowing components built with Jetpack Compose.
-- **💎 Premium Subscription**: Integration with RevenueCat and Firebase for managing user profiles and pro-features.
+- **💎 Premium Features**: Local Premium simulation with Firebase-backed user profiles.
 - **☁️ Cloud Sync**: Firebase-backed user accounts with Google Sign-In support.
+
+## ⚖️ Free vs Premium Capabilities
+
+| Feature | Free Plan | Premium / Trial |
+| :--- | :--- | :--- |
+| **Ad Blocking** | ✅ Unlimited | ✅ Unlimited |
+| **App Whitelist** | ⚠️ Max 3 Apps | ✅ Unlimited |
+| **Custom DNS Rules** | ❌ Locked | ✅ Allowed (Allow/Block domains) |
+| **Themes** | 🟢 Cyber Green Only | 🌈 All Themes (Blue, Amber, etc) |
+| **Analytics** | 📊 Basic Counters | 📈 Full Stats & Logs |
 
 ---
 
@@ -23,7 +33,7 @@ AdShield is a high-performance, cyberpunk-inspired Android application designed 
 - **UI Framework**: Jetpack Compose (Material 3)
 - **Networking**: Local VpnService (VpnService API)
 - **Backend/Auth**: Firebase (Auth, Firestore)
-- **Billing**: RevenueCat Purchases SDK
+- **Billing**: Local Premium simulation (no external SDK)
 - **Data Persistence**: SharedPreferences & Kotlin StateFlow
 - **Scripts**: Python (for Blocklist Aggregation)
 
@@ -52,7 +62,7 @@ scripts/            # Python-based blocklist aggregator & CI/CD
 ### Prerequisites
 - Android Studio Hedgehog (2023.1.1) or newer.
 - JDK 17.
-- A physical Android device or Emulator (API 26+).
+- A physical Android device or Emulator (API 24+, Android 7.0+).
 
 ### Initial Setup
 1. **Clone the project** to your local machine.
@@ -85,14 +95,4 @@ This project is private and intended for personal use and development.
 ---
 *Built with ❤️ for Privacy and Style.*
 
-## 📱 Publishing to Google Play
 
-> [!IMPORTANT]
-> **VpnService Declaration Requirement**
-> 
-> When uploading this application to the Google Play Store, you will be required to declare the use of `VpnService` permission.
-> 
-> 1.  Navigate to **App Content** -> **VPN Service declaration form**.
-> 2.  You must explicitly state that the app uses `VpnService` to implement its core functionality (DNS Filtering/Blocking).
-> 3.  You must confirm that `LocalVpnService` is the class extending `VpnService`.
-> 4.  Failure to declare this properly will result in app rejection. The code has been annotated with `@SuppressLint("VpnServicePolicy")` to suppress the IDE warning, but the Console form is mandatory.
