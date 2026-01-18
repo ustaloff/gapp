@@ -17,6 +17,7 @@
 - ✅ **Navigation Refactor**: Removed `CyberNavBar` & `RulesManagerScreen`, centralized in Settings
 - ✅ **Unified Filter Reload**: Centralized cooldown logic in MainActivity (Home & Settings consistent)
 - ✅ **System Logs**: Locked entry point for Free users (redirects to Premium)
+- ✅ **Visual**: Redesigned CyberGraph (Bars instead of Lines) for better theme fit
 - ✅ **LogsScreen**: Unification (removed tabs), added Icons & Back button
 - ✅ **SettingsScreen**: Restructured (Config vs Monitoring)
 - ✅ **Accessibility**: Created `ContentDescriptions.kt`, fixed all `contentDescription = null`

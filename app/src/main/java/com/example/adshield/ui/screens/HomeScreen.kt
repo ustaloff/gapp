@@ -185,7 +185,7 @@ fun HomeView(
 
             // PRIORITY 3: LIVE TRAFFIC GRAPH (Trust)
             Spacer(modifier = Modifier.height(24.dp))
-            CyberGraphSection(
+            CyberBarGraphSection(
                 data = VpnStats.blockedHistory,
                 totalData = VpnStats.totalHistory,
                 bpm = bpm,
