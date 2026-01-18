@@ -25,7 +25,8 @@ import java.util.Locale
 @Composable
 fun CyberTerminal(
     logs: List<VpnLogEntry>,
-    onLogClick: (String) -> Unit
+    onLogClick: (String) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     // 1. Cursor Animation
     val infiniteTransition = rememberInfiniteTransition(label = "cursor_blink")
@@ -50,7 +51,7 @@ fun CyberTerminal(
     }
 
     NeonCard(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .height(200.dp),
         borderColor = MaterialTheme.colorScheme.primary,

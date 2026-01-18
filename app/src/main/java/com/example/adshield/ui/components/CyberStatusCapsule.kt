@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.adshield.data.UserAccess
 import com.example.adshield.data.UserAccessState
+import com.example.adshield.ui.theme.ContentDescriptions
 
 @Composable
 fun CyberStatusCapsule(
@@ -108,7 +109,7 @@ fun CyberStatusCapsule(
             // Icon
             Icon(
                 imageVector = icon,
-                contentDescription = null,
+                contentDescription = ContentDescriptions.vpnStatusBadge,
                 tint = primaryColor,
                 modifier = Modifier.size(16.dp)
             )

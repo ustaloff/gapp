@@ -41,7 +41,7 @@ fun OnboardingScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF000000)) // Deep Black
+            .background(MaterialTheme.colorScheme.background) // Deep Black
     ) {
         // High-Tech Grid Background
         GridBackground(gridColor = NeonGreenPrimary.copy(alpha = 0.1f))

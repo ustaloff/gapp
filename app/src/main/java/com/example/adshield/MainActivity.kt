@@ -371,7 +371,7 @@ fun DashboardScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF0F172A)) // Dark Background
+            .background(MaterialTheme.colorScheme.background) // Dark Background
     ) {
         GridBackground()
 
@@ -398,13 +398,12 @@ fun DashboardScreen(
                     filterCount = filterCount,
                     dataSaved = dataSaved,
                     recentLogs = recentLogs,
-                    excludedApps = excludedApps, // Pass state
-                    effectiveWhitelist = effectiveWhitelist, // Pass effective whitelist
-                    filterUpdateTrigger = filterUpdateTrigger, // Pass trigger
+                    excludedApps = excludedApps,
+                    effectiveWhitelist = effectiveWhitelist,
+                    filterUpdateTrigger = filterUpdateTrigger,
                     isUpdatingFilters = isUpdatingFilters,
                     onWhitelistClick = { navigateTo("APP_LIST") },
                     onReloadFilters = {
-                        // Reload logic (moved from inline)
                         if (!isUpdatingFilters) {
                             isUpdatingFilters = true
                             scope.launch {
@@ -420,26 +419,27 @@ fun DashboardScreen(
                             }
                         }
                     },
-                    onLogClick = handleLogClick, // Use Restricted Handler
+                    onLogClick = handleLogClick,
                     onDomainManagerClick = { navigateTo("DOMAIN_LIST") },
                     onAppClick = { packageName ->
                         onWhitelistApp(packageName)
-                        excludedApps =
-                            preferences.getExcludedApps() // Update state to trigger UI refresh
+                        excludedApps = preferences.getExcludedApps()
                     },
                     onSettingsClick = { navigateTo("SETTINGS") },
                     onPowerClick = {
                         if (isRunning) onStopClick()
                         else if (!hasAcceptedDisclosure) showDisclosureDialog = true
                         else onStartClick()
-                    }
+                    },
+                    onPremiumClick = { navigateTo("PREMIUM") }  // NEW
                 )
 
                 "LOGS" -> {
                     androidx.activity.compose.BackHandler { navigateBack() }
                     LogsView(
                         logs = recentLogs,
-                        onLogClick = handleLogClick // Use Restricted Handler
+                        onLogClick = handleLogClick,
+                        userAccessState = userAccess.state  // Pass access state
                     )
                 }
 
@@ -503,14 +503,14 @@ fun DashboardScreen(
                 filterCount = filterCount,
                 dataSaved = dataSaved,
                 recentLogs = recentLogs,
-                excludedApps = excludedApps, // Pass state
-                effectiveWhitelist = effectiveWhitelist, // Pass effective whitelist
-                filterUpdateTrigger = filterUpdateTrigger, // Pass trigger
+                excludedApps = excludedApps,
+                effectiveWhitelist = effectiveWhitelist,
+                filterUpdateTrigger = filterUpdateTrigger,
                 isUpdatingFilters = isUpdatingFilters,
                 onWhitelistClick = { navigateTo("APP_LIST") },
                 onReloadFilters = {},
                 onLogClick = { onDomainToggle(it) },
-                onDomainManagerClick = { navigateTo("DOMAIN_LIST") }, // Added callback
+                onDomainManagerClick = { navigateTo("DOMAIN_LIST") },
                 onAppClick = { packageName ->
                     onWhitelistApp(packageName)
                     excludedApps = preferences.getExcludedApps()
@@ -520,7 +520,8 @@ fun DashboardScreen(
                     if (isRunning) onStopClick()
                     else if (!hasAcceptedDisclosure) showDisclosureDialog = true
                     else onStartClick()
-                }
+                },
+                onPremiumClick = { navigateTo("PREMIUM") }  // NEW
             )
         }
 

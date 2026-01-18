@@ -43,7 +43,7 @@ fun CyberToast(
         CyberToastType.SUCCESS -> AdShieldTheme.colors.success // Green
         CyberToastType.ERROR -> MaterialTheme.colorScheme.error // Error (Red) - Sticking to standard Error
         CyberToastType.INFO -> AdShieldTheme.colors.info // Info (Yellow/Gold)
-        CyberToastType.WARNING -> Color(0xFFFFA000) // Amber/Orange
+        CyberToastType.WARNING -> AdShieldTheme.colors.warning // Amber/Orange
     }
 
     val icon = when (type) {
@@ -94,7 +94,7 @@ fun CyberToast(
                 ) {
                     Icon(
                         imageVector = icon,
-                        contentDescription = null,
+                        contentDescription = title,
                         tint = typeColor,
                         modifier = Modifier.size(28.dp)
                     )

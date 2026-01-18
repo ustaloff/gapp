@@ -45,6 +45,9 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.example.adshield.data.BillingManager
 import com.example.adshield.BuildConfig
 import kotlinx.coroutines.launch
+import com.example.adshield.ui.theme.ContentDescriptions
+import com.example.adshield.ui.components.UiAccessState
+import com.example.adshield.ui.components.applyAccessState
 
 @Composable
 fun SettingsView(
@@ -61,6 +64,7 @@ fun SettingsView(
     val userAccessState by BillingManager.userAccessState.collectAsState(initial = UserAccessState.FREE)
     val isPremium = userAccessState == UserAccessState.PREMIUM || 
                    userAccessState == UserAccessState.TRIAL
+    val isFree = !isPremium
     
     var isUpdatingFilters by remember { mutableStateOf(false) }
 
@@ -219,7 +223,7 @@ fun SettingsView(
                                     val isSuccess = validationResult!!.startsWith("✅")
                                     Text(
                                         validationResult!!,
-                                        color = if (isSuccess) Color(0xFF4CAF50) else MaterialTheme.colorScheme.error,
+                                        color = if (isSuccess) AdShieldTheme.colors.success else MaterialTheme.colorScheme.error,
                                         fontWeight = if (isSuccess) FontWeight.Bold else FontWeight.Normal
                                     )
                                 }
@@ -458,7 +462,7 @@ fun SettingsView(
                             }
                             Icon(
                                 Icons.Filled.Star,
-                                contentDescription = null,
+                                contentDescription = "Premium Banner",
                                 tint = Color.Yellow
                             )
                         }
@@ -589,7 +593,7 @@ fun SettingsView(
                         }
                         Icon(
                             Icons.Default.Lock,
-                            contentDescription = null,
+                            contentDescription = ContentDescriptions.lockIcon,
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
@@ -597,23 +601,24 @@ fun SettingsView(
 
                 Spacer(Modifier.height(16.dp))
 
-                // Item 2: Domain Manager (Unified)
+                // Item 2: Domain Manager (Unified) - LOCK for FREE
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(
-                            MaterialTheme.colorScheme.primary.copy(alpha = if (isPremium) 0.01f else 0.005f),
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.01f),
                             MaterialTheme.shapes.medium
                         )
                         .border(
                             1.dp,
-                            MaterialTheme.colorScheme.primary.copy(alpha = if (isPremium) 0.3f else 0.1f),
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
                             MaterialTheme.shapes.medium
                         )
                         .clickable(onClick = {
-                            if (!isPremium) onPremiumClick() else onDomainConfigClick()
+                            if (isFree) onPremiumClick() else onDomainConfigClick()
                         })
                         .padding(16.dp)
+                        .applyAccessState(if (isFree) UiAccessState.DIM else UiAccessState.FULL)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -624,39 +629,39 @@ fun SettingsView(
                             Text(
                                 "DOMAIN MANAGER",
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (isPremium) 1f else 0.5f)
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                "Manage allowed & banned domains",
+                                if (isFree) "Manage allowed & banned domains 🔒" else "Manage allowed & banned domains",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isPremium) 1f else 0.5f)
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         Icon(
                             Icons.AutoMirrored.Filled.List,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary.copy(alpha = if (isPremium) 1f else 0.5f)
+                            contentDescription = ContentDescriptions.domainIcon,
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
 
                 Spacer(Modifier.height(16.dp))
 
-                // Item 3: Filter Source
+                // Item 3: Filter Source - DIM for FREE (custom URL locked)
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(
-                            MaterialTheme.colorScheme.primary.copy(alpha = if (isPremium) 0.01f else 0.005f),
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.01f),
                             MaterialTheme.shapes.medium
                         )
                         .border(
                             1.dp,
-                            MaterialTheme.colorScheme.primary.copy(alpha = if (isPremium) 0.3f else 0.1f),
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
                             MaterialTheme.shapes.medium
                         )
                         .clickable(onClick = { 
-                            if (userAccessState == UserAccessState.FREE) {
+                            if (isFree) {
                                 onPremiumClick()
                             } else {
                                 tempUrl = currentUrl
@@ -664,6 +669,7 @@ fun SettingsView(
                             }
                         })
                         .padding(16.dp)
+                        .applyAccessState(if (isFree) UiAccessState.DIM else UiAccessState.FULL)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -677,7 +683,7 @@ fun SettingsView(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                if (userAccessState == UserAccessState.FREE) "AdShield Recommended (Official) 🔒" 
+                                if (isFree) "AdShield Recommended (Official) 🔒" 
                                 else if (currentUrl.trim() == AppConfig.DEFAULT_FILTER_URL.trim() || 
                                     currentUrl.contains("ustaloff/adshield-lists") && currentUrl.endsWith("blocklist.txt")) "AdShield Recommended (Official)" else currentUrl,
                                 style = MaterialTheme.typography.labelSmall,
@@ -693,7 +699,7 @@ fun SettingsView(
                                 val now = System.currentTimeMillis()
                                 val cooldownMs = AppConfig.FILTER_UPDATE_COOLDOWN_HOURS * 60 * 60 * 1000L
                                 
-                                if (userAccessState == UserAccessState.FREE && (now - lastUpdate) < cooldownMs) {
+                                if (isFree && (now - lastUpdate) < cooldownMs) {
                                     val remainingTime = cooldownMs - (now - lastUpdate)
                                     val hours = remainingTime / (1000 * 60 * 60)
                                     val minutes = (remainingTime % (1000 * 60 * 60)) / (1000 * 60)

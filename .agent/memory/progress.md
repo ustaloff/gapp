@@ -20,6 +20,7 @@
 - [x] **BillingManager**: Локальная симуляция (без RevenueCat)
 - [x] **Filter Update Limits**: 24ч cooldown для Free
 - [x] **Premium Screen**: UI для апгрейда
+- [x] **UI Access Control**: DIM/LOCK модификаторы для Free пользователей
 
 ### Phase 4: Polish & Auth 🔄
 - [x] **UI Refinement**: Разделение экранов, улучшение компонентов
@@ -41,3 +42,5 @@
 - ✅ **2026-01**: Монетизация и Premium логика
 - ✅ **2026-01**: Оптимизация и рефакторинг
 - ✅ **2026-01**: Настройка Memory Bank
+- ✅ **2026-01**: UI Access Control (DIM/LOCK для FREE)
+- ✅ **2026-01**: UI Accessibility Audit (ContentDescriptions, Dimensions)

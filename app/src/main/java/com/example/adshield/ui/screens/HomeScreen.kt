@@ -39,19 +39,23 @@ fun HomeView(
     filterCount: Int,
     dataSaved: Long,
     recentLogs: List<VpnLogEntry>,
-    excludedApps: Set<String>, // Added state
-    effectiveWhitelist: Set<String>, // Added state
-    filterUpdateTrigger: Long, // Added trigger for Domain/Filter UI refresh
+    excludedApps: Set<String>,
+    effectiveWhitelist: Set<String>,
+    filterUpdateTrigger: Long,
     isUpdatingFilters: Boolean,
     onWhitelistClick: () -> Unit,
     onReloadFilters: () -> Unit,
     onLogClick: (String) -> Unit,
     onAppClick: (String) -> Unit,
-    onDomainManagerClick: () -> Unit, // Added callback
-    onSettingsClick: () -> Unit, // Added callback for Settings navigation
-    onPowerClick: () -> Unit // Added callback for Power logic
+    onDomainManagerClick: () -> Unit,
+    onSettingsClick: () -> Unit,
+    onPowerClick: () -> Unit,
+    onPremiumClick: () -> Unit  // NEW: For LOCK taps
 ) {
     val scrollState = rememberScrollState()
+    
+    // Access control helper
+    val isFree = userAccess.state.isFree()
 
     Box(
         modifier = Modifier
@@ -154,6 +158,7 @@ fun HomeView(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight()
+                                .applyAccessState(if (isFree) UiAccessState.DIM else UiAccessState.FULL)
                         )
 
                         val timeMs = VpnStats.timeSavedMs.value
@@ -172,6 +177,7 @@ fun HomeView(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight()
+                                .applyAccessState(if (isFree) UiAccessState.DIM else UiAccessState.FULL)
                         )
                     }
                 }
@@ -179,7 +185,15 @@ fun HomeView(
 
             // PRIORITY 3: LIVE TRAFFIC GRAPH (Trust)
             Spacer(modifier = Modifier.height(24.dp))
-            CyberGraphSection(VpnStats.blockedHistory, VpnStats.totalHistory, bpm, isRunning)
+            CyberGraphSection(
+                data = VpnStats.blockedHistory,
+                totalData = VpnStats.totalHistory,
+                bpm = bpm,
+                isRunning = isRunning,
+                showBpm = !isFree,           // Hide BPM for FREE
+                showThreatLevel = !isFree,   // Show "---" for FREE
+                modifier = Modifier.applyAccessState(if (isFree) UiAccessState.DIM else UiAccessState.FULL)
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -188,7 +202,7 @@ fun HomeView(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     Icons.Default.Lock,
-                    contentDescription = null,
+                    contentDescription = "Blocked requests section",
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(16.dp)
                 )
@@ -212,16 +226,21 @@ fun HomeView(
                     label = "TOTAL",
                     value = blockedCount.toString(),
                     modifier = Modifier.weight(1f)
+                    // TOTAL is always FULL
                 )
                 CyberStatCard(
                     label = "TODAY",
                     value = VpnStats.blockedToday.value.toString(),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
+                        .applyAccessState(if (isFree) UiAccessState.DIM else UiAccessState.FULL)
                 )
                 CyberStatCard(
                     label = "7 DAYS",
                     value = VpnStats.blockedWeekly.value.toString(),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
+                        .applyAccessState(if (isFree) UiAccessState.DIM else UiAccessState.FULL)
                 )
             }
 
@@ -232,35 +251,56 @@ fun HomeView(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                // TOP APPS - DIM for FREE (all items visible but dimmed)
                 Box(Modifier.fillMaxWidth()) {
                     CyberTopList(
                         title = "TOP APPS",
                         data = VpnStats.appBlockedStatsMap,
                         onAllowClick = { onAppClick(it) },
-                        isExcluded = { pkg -> excludedApps.contains(pkg) }, // Use State
-                        isEffective = { pkg -> effectiveWhitelist.contains(pkg) }, // Use State for limit check
-                        onSettingsClick = onWhitelistClick // Go to App Whitelist
+                        isExcluded = { pkg -> excludedApps.contains(pkg) },
+                        isEffective = { pkg -> effectiveWhitelist.contains(pkg) },
+                        onSettingsClick = onWhitelistClick,
+                        modifier = Modifier.applyAccessState(if (isFree) UiAccessState.DIM else UiAccessState.FULL)
                     )
                 }
+                
+                // TOP DOMAINS - LOCK for FREE (tapping shows paywall)
                 Box(Modifier.fillMaxWidth()) {
-                    CyberTopList(
-                        title = "TOP DOMAINS",
-                        data = VpnStats.domainBlockedStatsMap,
-                        onAllowClick = { onLogClick(it) },
-                        isExcluded = { domain ->
-                            // Force Recomp using trigger read
-                            filterUpdateTrigger.let { }
-                            FilterEngine.checkDomain(domain) == FilterEngine.FilterStatus.ALLOWED_USER
-                        },
-                        // Default isEffective = true, so no grey/red issue here
-                        onSettingsClick = onDomainManagerClick // Go to Domain Manager
-                    )
+                    if (isFree) {
+                        LockedContainer(onUnlockClick = onPremiumClick) {
+                            CyberTopList(
+                                title = "TOP DOMAINS",
+                                data = VpnStats.domainBlockedStatsMap,
+                                onAllowClick = { /* Blocked for FREE */ },
+                                isExcluded = { domain ->
+                                    filterUpdateTrigger.let { }
+                                    FilterEngine.checkDomain(domain) == FilterEngine.FilterStatus.ALLOWED_USER
+                                },
+                                onSettingsClick = null // Hide settings for LOCK
+                            )
+                        }
+                    } else {
+                        CyberTopList(
+                            title = "TOP DOMAINS",
+                            data = VpnStats.domainBlockedStatsMap,
+                            onAllowClick = { onLogClick(it) },
+                            isExcluded = { domain ->
+                                filterUpdateTrigger.let { }
+                                FilterEngine.checkDomain(domain) == FilterEngine.FilterStatus.ALLOWED_USER
+                            },
+                            onSettingsClick = onDomainManagerClick
+                        )
+                    }
                 }
             }
 
-            // PRIORITY 6: TERMINAL LOG (Deep Details)
+            // PRIORITY 6: TERMINAL LOG (Deep Details) - DIM for FREE
             Spacer(modifier = Modifier.height(24.dp))
-            CyberTerminal(logs = recentLogs, onLogClick = { onLogClick(it) })
+            CyberTerminal(
+                logs = recentLogs,
+                onLogClick = { onLogClick(it) },
+                modifier = Modifier.applyAccessState(if (isFree) UiAccessState.DIM else UiAccessState.FULL)
+            )
 
             // PRIORITY 7: PROTECTION ENGINE (Technical Footer)
             Spacer(modifier = Modifier.height(24.dp))

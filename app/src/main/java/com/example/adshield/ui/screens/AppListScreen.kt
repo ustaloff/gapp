@@ -26,6 +26,7 @@ import com.example.adshield.data.AppPreferences
 import com.example.adshield.data.AppsRepository
 import com.example.adshield.ui.components.CyberChip
 import com.example.adshield.ui.components.GridBackground
+import com.example.adshield.ui.theme.ContentDescriptions
 
 enum class AppListTab {
     ALL, BLOCKED, ALLOWED
@@ -164,7 +165,7 @@ fun AppListScreen(
                 leadingIcon = {
                     Icon(
                         Icons.Default.Search,
-                        contentDescription = null,
+                        contentDescription = ContentDescriptions.searchButton,
                         tint = MaterialTheme.colorScheme.primary
                     )
                 },
@@ -310,7 +311,7 @@ fun AppListItem(
 
         Image(
             bitmap = iconBitmap,
-            contentDescription = null,
+            contentDescription = ContentDescriptions.appIcon,
             modifier = Modifier
                 .size(40.dp)
                 .clip(MaterialTheme.shapes.extraLarge),

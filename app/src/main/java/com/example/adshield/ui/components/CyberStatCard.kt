@@ -6,9 +6,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.adshield.ui.theme.ContentDescriptions
 import kotlin.math.roundToInt
 
 @Composable
@@ -39,7 +41,7 @@ fun CyberStatCard(
                 if (iconVector != null) {
                     Icon(
                         imageVector = iconVector,
-                        contentDescription = null,
+                        contentDescription = label, // Use label as description for stats
                         tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
                         modifier = Modifier.size(16.dp)
                     )

@@ -3,7 +3,13 @@ package com.example.adshield.data
 enum class UserAccessState {
     TRIAL,
     FREE,
-    PREMIUM
+    PREMIUM;
+    
+    /** Returns true if user is FREE (has limitations) */
+    fun isFree(): Boolean = this == FREE
+    
+    /** Returns true if user has premium access (TRIAL or PREMIUM) */
+    fun hasPremiumAccess(): Boolean = this != FREE
 }
 
 data class UserAccess(

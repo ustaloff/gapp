@@ -139,6 +139,7 @@ fun AdShieldTheme(
 private fun getAdShieldColors(theme: AppTheme): AdShieldColors {
     return when (theme) {
         AppTheme.CyberGreen -> AdShieldColors(
+            accent = NeonGreenPrimary,
             warning = NeonGreenWarning,
             success = NeonGreenSuccess,
             info = NeonGreenInfo,
@@ -148,6 +149,7 @@ private fun getAdShieldColors(theme: AppTheme): AdShieldColors {
         )
 
         AppTheme.CyberBlue -> AdShieldColors(
+            accent = NeonBluePrimary,
             warning = NeonBlueWarning,
             success = NeonBlueSuccess,
             info = NeonBlueInfo,
@@ -157,6 +159,7 @@ private fun getAdShieldColors(theme: AppTheme): AdShieldColors {
         )
 
         AppTheme.CyberAmber -> AdShieldColors(
+            accent = NeonAmberPrimary,
             warning = NeonAmberWarning,
             success = NeonAmberSuccess,
             info = NeonAmberInfo,
@@ -177,6 +180,7 @@ object AdShieldTheme {
 
 @Immutable
 data class AdShieldColors(
+    val accent: Color,
     val warning: Color,
     val success: Color,
     val info: Color,
@@ -187,6 +191,7 @@ data class AdShieldColors(
 
 val LocalAdShieldColors = staticCompositionLocalOf {
     AdShieldColors(
+        accent = Color.Unspecified,
         warning = Color.Unspecified,
         success = Color.Unspecified,
         info = Color.Unspecified,

@@ -22,7 +22,10 @@ fun CyberGraphSection(
     data: List<Int>, // Blocked
     totalData: List<Int> = emptyList(), // Total Traffic (Optional for compat, but we'll pass it)
     bpm: Int, 
-    isRunning: Boolean
+    isRunning: Boolean,
+    showBpm: Boolean = true,           // FALSE for FREE users
+    showThreatLevel: Boolean = true,   // FALSE for FREE users (shows "---")
+    modifier: Modifier = Modifier
 ) {
     val primaryColor = MaterialTheme.colorScheme.primary
     val secondaryColor = MaterialTheme.colorScheme.secondary // Or a distinct color for Total
@@ -60,7 +63,7 @@ fun CyberGraphSection(
     }
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .border(
                 1.dp,
@@ -324,24 +327,34 @@ fun CyberGraphSection(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Load Level Indicator Text
+            // Load Level Indicator Text (respect showThreatLevel)
+            val threatText = when {
+                !isRunning -> "SYSTEM: STANDBY"
+                !showThreatLevel -> "THREAT: ---"
+                else -> "THREAT: $level"
+            }
             Text(
-                text = if (isRunning) "THREAT: $level" else "SYSTEM: STANDBY",
+                text = threatText,
                 style = MaterialTheme.typography.labelSmall,
-                color = threatColor,
+                color = if (showThreatLevel || !isRunning) threatColor else threatColor.copy(alpha = 0.5f),
                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                fontSize = 12.sp, // Slightly bigger
+                fontSize = 12.sp,
                 fontWeight = FontWeight.Bold
             )
 
-            // BPM / Rate
+            // BPM / Rate (respect showBpm)
+            val bpmText = when {
+                !isRunning -> "ACT :: ---"
+                !showBpm -> "ACT :: ---"
+                else -> "ACT :: $bpm/MIN"
+            }
             Text(
-                text = if (isRunning) "ACT :: $bpm/MIN" else "ACT :: ---",
+                text = bpmText,
                 style = MaterialTheme.typography.labelSmall,
-                color = if (isRunning) primaryColor else offlineColor,
+                color = if (isRunning && showBpm) primaryColor else offlineColor.copy(alpha = 0.5f),
                 fontWeight = FontWeight.Bold,
                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                fontSize = 12.sp // Slightly bigger
+                fontSize = 12.sp
             )
         }
     }

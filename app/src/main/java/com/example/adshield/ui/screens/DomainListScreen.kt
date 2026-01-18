@@ -32,6 +32,7 @@ import com.example.adshield.ui.components.CyberChip
 import com.example.adshield.ui.components.GridBackground
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.example.adshield.ui.theme.ContentDescriptions
 
 
 
@@ -160,7 +161,7 @@ fun DomainListScreen(
                 leadingIcon = {
                     Icon(
                         Icons.Default.Search,
-                        contentDescription = null,
+                        contentDescription = ContentDescriptions.searchButton,
                         tint = MaterialTheme.colorScheme.primary
                     )
                 },
@@ -300,7 +301,7 @@ fun DomainItem(
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
             Icon(
                 icon,
-                contentDescription = null,
+                contentDescription = if (item.isBlocked) ContentDescriptions.blockedIcon else ContentDescriptions.allowedIcon,
                 tint = iconTint,
                 modifier = Modifier.size(16.dp)
             )

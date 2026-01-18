@@ -26,12 +26,17 @@ import java.util.Locale
 
 import com.example.adshield.filter.FilterEngine
 import com.example.adshield.ui.components.getLogStyle
+import com.example.adshield.data.UserAccessState
+import com.example.adshield.ui.components.UiAccessState
+import com.example.adshield.ui.components.applyAccessState
 
 @Composable
 fun LogsView(
     logs: List<VpnLogEntry>,
-    onLogClick: (String) -> Unit
+    onLogClick: (String) -> Unit,
+    userAccessState: UserAccessState = UserAccessState.FREE  // NEW: for access control
 ) {
+    val isFree = userAccessState.isFree()
     var searchQuery by remember { mutableStateOf("") }
     var filterType by remember { mutableStateOf("ALL") } // ALL, BLOCKED, ALLOWED
 
@@ -69,7 +74,7 @@ fun LogsView(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     Icons.AutoMirrored.Filled.List,
-                    contentDescription = null,
+                    contentDescription = "System logs",
                     tint = MaterialTheme.colorScheme.primary
                 )
                 Spacer(Modifier.width(8.dp))
@@ -83,36 +88,40 @@ fun LogsView(
             }
             Spacer(Modifier.height(16.dp))
 
-            // Search Bar
+            // Search Bar - DIM for FREE
             CyberTextField(
                 value = searchQuery,
-                onValueChange = { searchQuery = it },
-                placeholder = "Search domain...",
-                modifier = Modifier.fillMaxWidth()
+                onValueChange = { if (!isFree) searchQuery = it }, // Disable input for FREE
+                placeholder = if (isFree) "Search (Premium)" else "Search domain...",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .applyAccessState(if (isFree) UiAccessState.DIM else UiAccessState.FULL)
             )
             Spacer(Modifier.height(12.dp))
 
-            // Filter Chips
+            // Filter Chips - DIM for FREE
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .applyAccessState(if (isFree) UiAccessState.DIM else UiAccessState.FULL),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 CyberChip(
                     text = "ALL",
                     selected = filterType == "ALL",
-                    onClick = { filterType = "ALL" },
+                    onClick = { if (!isFree) filterType = "ALL" },
                     modifier = Modifier.weight(1f)
                 )
                 CyberChip(
                     text = "BLOCKED",
                     selected = filterType == "BLOCKED",
-                    onClick = { filterType = "BLOCKED" },
+                    onClick = { if (!isFree) filterType = "BLOCKED" },
                     modifier = Modifier.weight(1f)
                 )
                 CyberChip(
                     text = "ALLOWED",
                     selected = filterType == "ALLOWED",
-                    onClick = { filterType = "ALLOWED" },
+                    onClick = { if (!isFree) filterType = "ALLOWED" },
                     modifier = Modifier.weight(1f)
                 )
             }

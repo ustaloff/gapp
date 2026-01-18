@@ -26,6 +26,8 @@ import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.draw.clip
+import com.example.adshield.ui.theme.ContentDescriptions
+import com.example.adshield.ui.theme.Dimensions
 import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.Image
 
@@ -37,13 +39,14 @@ fun CyberTopList(
     searchQuery: String = "",
     isExcluded: (String) -> Boolean,
     isEffective: (String) -> Boolean = { true }, // Default to always effective (for domains)
-    onSettingsClick: (() -> Unit)? = null
+    onSettingsClick: (() -> Unit)? = null,
+    modifier: Modifier = Modifier
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val packageManager = remember(context) { context.packageManager }
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .border(
                 1.dp,
@@ -162,7 +165,7 @@ fun CyberTopList(
                         if (appIcon != null) {
                             Image(
                                 bitmap = appIcon!!,
-                                contentDescription = null,
+                                contentDescription = ContentDescriptions.appIcon,
                                 modifier = Modifier
                                     .size(24.dp)
                                     .clip(MaterialTheme.shapes.extraLarge)
@@ -172,7 +175,7 @@ fun CyberTopList(
                             // Fallback Icon
                             Icon(
                                 imageVector = Icons.Default.CheckCircle, // Generic
-                                contentDescription = null,
+                                contentDescription = ContentDescriptions.appIcon,
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
                                 modifier = Modifier.size(24.dp)
                             )

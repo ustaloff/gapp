@@ -34,6 +34,7 @@ import com.example.adshield.ui.components.CyberStatCard
 import com.example.adshield.ui.components.GridBackground
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.example.adshield.ui.theme.ContentDescriptions
 
 // Helper Data Class for Top Offenders
 data class AppStatItem(
@@ -129,7 +130,7 @@ fun StatsView(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     Icons.Default.Info,
-                    contentDescription = null,
+                    contentDescription = "Network Analytics",
                     tint = MaterialTheme.colorScheme.primary
                 )
                 Spacer(Modifier.width(8.dp))
@@ -259,7 +260,7 @@ fun OffenderItem(
             }
             Image(
                 bitmap = imageBitmap,
-                contentDescription = null,
+                contentDescription = ContentDescriptions.appIcon,
                 modifier = Modifier
                     .size(40.dp)
                     .alpha(if (isOverflow) 0.5f else 1f), // Dim if overflow
