@@ -18,10 +18,19 @@ import androidx.compose.ui.unit.sp
 import com.example.adshield.ui.theme.AdShieldTheme
 
 @Composable
-fun CyberGraphSection(data: List<Int>, bpm: Int, isRunning: Boolean) {
+fun CyberGraphSection(
+    data: List<Int>, // Blocked
+    totalData: List<Int> = emptyList(), // Total Traffic (Optional for compat, but we'll pass it)
+    bpm: Int, 
+    isRunning: Boolean
+) {
     val primaryColor = MaterialTheme.colorScheme.primary
+    val secondaryColor = MaterialTheme.colorScheme.secondary // Or a distinct color for Total
     val offlineColor = MaterialTheme.colorScheme.error // Or Gray
 
+    // ... (rest of val level, threatColor etc)
+    
+    // Pulse and Threat Logic ...
     // Animation state for pulse
     val infiniteTransition = rememberInfiniteTransition(label = "monitoring_pulse")
     val pulseAlpha by if (isRunning) {
@@ -61,6 +70,7 @@ fun CyberGraphSection(data: List<Int>, bpm: Int, isRunning: Boolean) {
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
             .padding(12.dp)
     ) {
+        // ... (Header same)
         // HUD Header
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -89,6 +99,41 @@ fun CyberGraphSection(data: List<Int>, bpm: Int, isRunning: Boolean) {
                         )
                 )
             }
+
+            // Right: Legend
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // Total Legend
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .background(secondaryColor.copy(alpha = 0.5f), CircleShape)
+                )
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    text = "ALL",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontSize = 8.sp,
+                    color = secondaryColor.copy(alpha = 0.7f),
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                )
+                
+                Spacer(Modifier.width(8.dp))
+                
+                // Blocked Legend
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .background(threatColor, CircleShape)
+                )
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    text = "BLK",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontSize = 8.sp,
+                    color = threatColor.copy(alpha = 0.8f),
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                )
+            }
         }
         Spacer(Modifier.height(16.dp))
 
@@ -111,19 +156,26 @@ fun CyberGraphSection(data: List<Int>, bpm: Int, isRunning: Boolean) {
             ) {
                 val width = size.width
                 val height = size.height
-                // Use all 60 points or whatever is available, but limit if needed
-                val graphData = data.ifEmpty { List(60) { 0 } }
-                val max = (graphData.maxOrNull() ?: 5).coerceAtLeast(5).toFloat()
-                val graphColor = if (isRunning) primaryColor else offlineColor.copy(alpha = 0.3f)
+                
+                // DATA PREP
+                val blockedData = data.ifEmpty { List(60) { 0 } }
+                val trafficData = totalData.ifEmpty { List(60) { 0 } }
+                
+                // Determine Max Scale based on TOTAL traffic (so blocked is relative to it)
+                val maxTotal = (trafficData.maxOrNull() ?: 5).coerceAtLeast(5).toFloat()
+                
+                // Colors
+                val trafficColor = if (isRunning) threatColor.copy(alpha = 0.5f) else offlineColor.copy(alpha = 0.1f)
+                val blockedColor = if (isRunning) threatColor else offlineColor.copy(alpha = 0.3f)
 
-                // Draw Grid
+                // Draw Grid (Same)
                 val verticalLines = 6 // roughly every 10 mins
                 val horizontalLines = 4
 
                 for (i in 1 until verticalLines) {
                     val x = (width / verticalLines) * i
                     drawLine(
-                        color = graphColor.copy(alpha = 0.05f),
+                        color = Color.White.copy(alpha = 0.05f),
                         start = Offset(x, 0f),
                         end = Offset(x, height),
                         strokeWidth = 1f
@@ -133,55 +185,90 @@ fun CyberGraphSection(data: List<Int>, bpm: Int, isRunning: Boolean) {
                 for (i in 1 until horizontalLines) {
                     val y = (height / horizontalLines) * i
                     drawLine(
-                        color = graphColor.copy(alpha = 0.05f),
+                        color = Color.White.copy(alpha = 0.05f),
                         start = Offset(0f, y),
                         end = Offset(width, y),
                         strokeWidth = 1f
                     )
                 }
 
-                // Draw Path (Smooth Bezier) -- ONLY IF RUNNING OR DATA EXISTS
-                if (isRunning && graphData.isNotEmpty()) {
-                    val path = androidx.compose.ui.graphics.Path()
-                    val stepX = width / (graphData.size - 1).coerceAtLeast(1)
+                // DRAW PATHS -- ONLY IF RUNNING
+                if (isRunning) {
+                    
+                    // 1. BLOCKED TRAFFIC LINE (Background/Underlay)
+                    if (blockedData.isNotEmpty()) {
+                        val path = androidx.compose.ui.graphics.Path()
+                        val stepX = width / (blockedData.size - 1).coerceAtLeast(1)
 
-                    graphData.forEachIndexed { index, value ->
-                        val x = index * stepX
-                        val y = height - ((value / max) * height)
+                        blockedData.forEachIndexed { index, value ->
+                            val x = index * stepX
+                            // Use SAME maxTotal for scale to show proportion
+                            val y = height - ((value / maxTotal) * height)
 
-                        if (index == 0) {
-                            path.moveTo(x, y)
-                        } else {
-                            val prevX = (index - 1) * stepX
-                            val prevY = height - ((graphData[index - 1] / max) * height)
-                            val controlX1 = prevX + (x - prevX) / 2
-                            path.cubicTo(controlX1, prevY, controlX1, y, x, y)
+                            if (index == 0) path.moveTo(x, y)
+                            else {
+                                val prevX = (index - 1) * stepX
+                                val prevY = height - ((blockedData[index - 1] / maxTotal) * height)
+                                val cx = prevX + (x - prevX) / 2
+                                path.cubicTo(cx, prevY, cx, y, x, y)
+                            }
                         }
-                    }
 
-                    // Stroke
-                    drawPath(
-                        path = path,
-                        color = graphColor,
-                        style = androidx.compose.ui.graphics.drawscope.Stroke(
-                            width = 2.dp.toPx(),
-                            cap = androidx.compose.ui.graphics.StrokeCap.Round
-                        )
-                    )
-
-                    // Fill Gradient (Optional, requires closing path)
-                    path.lineTo(width, height)
-                    path.lineTo(0f, height)
-                    path.close()
-                    drawPath(
-                        path = path,
-                        brush = androidx.compose.ui.graphics.Brush.verticalGradient(
-                            colors = listOf(
-                                graphColor.copy(alpha = 0.2f),
-                                Color.Transparent
+                        // Fill Gradient
+                        val fillPath = androidx.compose.ui.graphics.Path()
+                        fillPath.addPath(path)
+                        fillPath.lineTo(width, height)
+                        fillPath.lineTo(0f, height)
+                        fillPath.close()
+                        
+                        drawPath(
+                            path = fillPath,
+                            brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                                colors = listOf(
+                                    blockedColor.copy(alpha = 0.2f),
+                                    Color.Transparent
+                                )
                             )
                         )
-                    )
+
+                        // Stroke
+                        drawPath(
+                            path = path,
+                            color = blockedColor,
+                            style = androidx.compose.ui.graphics.drawscope.Stroke(
+                                width = 2.dp.toPx(),
+                                cap = androidx.compose.ui.graphics.StrokeCap.Round
+                            )
+                        )
+                    }
+
+                    // 2. TOTAL TRAFFIC LINE (Foreground/Overlay)
+                    if (trafficData.isNotEmpty()) {
+                        val path = androidx.compose.ui.graphics.Path()
+                        val stepX = width / (trafficData.size - 1).coerceAtLeast(1)
+
+                        trafficData.forEachIndexed { index, value ->
+                            val x = index * stepX
+                            val y = height - ((value / maxTotal) * height)
+
+                            if (index == 0) path.moveTo(x, y)
+                            else {
+                                val prevX = (index - 1) * stepX
+                                val prevY = height - ((trafficData[index - 1] / maxTotal) * height)
+                                val cx = prevX + (x - prevX) / 2
+                                path.cubicTo(cx, prevY, cx, y, x, y)
+                            }
+                        }
+                        
+                        drawPath(
+                            path = path,
+                            color = trafficColor,
+                            style = androidx.compose.ui.graphics.drawscope.Stroke(
+                                width = 1.5.dp.toPx(),
+                                cap = androidx.compose.ui.graphics.StrokeCap.Round
+                            )
+                        )
+                    }
                 }
             }
         }

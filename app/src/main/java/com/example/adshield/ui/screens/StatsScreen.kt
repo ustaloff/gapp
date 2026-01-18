@@ -144,7 +144,7 @@ fun StatsView(
             Spacer(Modifier.height(24.dp))
 
             // 1. Live Graph
-            CyberGraphSection(data, bpm, isRunning)
+            CyberGraphSection(data, VpnStats.totalHistory, bpm, isRunning)
 
             Spacer(Modifier.height(24.dp))
 

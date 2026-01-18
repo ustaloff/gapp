@@ -79,13 +79,22 @@ object VpnStats {
     }
     val blockedHistory: List<Int> get() = _blockedHistory
 
+    // Total Requests History
+    private val _totalHistory = mutableStateListOf<Int>().apply {
+        repeat(60) { add(0) }
+    }
+    val totalHistory: List<Int> get() = _totalHistory
+
     private var lastMinute = System.currentTimeMillis() / 60000
 
     fun setStatus(running: Boolean) {
         isRunning.value = running
         if (!running) {
             _recentLogs.clear()
-            repeat(60) { _blockedHistory[it] = 0 }
+            repeat(60) { 
+                _blockedHistory[it] = 0
+                _totalHistory[it] = 0 
+            }
             blocksPerMinute.intValue = 0
         }
     }
@@ -151,6 +160,9 @@ object VpnStats {
     ) {
         withContext(Dispatchers.Main) {
             statsLock.withLock {
+                // ALWAYS increment current minute total
+                _totalHistory[59]++
+
                 if (status == com.example.adshield.filter.FilterEngine.FilterStatus.BLOCKED) {
                     blockedCount.intValue++
                     dataSavedBytes.longValue += 30 * 1024
@@ -189,6 +201,10 @@ object VpnStats {
                 if (_blockedHistory.isNotEmpty()) {
                     _blockedHistory.removeAt(0)
                     _blockedHistory.add(0)
+                }
+                if (_totalHistory.isNotEmpty()) {
+                    _totalHistory.removeAt(0)
+                    _totalHistory.add(0)
                 }
             }
             lastMinute = currentMinute
