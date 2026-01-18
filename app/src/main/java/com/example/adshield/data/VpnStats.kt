@@ -58,7 +58,8 @@ object VpnStats {
         val yesterday = dailyBuckets[1]
 
         if (yesterday > 0) {
-            growthToday.intValue = ((today - yesterday).toFloat() / yesterday.toFloat() * 100).toInt()
+            growthToday.intValue =
+                ((today - yesterday).toFloat() / yesterday.toFloat() * 100).toInt()
         } else {
             // If yesterday was 0, growth is technically infinite, but let's cap it or just show 100% if today > 0
             growthToday.intValue = if (today > 0) 100 else 0
@@ -91,9 +92,9 @@ object VpnStats {
         isRunning.value = running
         if (!running) {
             _recentLogs.clear()
-            repeat(60) { 
+            repeat(60) {
                 _blockedHistory[it] = 0
-                _totalHistory[it] = 0 
+                _totalHistory[it] = 0
             }
             blocksPerMinute.intValue = 0
         }

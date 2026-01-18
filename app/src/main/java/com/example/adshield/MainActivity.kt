@@ -65,7 +65,7 @@ class MainActivity : ComponentActivity() {
             // Load initial theme from prefs and observe changes
             // Load initial theme from prefs and observe changes
             val appTheme by prefs.themeFlow.collectAsState(initial = com.example.adshield.data.AppConfig.DEFAULT_THEME)
-            
+
             // Observe UserAccess for status badges
             val userAccess by BillingManager.currentUserAccess.collectAsState()
 
@@ -115,7 +115,7 @@ class MainActivity : ComponentActivity() {
                             )
                         } else {
                             DashboardScreen(
-                                userAccess = userAccess, 
+                                userAccess = userAccess,
                                 onStartClick = { checkPermissionsAndStart() },
                                 onStopClick = { stopVpnService() },
                                 onWhitelistApp = { packageName ->
@@ -139,7 +139,8 @@ class MainActivity : ComponentActivity() {
                                         if (accessState == com.example.adshield.data.UserAccessState.FREE &&
                                             currentCount >= com.example.adshield.data.AppConfig.FREE_WHITELIST_LIMIT
                                         ) {
-                                            toastMessage = "FREE LIMIT REACHED (${com.example.adshield.data.AppConfig.FREE_WHITELIST_LIMIT}/${com.example.adshield.data.AppConfig.FREE_WHITELIST_LIMIT})"
+                                            toastMessage =
+                                                "FREE LIMIT REACHED (${com.example.adshield.data.AppConfig.FREE_WHITELIST_LIMIT}/${com.example.adshield.data.AppConfig.FREE_WHITELIST_LIMIT})"
                                             toastType = CyberToastType.WARNING
                                             toastVisible = true
                                             return@DashboardScreen
@@ -257,11 +258,12 @@ fun DashboardScreen(
     var effectiveWhitelist by remember { mutableStateOf(setOf<String>()) }
     val userAccess by com.example.adshield.data.BillingManager.currentUserAccess.collectAsState() // Access state already passed but we need to observe for changes? No, it's passed as param. Wait, userAccess param is static? No, DashboardScreen gets updated value.
     // However, to be safe, let's observe entitlements inside LaunchedEffect or derive from passed userAccess.
-    
+
     val entitlements = com.example.adshield.data.AccessControl.entitlementsFor(userAccess.state)
-    
+
     LaunchedEffect(excludedApps, entitlements) {
-        effectiveWhitelist = appsRepository.getEffectiveWhitelist(excludedApps, entitlements.unlimitedWhitelist)
+        effectiveWhitelist =
+            appsRepository.getEffectiveWhitelist(excludedApps, entitlements.unlimitedWhitelist)
     }
 
     // State for Domain Filter Refresh
@@ -379,7 +381,8 @@ fun DashboardScreen(
         // Helper to handle log/domain clicks with entitlement check
         // Helper to handle log/domain clicks with entitlement check
         val handleLogClick: (String) -> Unit = { domain ->
-            val entitlements = com.example.adshield.data.AccessControl.entitlementsFor(userAccess.state)
+            val entitlements =
+                com.example.adshield.data.AccessControl.entitlementsFor(userAccess.state)
             if (entitlements.customDns) {
                 onDomainToggle(domain)
             } else {
@@ -390,105 +393,107 @@ fun DashboardScreen(
         // --- CONTENT ---
         // Box wrapper removed to fix brace mismatch
         when (currentScreen) {
-                "HOME" -> HomeView(
-                    userAccess = userAccess,
-                    isRunning = isRunning,
-                    blockedCount = blockedCount,
-                    bpm = bpm,
-                    filterCount = filterCount,
-                    dataSaved = dataSaved,
-                    recentLogs = recentLogs,
-                    excludedApps = excludedApps,
-                    effectiveWhitelist = effectiveWhitelist,
-                    filterUpdateTrigger = filterUpdateTrigger,
-                    isUpdatingFilters = isUpdatingFilters,
-                    onWhitelistClick = { navigateTo("APP_LIST") },
-                    onReloadFilters = {
-                        if (!isUpdatingFilters) {
-                            isUpdatingFilters = true
-                            scope.launch {
-                                withContext(Dispatchers.IO) {
-                                    val filterData = FilterRepository.downloadAndParseFilters(context)
-                                    if (filterData.blockRules.isNotEmpty()) {
-                                        FilterEngine.updateBlocklist(filterData)
-                                    }
+            "HOME" -> HomeView(
+                userAccess = userAccess,
+                isRunning = isRunning,
+                blockedCount = blockedCount,
+                bpm = bpm,
+                filterCount = filterCount,
+                dataSaved = dataSaved,
+                recentLogs = recentLogs,
+                excludedApps = excludedApps,
+                effectiveWhitelist = effectiveWhitelist,
+                filterUpdateTrigger = filterUpdateTrigger,
+                isUpdatingFilters = isUpdatingFilters,
+                onWhitelistClick = { navigateTo("APP_LIST") },
+                onReloadFilters = {
+                    if (!isUpdatingFilters) {
+                        isUpdatingFilters = true
+                        scope.launch {
+                            withContext(Dispatchers.IO) {
+                                val filterData = FilterRepository.downloadAndParseFilters(context)
+                                if (filterData.blockRules.isNotEmpty()) {
+                                    FilterEngine.updateBlocklist(filterData)
                                 }
-                                val newCount = FilterEngine.getRuleCount()
-                                filterCount = newCount
-                                isUpdatingFilters = false
                             }
+                            val newCount = FilterEngine.getRuleCount()
+                            filterCount = newCount
+                            isUpdatingFilters = false
                         }
-                    },
+                    }
+                },
+                onLogClick = handleLogClick,
+                onDomainManagerClick = { navigateTo("DOMAIN_LIST") },
+                onAppClick = { packageName ->
+                    onWhitelistApp(packageName)
+                    excludedApps = preferences.getExcludedApps()
+                },
+                onSettingsClick = { navigateTo("SETTINGS") },
+                onPowerClick = {
+                    if (isRunning) onStopClick()
+                    else if (!hasAcceptedDisclosure) showDisclosureDialog = true
+                    else onStartClick()
+                },
+                onPremiumClick = { navigateTo("PREMIUM") }  // NEW
+            )
+
+            "LOGS" -> {
+                androidx.activity.compose.BackHandler { navigateBack() }
+                LogsView(
+                    logs = recentLogs,
                     onLogClick = handleLogClick,
-                    onDomainManagerClick = { navigateTo("DOMAIN_LIST") },
-                    onAppClick = { packageName ->
-                        onWhitelistApp(packageName)
-                        excludedApps = preferences.getExcludedApps()
-                    },
-                    onSettingsClick = { navigateTo("SETTINGS") },
-                    onPowerClick = {
-                        if (isRunning) onStopClick()
-                        else if (!hasAcceptedDisclosure) showDisclosureDialog = true
-                        else onStartClick()
-                    },
-                    onPremiumClick = { navigateTo("PREMIUM") }  // NEW
+                    onBackClick = { navigateBack() },
+                    userAccessState = userAccess.state  // Pass access state
                 )
+            }
 
-                "LOGS" -> {
-                    androidx.activity.compose.BackHandler { navigateBack() }
-                    LogsView(
-                        logs = recentLogs,
-                        onLogClick = handleLogClick,
-                        userAccessState = userAccess.state  // Pass access state
-                    )
-                }
+            "STATS" -> {
+                androidx.activity.compose.BackHandler { navigateBack() }
+                StatsView(
+                    data = VpnStats.blockedHistory,
+                    bpm = bpm,
+                    isRunning = isRunning,
+                    excludedApps = excludedApps, // Pass Hoisted State
+                    effectiveWhitelist = effectiveWhitelist, // Pass Hoisted State
+                    onAllowClick = { pkg, _ ->
+                        onWhitelistApp(pkg)
+                        excludedApps = preferences.getExcludedApps()
+                    }
+                )
+            }
 
-                "STATS" -> {
-                    androidx.activity.compose.BackHandler { navigateBack() }
-                    StatsView(
-                        data = VpnStats.blockedHistory,
-                        bpm = bpm,
-                        isRunning = isRunning,
-                        excludedApps = excludedApps, // Pass Hoisted State
-                        effectiveWhitelist = effectiveWhitelist, // Pass Hoisted State
-                        onAllowClick = { pkg, _ -> 
-                             onWhitelistApp(pkg)
-                             excludedApps = preferences.getExcludedApps()
-                        }
-                    )
-                }
+            "SETTINGS" -> {
+                androidx.activity.compose.BackHandler { navigateBack() }
+                SettingsView(
+                    onBackClick = { navigateBack() },
+                    onWhitelistClick = { navigateTo("APP_LIST") },
+                    onDomainConfigClick = { navigateTo("DOMAIN_LIST") },
+                    onLogsClick = { navigateTo("LOGS") },
+                    onPremiumClick = { navigateTo("PREMIUM") },
+                    onThemeChange = onThemeChange,
+                    whitelistCount = excludedApps.size // Pass count
+                )
+            }
 
-                "SETTINGS" -> {
-                    androidx.activity.compose.BackHandler { navigateBack() }
-                    SettingsView(
-                        onBackClick = { navigateBack() },
-                        onWhitelistClick = { navigateTo("APP_LIST") },
-                        onDomainConfigClick = { navigateTo("DOMAIN_LIST") },
-                        onPremiumClick = { navigateTo("PREMIUM") },
-                        onThemeChange = onThemeChange,
-                        whitelistCount = excludedApps.size // Pass count
-                    )
-                }
+            "APP_LIST" -> {
+                androidx.activity.compose.BackHandler { navigateBack() }
+                AppListScreen(
+                    onBackClick = { navigateBack() },
+                    onAppToggle = { pkg, _ ->
+                        onWhitelistApp(pkg)
+                        excludedApps = preferences.getExcludedApps()
+                    }
+                )
+            }
 
-                "APP_LIST" -> {
-                    androidx.activity.compose.BackHandler { navigateBack() }
-                    AppListScreen(
-                        onBackClick = { navigateBack() },
-                        onAppToggle = { pkg, _ ->
-                            onWhitelistApp(pkg)
-                            excludedApps = preferences.getExcludedApps() 
-                        }
-                    )
-                }
+            "DOMAIN_LIST" -> {
+                androidx.activity.compose.BackHandler { navigateBack() }
+                DomainListScreen(
+                    onBackClick = { navigateBack() }
+                )
+            }
 
-                "DOMAIN_LIST" -> {
-                    androidx.activity.compose.BackHandler { navigateBack() }
-                    DomainListScreen(
-                        onBackClick = { navigateBack() }
-                    )
-                }
-
-                "PREMIUM" -> {
+            "PREMIUM" -> {
                 androidx.activity.compose.BackHandler { navigateBack() }
                 PremiumScreen(
                     onBackClick = { navigateBack() }
@@ -525,20 +530,8 @@ fun DashboardScreen(
             )
         }
 
-        // FLOATING NAV BAR OVERLAY
-        if (currentScreen in listOf("HOME", "LOGS", "STATS")) {
-            CyberNavBar(
-                isRunning = isRunning,
-                onPowerClick = {
-                    if (isRunning) onStopClick()
-                    else if (!hasAcceptedDisclosure) showDisclosureDialog = true
-                    else onStartClick()
-                },
-                currentScreen = currentScreen,
-                onNavigate = { navigateTo(it) },
-                modifier = Modifier.align(Alignment.BottomCenter)
-            )
-        }
+        // FLOATING NAV BAR REMOVED per user request
+        // if (currentScreen in listOf("HOME", "LOGS", "STATS")) ...
 
         // CYBER TOAST OVERLAY
         Box(

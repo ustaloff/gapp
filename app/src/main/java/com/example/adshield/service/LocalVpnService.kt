@@ -63,13 +63,18 @@ class LocalVpnService : VpnService() {
 
         VpnStats.setStatus(true)
         startForegroundWithNotification()
-        
+
         // Sync Entitlements immediately and listen
         vpnScope.launch {
             BillingManager.currentUserAccess.collect { access ->
-                val entitlements = com.example.adshield.data.AccessControl.entitlementsFor(access.state)
-                com.example.adshield.filter.FilterEngine.isCustomRulesEnabled = entitlements.customDns
-                Log.i("LocalVpnService", "Updated Engine Entitlements: CustomDNS=${entitlements.customDns}")
+                val entitlements =
+                    com.example.adshield.data.AccessControl.entitlementsFor(access.state)
+                com.example.adshield.filter.FilterEngine.isCustomRulesEnabled =
+                    entitlements.customDns
+                Log.i(
+                    "LocalVpnService",
+                    "Updated Engine Entitlements: CustomDNS=${entitlements.customDns}"
+                )
             }
         }
 
@@ -141,7 +146,7 @@ class LocalVpnService : VpnService() {
                 // 2. Exclude user-selected apps (Split Tunneling)
                 val prefs = com.example.adshield.data.AppPreferences(this@LocalVpnService)
                 val excludedApps = prefs.getExcludedApps()
-                
+
                 // RESTRICTION: Limit whitelist to 3 apps for Free users
                 val entitlements = BillingManager.getCurrentEntitlements()
                 val finalExcludedApps = if (entitlements.unlimitedWhitelist) {
@@ -157,14 +162,17 @@ class LocalVpnService : VpnService() {
                         }
                         pkg to label
                     }
-                    .sortedBy { it.second.lowercase() } // Case-insensitive sort
-                    .take(AppConfig.FREE_WHITELIST_LIMIT)
-                    .map { it.first }
-                    .toSet()
+                        .sortedBy { it.second.lowercase() } // Case-insensitive sort
+                        .take(AppConfig.FREE_WHITELIST_LIMIT)
+                        .map { it.first }
+                        .toSet()
                 }
-                
+
                 if (!entitlements.unlimitedWhitelist && excludedApps.size > 3) {
-                    Log.i("LocalVpnService", "Free Tier: Limiting whitelist to 3 apps (User has ${excludedApps.size})")
+                    Log.i(
+                        "LocalVpnService",
+                        "Free Tier: Limiting whitelist to 3 apps (User has ${excludedApps.size})"
+                    )
                 }
 
                 Log.i(

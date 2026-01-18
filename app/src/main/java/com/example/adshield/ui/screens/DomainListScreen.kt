@@ -35,7 +35,6 @@ import kotlinx.coroutines.withContext
 import com.example.adshield.ui.theme.ContentDescriptions
 
 
-
 enum class DomainTab {
     BLOCKED, ALLOWED
 }
@@ -234,8 +233,8 @@ fun DomainListScreen(
 
         // FAB (Always enabled, entry restricted in Settings)
         FloatingActionButton(
-            onClick = { 
-                showAddDialog = true 
+            onClick = {
+                showAddDialog = true
             },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
@@ -245,7 +244,7 @@ fun DomainListScreen(
             shape = MaterialTheme.shapes.medium
         ) {
             Icon(
-                Icons.Default.Add, 
+                Icons.Default.Add,
                 contentDescription = "Add Domain"
             )
         }

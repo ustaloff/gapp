@@ -35,6 +35,7 @@ fun UserStatusBadge(
             status = "FREE",
             sub = "LOW PROTECTION"
         )
+
         UserAccessState.TRIAL -> {
             val daysLeft = getDaysLeft(userAccess.trialEndsAt)
             StatusConfig(
@@ -43,6 +44,7 @@ fun UserStatusBadge(
                 sub = daysLeft.toString() + "d left"
             )
         }
+
         UserAccessState.PREMIUM -> {
             val daysLeft = getDaysLeft(userAccess.premiumExpiresAt)
             val sub = if (daysLeft <= 7 && daysLeft >= 0) "{$daysLeft}d left" else null

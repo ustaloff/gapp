@@ -4,10 +4,10 @@ enum class UserAccessState {
     TRIAL,
     FREE,
     PREMIUM;
-    
+
     /** Returns true if user is FREE (has limitations) */
     fun isFree(): Boolean = this == FREE
-    
+
     /** Returns true if user has premium access (TRIAL or PREMIUM) */
     fun hasPremiumAccess(): Boolean = this != FREE
 }
@@ -47,6 +47,7 @@ object AccessControl {
                 customDns = true,
                 showAds = false // Clean Trial
             )
+
             UserAccessState.PREMIUM -> UserEntitlements(
                 invisibilityMode = true,
                 dohEnabled = true,
@@ -55,6 +56,7 @@ object AccessControl {
                 customDns = true,
                 showAds = false
             )
+
             UserAccessState.FREE -> UserEntitlements(
                 invisibilityMode = false,
                 dohEnabled = false,

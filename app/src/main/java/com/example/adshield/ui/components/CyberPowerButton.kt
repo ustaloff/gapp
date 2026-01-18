@@ -189,7 +189,7 @@ fun CyberMiniPowerButton(
             contentAlignment = Alignment.Center
         ) {
             val iconColor = MaterialTheme.colorScheme.onSurfaceVariant
-            
+
             Canvas(modifier = Modifier.size(20.dp)) {
                 val center = Offset(size.width / 2, size.height / 2)
                 drawArc(

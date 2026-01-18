@@ -35,14 +35,15 @@ fun CyberStatusCapsule(
     modifier: Modifier = Modifier
 ) {
     // Determine State Config
-    val isPremium = userAccess.state == UserAccessState.PREMIUM || userAccess.state == UserAccessState.TRIAL
+    val isPremium =
+        userAccess.state == UserAccessState.PREMIUM || userAccess.state == UserAccessState.TRIAL
     val isProtected = isRunning && isPremium
     val isAdBlockOnly = isRunning && !isPremium
 
     // Colors
     val themeColor = MaterialTheme.colorScheme.primary
     val errorColor = MaterialTheme.colorScheme.error
-    
+
     val (primaryColor, text, icon) = when {
         isProtected -> Triple(themeColor, "TUNNELING ACTIVE // IP MASKED", Icons.Default.Lock)
         isAdBlockOnly -> Triple(errorColor, "ADBLOCK ACTIVE // IP VISIBLE", Icons.Default.Warning)
@@ -113,7 +114,7 @@ fun CyberStatusCapsule(
                 tint = primaryColor,
                 modifier = Modifier.size(16.dp)
             )
-            
+
             Spacer(modifier = Modifier.width(12.dp))
 
             // Text

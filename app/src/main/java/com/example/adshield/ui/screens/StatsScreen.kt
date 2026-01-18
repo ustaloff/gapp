@@ -51,7 +51,7 @@ fun StatsView(
     isRunning: Boolean,
     excludedApps: Set<String>, // Hoisted State
     effectiveWhitelist: Set<String>, // Hoisted State
-    onAllowClick: (String, Boolean) -> Unit 
+    onAllowClick: (String, Boolean) -> Unit
 ) {
     val context = LocalContext.current
     // We still need repository ONLY for resolving names for Top Offenders list if we want, or do it here. 
@@ -59,20 +59,20 @@ fun StatsView(
     // The previous implementation instantiated repository just for effective whitelist AND name resolution?
     // Looking at previous code... yes it fetched names in LaunchedEffect.
     // So we keep repository for name resolution but NOT for whitelist logic.
-    
+
     val appsRepository = remember { com.example.adshield.data.AppsRepository(context) }
     // val preferences = remember { com.example.adshield.data.AppPreferences(context) } // No longer needed for internal state
-    
+
     // Top Offenders State
     var topApps by remember { mutableStateOf<List<AppStatItem>>(emptyList()) }
 
     // Removed internal UserAccess observation, as effective whitelist is passed in.
-    
+
     // ... (rest of code)
-    
+
     // Ensure we trigger name resolution when blocked stats change
     val updateTrigger = VpnStats.blockedCount.value
-    LaunchedEffect(updateTrigger) { 
+    LaunchedEffect(updateTrigger) {
         withContext(Dispatchers.IO) {
             val pm = context.packageManager
             val rawMap = VpnStats.appBlockedStatsMap.toMap()
@@ -93,7 +93,7 @@ fun StatsView(
             topApps = result
         }
     }
-    
+
     // START RESTORE VARIABLES
     // Convert bytes to readable string
     val dataSavedBytes = VpnStats.dataSavedBytes.value
@@ -198,7 +198,7 @@ fun StatsView(
                             app = app,
                             isExcluded = excludedApps.contains(app.packageName),
                             isEffective = effectiveWhitelist.contains(app.packageName),
-                            onToggle = { 
+                            onToggle = {
                                 val isCurrentlyExcluded = excludedApps.contains(app.packageName)
                                 if (isCurrentlyExcluded) {
                                     // Remove
@@ -228,14 +228,14 @@ fun OffenderItem(
     val isActive = isExcluded && isEffective
     val isOverflow = isExcluded && !isEffective
 
-    val statusIcon = if (isExcluded) Icons.Filled.CheckCircle else Icons.Filled.Lock 
-    
+    val statusIcon = if (isExcluded) Icons.Filled.CheckCircle else Icons.Filled.Lock
+
     val tint = when {
         isActive -> MaterialTheme.colorScheme.primary // Green
         isOverflow -> MaterialTheme.colorScheme.onSurfaceVariant // Grey
         else -> MaterialTheme.colorScheme.error // Red
     }
-    
+
     val bgBorder = tint.copy(alpha = 0.5f)
 
     Row(
@@ -281,7 +281,9 @@ fun OffenderItem(
                 text = app.appName,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
-                color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha=if(isOverflow) 0.5f else 1f),
+                color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(
+                    alpha = if (isOverflow) 0.5f else 1f
+                ),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )

@@ -291,7 +291,6 @@ object FilterEngine {
     }
 
 
-
     // OPTIMIZED: Traverses segments from right-to-left without splitting into a List
     private fun checkTrie(targetRoot: TrieNode, domain: String, startIndex: Int): String? {
         var end = domain.length

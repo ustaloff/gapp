@@ -24,7 +24,6 @@ object UserRepository {
     }
 
 
-
     suspend fun signInWithGoogle(idToken: String): Result<FirebaseUser> {
         val credential = com.google.firebase.auth.GoogleAuthProvider.getCredential(idToken, null)
         return try {
@@ -44,18 +43,18 @@ object UserRepository {
     }
 
 
-
     suspend fun fetchUserAccess(): UserAccess {
         val user = auth.currentUser ?: return UserAccess(UserAccessState.FREE)
         return try {
             val doc = db.collection("users").document(user.uid).get().await()
             val stateName = doc.getString("userAccessState") ?: UserAccessState.FREE.name
             val trialEndsAt = if (doc.contains("trialEndsAt")) doc.getLong("trialEndsAt") else null
-            val premiumExpiresAt = if (doc.contains("premiumExpiresAt")) doc.getLong("premiumExpiresAt") else null
+            val premiumExpiresAt =
+                if (doc.contains("premiumExpiresAt")) doc.getLong("premiumExpiresAt") else null
 
             val state = try {
                 UserAccessState.valueOf(stateName)
-            } catch (_: Exception) { 
+            } catch (_: Exception) {
                 UserAccessState.FREE
             }
             UserAccess(state, trialEndsAt, premiumExpiresAt)
@@ -77,7 +76,7 @@ object UserRepository {
             // Remove legacy field to avoid confusion in future
             val updates = data as MutableMap<String, Any?>
             updates["isPremium"] = com.google.firebase.firestore.FieldValue.delete()
-            
+
             db.collection("users").document(user.uid)
                 .set(updates, com.google.firebase.firestore.SetOptions.merge())
                 .await()
@@ -102,7 +101,6 @@ object UserRepository {
             Log.e("UserRepository", "Error updating user doc", e)
         }
     }
-
 
 
     fun getCurrentUser(): FirebaseUser? {

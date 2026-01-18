@@ -15,22 +15,22 @@ object Dimensions {
     val spacingLG = 16.dp
     val spacingXL = 24.dp
     val spacingXXL = 32.dp
-    
+
     // Screen padding
     val screenPaddingHorizontal = 24.dp
     val screenPaddingVertical = 16.dp
-    
+
     // Card & Container
     val cardPadding = 16.dp
     val cardBorderWidth = 1.dp
-    
+
     // Icon sizes
     val iconSizeXS = 12.dp
     val iconSizeSM = 16.dp
     val iconSizeMD = 24.dp
     val iconSizeLG = 32.dp
     val iconSizeXL = 48.dp
-    
+
     // Component heights
     val buttonHeight = 48.dp
     val buttonHeightSmall = 32.dp
@@ -39,14 +39,14 @@ object Dimensions {
     val navBarHeight = 80.dp
     val terminalHeight = 200.dp
     val graphHeight = 200.dp
-    
+
     // Corner radius
     val cornerRadiusSM = 4.dp
     val cornerRadiusMD = 8.dp
     val cornerRadiusLG = 12.dp
     val cornerRadiusXL = 24.dp
     val cornerRadiusFull = 999.dp  // For pill shapes
-    
+
     // Bottom navigation spacer (to avoid overlap)
     val bottomNavSpacer = 130.dp
 }
@@ -85,12 +85,12 @@ object Alphas {
     const val dim = 0.5f
     const val subtle = 0.7f
     const val full = 1f
-    
+
     // Background alphas
     const val backgroundLight = 0.01f
     const val backgroundMedium = 0.1f
     const val backgroundDark = 0.3f
-    
+
     // Border alphas  
     const val borderLight = 0.1f
     const val borderMedium = 0.3f

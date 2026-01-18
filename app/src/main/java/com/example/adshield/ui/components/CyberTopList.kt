@@ -134,18 +134,18 @@ fun CyberTopList(
                     // Logic for Colors:
                     val excluded = isExcluded(packageName)
                     val effective = isEffective(packageName)
-                    
+
                     val isActive = excluded && effective
                     val isOverflow = excluded && !effective
 
-                    val statusIcon = if (excluded) Icons.Filled.CheckCircle else Icons.Filled.Lock 
-                    
+                    val statusIcon = if (excluded) Icons.Filled.CheckCircle else Icons.Filled.Lock
+
                     val tint = when {
                         isActive -> MaterialTheme.colorScheme.primary // Green
                         isOverflow -> MaterialTheme.colorScheme.onSurfaceVariant // Grey
                         else -> MaterialTheme.colorScheme.error // Red
                     }
-                    
+
                     val bgBorder = tint.copy(alpha = 0.5f)
 
                     Row(
@@ -188,7 +188,9 @@ fun CyberTopList(
                                 text = appName, // UPDATED: Shows Human Name
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Medium,
-                                color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha=if(isOverflow) 0.5f else 1f),
+                                color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(
+                                    alpha = if (isOverflow) 0.5f else 1f
+                                ),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace

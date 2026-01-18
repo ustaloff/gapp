@@ -54,6 +54,7 @@ fun SettingsView(
     onBackClick: () -> Unit,
     onWhitelistClick: () -> Unit,
     onDomainConfigClick: () -> Unit,
+    onLogsClick: () -> Unit,
     onPremiumClick: () -> Unit,
     onThemeChange: (AppTheme) -> Unit,
     whitelistCount: Int // Added param
@@ -62,10 +63,10 @@ fun SettingsView(
     val scope = rememberCoroutineScope()
     val prefs = remember { AppPreferences(context) }
     val userAccessState by BillingManager.userAccessState.collectAsState(initial = UserAccessState.FREE)
-    val isPremium = userAccessState == UserAccessState.PREMIUM || 
-                   userAccessState == UserAccessState.TRIAL
+    val isPremium = userAccessState == UserAccessState.PREMIUM ||
+            userAccessState == UserAccessState.TRIAL
     val isFree = !isPremium
-    
+
     var isUpdatingFilters by remember { mutableStateOf(false) }
 
     @Suppress("UNUSED_VALUE") // False positive: Variable is assigned but analyzer thinks it's unused
@@ -138,8 +139,8 @@ fun SettingsView(
         val scope = rememberCoroutineScope()
 
         AlertDialog(
-            onDismissRequest = { 
-                if (!isValidating) showUrlDialog = false 
+            onDismissRequest = {
+                if (!isValidating) showUrlDialog = false
             },
             title = {
                 Row(
@@ -150,7 +151,7 @@ fun SettingsView(
                     Text("FILTER SOURCE URL")
                     // RESET BUTTON
                     if (tempUrl.trim() != AppConfig.DEFAULT_FILTER_URL.trim() && !tempUrl.contains("ustaloff/adshield-lists")) {
-                         TextButton(
+                        TextButton(
                             onClick = {
                                 tempUrl = AppConfig.DEFAULT_FILTER_URL
                                 isError = false
@@ -165,23 +166,34 @@ fun SettingsView(
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    val isDefault = tempUrl.trim() == AppConfig.DEFAULT_FILTER_URL.trim() || 
-                                    (tempUrl.contains("ustaloff/adshield-lists") && tempUrl.endsWith("blocklist.txt"))
+                    val isDefault = tempUrl.trim() == AppConfig.DEFAULT_FILTER_URL.trim() ||
+                            (tempUrl.contains("ustaloff/adshield-lists") && tempUrl.endsWith("blocklist.txt"))
 
                     if (isDefault) {
                         // MASKED VIEW
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), MaterialTheme.shapes.small)
-                                .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha=0.3f), MaterialTheme.shapes.small)
+                                .background(
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                    MaterialTheme.shapes.small
+                                )
+                                .border(
+                                    1.dp,
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                                    MaterialTheme.shapes.small
+                                )
                                 .padding(16.dp)
                         ) {
                             Column {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text("✅", fontSize = 16.sp)
                                     Spacer(Modifier.width(8.dp))
-                                    Text("AdShield Official List (Recommended)", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+                                    Text(
+                                        "AdShield Official List (Recommended)",
+                                        fontWeight = FontWeight.Bold,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
                                 }
                                 Spacer(Modifier.height(4.dp))
                                 Text(
@@ -191,13 +203,13 @@ fun SettingsView(
                                 )
                             }
                         }
-                        
+
                         TextButton(
                             onClick = {
                                 tempUrl = "" // Clear to let user type
                                 isError = false
                             },
-                             modifier = Modifier.align(Alignment.End)
+                            modifier = Modifier.align(Alignment.End)
                         ) {
                             Text("USE CUSTOM URL", color = MaterialTheme.colorScheme.primary)
                         }
@@ -218,7 +230,10 @@ fun SettingsView(
                             enabled = !isValidating,
                             supportingText = {
                                 if (isError) {
-                                    Text("Invalid URL (Must start with http/https)", color = MaterialTheme.colorScheme.error)
+                                    Text(
+                                        "Invalid URL (Must start with http/https)",
+                                        color = MaterialTheme.colorScheme.error
+                                    )
                                 } else if (validationResult != null) {
                                     val isSuccess = validationResult!!.startsWith("✅")
                                     Text(
@@ -233,9 +248,9 @@ fun SettingsView(
                 }
             },
             confirmButton = {
-                val isDefault = tempUrl.trim() == AppConfig.DEFAULT_FILTER_URL.trim() || 
-                                (tempUrl.contains("ustaloff/adshield-lists") && tempUrl.endsWith("blocklist.txt"))
-                                
+                val isDefault = tempUrl.trim() == AppConfig.DEFAULT_FILTER_URL.trim() ||
+                        (tempUrl.contains("ustaloff/adshield-lists") && tempUrl.endsWith("blocklist.txt"))
+
                 if (!isDefault) {
                     Button(
                         onClick = {
@@ -250,11 +265,16 @@ fun SettingsView(
                                         // Save and Close after brief delay to show success
                                         prefs.setFilterSourceUrl(tempUrl)
                                         currentUrl = tempUrl
-                                        Toast.makeText(context, "Filter Source Updated!", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(
+                                            context,
+                                            "Filter Source Updated!",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
                                         kotlinx.coroutines.delay(1000)
                                         showUrlDialog = false
                                     } else {
-                                        validationResult = "❌ Error: ${result.exceptionOrNull()?.message}"
+                                        validationResult =
+                                            "❌ Error: ${result.exceptionOrNull()?.message}"
                                     }
                                     isValidating = false
                                 }
@@ -501,7 +521,7 @@ fun SettingsView(
                     // Blue Button (Premium)
                     Box(modifier = Modifier.weight(1f)) {
                         Button(
-                            onClick = { 
+                            onClick = {
                                 if (isPremium) onThemeChange(AppTheme.CyberBlue) else onPremiumClick()
                             },
                             modifier = Modifier.fillMaxWidth(),
@@ -517,14 +537,21 @@ fun SettingsView(
                             Text("BLUE", color = if (isPremium) NeonBluePrimary else Color.Gray)
                         }
                         if (!isPremium) {
-                            Icon(Icons.Default.Lock, null, tint = Color.Gray, modifier = Modifier.align(Alignment.Center).size(16.dp))
+                            Icon(
+                                Icons.Default.Lock,
+                                null,
+                                tint = Color.Gray,
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .size(16.dp)
+                            )
                         }
                     }
 
                     // Amber Button (Premium)
                     Box(modifier = Modifier.weight(1f)) {
                         Button(
-                            onClick = { 
+                            onClick = {
                                 if (isPremium) onThemeChange(AppTheme.CyberAmber) else onPremiumClick()
                             },
                             modifier = Modifier.fillMaxWidth(),
@@ -540,14 +567,31 @@ fun SettingsView(
                             Text("AMBER", color = if (isPremium) NeonAmberPrimary else Color.Gray)
                         }
                         if (!isPremium) {
-                            Icon(Icons.Default.Lock, null, tint = Color.Gray, modifier = Modifier.align(Alignment.Center).size(16.dp))
+                            Icon(
+                                Icons.Default.Lock,
+                                null,
+                                tint = Color.Gray,
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .size(16.dp)
+                            )
                         }
                     }
                 }
 
                 Spacer(Modifier.height(24.dp))
 
-                // Item 1: Whitelist (Renamed to APP WHITELIST)
+                // ==========================
+                // CONFIGURATION (MANAGERS)
+                // ==========================
+                Text(
+                    "CONFIGURATION",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                // Item 1: APP MANAGER
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -570,20 +614,20 @@ fun SettingsView(
                     ) {
                         Column {
                             Text(
-                                "APP WHITELIST",
+                                "APP MANAGER",
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    "Exclude apps from VPN",
+                                    "Excluded apps (Whitelist)",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 if (!isPremium) {
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(
-                                        "(Free Limit: $whitelistCount/${AppConfig.FREE_WHITELIST_LIMIT})",
+                                        "($whitelistCount/${AppConfig.FREE_WHITELIST_LIMIT})",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.error,
                                         fontSize = 10.sp
@@ -599,9 +643,9 @@ fun SettingsView(
                     }
                 }
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(8.dp))
 
-                // Item 2: Domain Manager (Unified) - LOCK for FREE
+                // Item 2: DOMAIN MANAGER
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -632,7 +676,7 @@ fun SettingsView(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                if (isFree) "Manage allowed & banned domains 🔒" else "Manage allowed & banned domains",
+                                if (isFree) "Blocked & Allowed domains 🔒" else "Blocked & Allowed domains",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -640,6 +684,59 @@ fun SettingsView(
                         Icon(
                             Icons.AutoMirrored.Filled.List,
                             contentDescription = ContentDescriptions.domainIcon,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(24.dp))
+
+                // ==========================
+                // MONITORING (LOGS)
+                // ==========================
+                Text(
+                    "MONITORING",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                // Item 3: SYSTEM LOGS
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.01f),
+                            MaterialTheme.shapes.medium
+                        )
+                        .border(
+                            1.dp,
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                            MaterialTheme.shapes.medium
+                        )
+                        .clickable(onClick = onLogsClick)
+                        .padding(16.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column {
+                            Text(
+                                "SYSTEM LOGS",
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                "Traffic history (Apps & Domains)",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Icon(
+                            Icons.AutoMirrored.Filled.List,
+                            contentDescription = "Logs",
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
@@ -660,12 +757,12 @@ fun SettingsView(
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
                             MaterialTheme.shapes.medium
                         )
-                        .clickable(onClick = { 
+                        .clickable(onClick = {
                             if (isFree) {
                                 onPremiumClick()
                             } else {
                                 tempUrl = currentUrl
-                                showUrlDialog = true 
+                                showUrlDialog = true
                             }
                         })
                         .padding(16.dp)
@@ -683,9 +780,12 @@ fun SettingsView(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                if (isFree) "AdShield Recommended (Official) 🔒" 
-                                else if (currentUrl.trim() == AppConfig.DEFAULT_FILTER_URL.trim() || 
-                                    currentUrl.contains("ustaloff/adshield-lists") && currentUrl.endsWith("blocklist.txt")) "AdShield Recommended (Official)" else currentUrl,
+                                if (isFree) "AdShield Recommended (Official) 🔒"
+                                else if (currentUrl.trim() == AppConfig.DEFAULT_FILTER_URL.trim() ||
+                                    currentUrl.contains("ustaloff/adshield-lists") && currentUrl.endsWith(
+                                        "blocklist.txt"
+                                    )
+                                ) "AdShield Recommended (Official)" else currentUrl,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
@@ -697,13 +797,18 @@ fun SettingsView(
                             onClick = {
                                 val lastUpdate = AppPreferences(context).getLastFilterUpdate()
                                 val now = System.currentTimeMillis()
-                                val cooldownMs = AppConfig.FILTER_UPDATE_COOLDOWN_HOURS * 60 * 60 * 1000L
-                                
+                                val cooldownMs =
+                                    AppConfig.FILTER_UPDATE_COOLDOWN_HOURS * 60 * 60 * 1000L
+
                                 if (isFree && (now - lastUpdate) < cooldownMs) {
                                     val remainingTime = cooldownMs - (now - lastUpdate)
                                     val hours = remainingTime / (1000 * 60 * 60)
                                     val minutes = (remainingTime % (1000 * 60 * 60)) / (1000 * 60)
-                                    Toast.makeText(context, "Free Limit: Update available in ${hours}h ${minutes}m", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(
+                                        context,
+                                        "Free Limit: Update available in ${hours}h ${minutes}m",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 } else {
                                     scope.launch {
                                         isUpdatingFilters = true
@@ -739,52 +844,67 @@ fun SettingsView(
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
-                    
+
                     Column(
                         Modifier
                             .fillMaxWidth()
-                            .border(1.dp, Color.Red.copy(alpha=0.5f), MaterialTheme.shapes.medium)
+                            .border(1.dp, Color.Red.copy(alpha = 0.5f), MaterialTheme.shapes.medium)
                             .padding(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text("Current State: ${userAccessState.name}", color = Color.White, fontSize = 12.sp)
-                        
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            "Current State: ${userAccessState.name}",
+                            color = Color.White,
+                            fontSize = 12.sp
+                        )
+
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
                             Button(
                                 onClick = { BillingManager.resetToFree(context) },
                                 modifier = Modifier.weight(1f),
                                 colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
                                 contentPadding = PaddingValues(0.dp)
-                            ) { Text("FREE", fontSize=10.sp) }
-                            
+                            ) { Text("FREE", fontSize = 10.sp) }
+
                             Button(
                                 onClick = { BillingManager.activateTrial(context) },
                                 modifier = Modifier.weight(1f),
                                 colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
                                 contentPadding = PaddingValues(0.dp)
-                            ) { Text("TRIAL", fontSize=10.sp) }
-                            
+                            ) { Text("TRIAL", fontSize = 10.sp) }
+
                             Button(
                                 onClick = { BillingManager.activatePremium(context) },
                                 modifier = Modifier.weight(1f),
                                 colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
                                 contentPadding = PaddingValues(0.dp)
-                            ) { Text("PREMIUM", fontSize=10.sp) }
+                            ) { Text("PREMIUM", fontSize = 10.sp) }
                         }
-                        
+
                         Button(
-                            onClick = { 
+                            onClick = {
                                 prefs.resetOnboarding()
-                                Toast.makeText(context, "Onboarding Reset. Restart App.", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    context,
+                                    "Onboarding Reset. Restart App.",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             },
                             modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.Red.copy(alpha=0.3f))
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.Red.copy(
+                                    alpha = 0.3f
+                                )
+                            )
                         ) {
                             Text("RESET ONBOARDING FLAG", color = Color.Red)
                         }
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(150.dp))
             }
         }

@@ -49,7 +49,7 @@ fun AppListScreen(
     var searchQuery by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(true) }
     var currentTab by remember { mutableStateOf(AppListTab.ALL) }
-    
+
     // UI State for list scrolling
     val listState = rememberLazyListState()
 
@@ -59,17 +59,18 @@ fun AppListScreen(
 
     // Calculate EFFECTIVE Whitelist (Who actually bypasses VPN)
     // Matches logic in LocalVpnService.kt (Sorted by Label/Name)
-    val effectiveExcludedApps = remember(excludedApps, entitlements, apps) { // Added apps dependency
-        if (entitlements.unlimitedWhitelist) {
-            excludedApps
-        } else {
-            // We need to sort by NAME to match the Service logic and UI sorting
-            // We can look up names from the 'apps' list which is already loaded
-            excludedApps.sortedBy { pkg ->
-                 apps.find { it.packageName == pkg }?.name?.lowercase() ?: pkg
-            }.take(com.example.adshield.data.AppConfig.FREE_WHITELIST_LIMIT).toSet()
+    val effectiveExcludedApps =
+        remember(excludedApps, entitlements, apps) { // Added apps dependency
+            if (entitlements.unlimitedWhitelist) {
+                excludedApps
+            } else {
+                // We need to sort by NAME to match the Service logic and UI sorting
+                // We can look up names from the 'apps' list which is already loaded
+                excludedApps.sortedBy { pkg ->
+                    apps.find { it.packageName == pkg }?.name?.lowercase() ?: pkg
+                }.take(com.example.adshield.data.AppConfig.FREE_WHITELIST_LIMIT).toSet()
+            }
         }
-    }
 
     // Load data
     LaunchedEffect(Unit) {
@@ -126,7 +127,7 @@ fun AppListScreen(
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
                     Text(
-                        text = "WHITELIST CONFIG",
+                        text = "APP MANAGER",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp,
@@ -227,7 +228,8 @@ fun AppListScreen(
                     }
 
                     matchesSearch && matchesTab
-                }.sortedBy { it.name.lowercase() } // Sort by Name for UI usability (Case Insensitive)
+                }
+                    .sortedBy { it.name.lowercase() } // Sort by Name for UI usability (Case Insensitive)
 
                 if (filteredApps.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -280,7 +282,7 @@ fun AppListItem(
     // Excluded & Effective -> Primary (Green)
     // Excluded & NOT Effective (Overflow) -> Grey/Dim
     // Not Excluded -> Very dim / default
-    
+
     val isActive = isExcluded && isEffective
     val isOverflow = isExcluded && !isEffective
 
@@ -289,7 +291,7 @@ fun AppListItem(
         isOverflow -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f) // Grey for Overflow
         else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f)
     }
-    
+
     val alpha = when {
         isActive -> 1f
         isOverflow -> 0.6f // Dimmed for overflow
@@ -343,7 +345,7 @@ fun AppListItem(
             onCheckedChange = onToggle,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = if (isOverflow) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.background,
-                checkedTrackColor = if (isOverflow) MaterialTheme.colorScheme.onSurface.copy(alpha=0.3f) else MaterialTheme.colorScheme.primary,
+                checkedTrackColor = if (isOverflow) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f) else MaterialTheme.colorScheme.primary,
                 uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 uncheckedTrackColor = MaterialTheme.colorScheme.surface
             )

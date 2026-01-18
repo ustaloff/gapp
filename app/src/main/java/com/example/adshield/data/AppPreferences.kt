@@ -43,13 +43,13 @@ class AppPreferences(context: Context) {
     fun setOnboardingComplete(complete: Boolean) {
         prefs.edit { putBoolean(KEY_ONBOARDING_COMPLETE, complete) }
     }
-    
+
     fun isOnboardingComplete(): Boolean {
         return prefs.getBoolean(KEY_ONBOARDING_COMPLETE, false)
     }
 
     fun resetOnboarding() {
-        prefs.edit { 
+        prefs.edit {
             remove(KEY_ONBOARDING_COMPLETE)
             remove(KEY_TRIAL_CONSUMED)
         }
@@ -74,7 +74,6 @@ class AppPreferences(context: Context) {
     fun isAppExcluded(packageName: String): Boolean {
         return getExcludedApps().contains(packageName)
     }
-
 
 
     // --- User-Defined Domain Allowlist ---

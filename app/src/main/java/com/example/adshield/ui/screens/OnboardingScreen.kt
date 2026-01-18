@@ -111,8 +111,12 @@ fun OnboardingScreen(
                 ) {
                     repeat(3) { iteration ->
                         val isSelected = pagerState.currentPage == iteration
-                        val width by animateDpAsState(if (isSelected) 24.dp else 8.dp, label = "dotWidth")
-                        val color = if (isSelected) NeonGreenPrimary else Color.White.copy(alpha = 0.2f)
+                        val width by animateDpAsState(
+                            if (isSelected) 24.dp else 8.dp,
+                            label = "dotWidth"
+                        )
+                        val color =
+                            if (isSelected) NeonGreenPrimary else Color.White.copy(alpha = 0.2f)
 
                         Box(
                             modifier = Modifier
@@ -124,8 +128,9 @@ fun OnboardingScreen(
                 }
 
                 // Primary Action Button
-                val buttonText = if (pagerState.currentPage == 2) "START ${com.example.adshield.data.AppConfig.TRIAL_DURATION_DAYS}-DAY FREE TRIAL" else "CONTINUE"
-                
+                val buttonText =
+                    if (pagerState.currentPage == 2) "START ${com.example.adshield.data.AppConfig.TRIAL_DURATION_DAYS}-DAY FREE TRIAL" else "CONTINUE"
+
                 CyberButton(
                     text = buttonText,
                     onClick = {
@@ -135,7 +140,9 @@ fun OnboardingScreen(
                             onFinish(true)
                         }
                     },
-                    modifier = Modifier.fillMaxWidth().height(56.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
                 )
             }
         }
@@ -184,9 +191,9 @@ fun OnboardingSlide(page: Int) {
             color = Color.White,
             textAlign = TextAlign.Center
         )
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         Text(
             text = subtitle,
             style = MaterialTheme.typography.bodyLarge,
@@ -215,7 +222,7 @@ fun ScreenOneVisual() {
                 repeatMode = RepeatMode.Reverse
             ), label = "alpha"
         )
-        
+
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             AppIconStub(isRed = true, alpha = alpha)
             AppIconStub(isRed = true, alpha = alpha)
@@ -228,7 +235,9 @@ fun ScreenOneVisual() {
             "THREATS DETECTED",
             color = NeonGreenError,
             style = MaterialTheme.typography.labelSmall,
-            modifier = Modifier.padding(top = 16.dp).alpha(alpha)
+            modifier = Modifier
+                .padding(top = 16.dp)
+                .alpha(alpha)
         )
     }
 }
@@ -291,7 +300,7 @@ fun ScreenThreeVisual() {
                     )
                 )
         )
-        
+
         Icon(
             imageVector = Icons.Default.VisibilityOff, // Eye Off representing Invisibility
             contentDescription = null,
@@ -308,7 +317,7 @@ fun ScreenThreeVisual() {
                 animation = tween(4000, easing = LinearEasing)
             ), label = "rotation"
         )
-        
+
         Box(
             modifier = Modifier
                 .size(160.dp)

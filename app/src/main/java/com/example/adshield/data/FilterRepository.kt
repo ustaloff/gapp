@@ -66,10 +66,10 @@ object FilterRepository {
                 TAG,
                 "Loaded ${blockRules.size} block rules and ${exceptionRules.size} exception rules in ${System.currentTimeMillis() - start}ms"
             )
-            
+
             // Record success timestamp
             prefs.setLastFilterUpdate(System.currentTimeMillis())
-            
+
             return@withContext FilterData(blockRules, exceptionRules)
         }
 

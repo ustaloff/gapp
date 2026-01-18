@@ -36,14 +36,20 @@ fun PremiumScreen(
 ) {
     val context = LocalContext.current
     val userAccessState by BillingManager.userAccessState.collectAsState(initial = com.example.adshield.data.UserAccessState.FREE)
-    val isPremium = userAccessState == com.example.adshield.data.UserAccessState.PREMIUM || 
-                   userAccessState == com.example.adshield.data.UserAccessState.TRIAL
+    val isPremium = userAccessState == com.example.adshield.data.UserAccessState.PREMIUM ||
+            userAccessState == com.example.adshield.data.UserAccessState.TRIAL
     var isLoading by remember { mutableStateOf(false) }
 
     // Mock Pricing
-    val packageMonthly = BillingManager.MockPackage("pro_monthly", BillingManager.MockProduct("$2.49", "Monthly", "Billed monthly"))
-    val packageYearly = BillingManager.MockPackage("pro_yearly", BillingManager.MockProduct("$11.99", "Yearly", "Billed annually"))
-    
+    val packageMonthly = BillingManager.MockPackage(
+        "pro_monthly",
+        BillingManager.MockProduct("$2.49", "Monthly", "Billed monthly")
+    )
+    val packageYearly = BillingManager.MockPackage(
+        "pro_yearly",
+        BillingManager.MockProduct("$11.99", "Yearly", "Billed annually")
+    )
+
     var selectedPackage by remember { mutableStateOf<BillingManager.MockPackage?>(packageYearly) }
 
     Box(
@@ -61,7 +67,11 @@ fun PremiumScreen(
             // Header: Close Button
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 IconButton(onClick = onBackClick) {
-                    Icon(androidx.compose.material.icons.Icons.Default.Close, contentDescription = "Close", tint = Color.Gray)
+                    Icon(
+                        androidx.compose.material.icons.Icons.Default.Close,
+                        contentDescription = "Close",
+                        tint = Color.Gray
+                    )
                 }
             }
 
@@ -73,9 +83,9 @@ fun PremiumScreen(
                 color = Color.White,
                 textAlign = TextAlign.Center
             )
-            
+
             Spacer(Modifier.height(8.dp))
-            
+
             Text(
                 "Upgrade to Premium to unlock full protection and encrypted DNS tunnels.",
                 style = MaterialTheme.typography.bodyMedium,
@@ -89,13 +99,26 @@ fun PremiumScreen(
             // SECURITY SCORES
             // Current (Free)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("CURRENT PROTECTION", color = Color.Gray, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                Text("68% - VULNERABLE", color = Color.Gray, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                Text(
+                    "CURRENT PROTECTION",
+                    color = Color.Gray,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    "68% - VULNERABLE",
+                    color = Color.Gray,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold
+                )
             }
             Spacer(Modifier.height(4.dp))
             LinearProgressIndicator(
                 progress = { 0.68f },
-                modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(4.dp)),
                 color = NeonGreenWarning,
                 trackColor = MaterialTheme.colorScheme.surface
             )
@@ -105,37 +128,83 @@ fun PremiumScreen(
             // Premium (Target)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                     Icon(androidx.compose.material.icons.Icons.Default.Lock, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(12.dp))
-                     Spacer(Modifier.width(4.dp))
-                     Text("PREMIUM PROTECTION", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                    Icon(
+                        androidx.compose.material.icons.Icons.Default.Lock,
+                        null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(12.dp)
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        "PREMIUM PROTECTION",
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
-                Text("100% - ENCRYPTED", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                Text(
+                    "100% - ENCRYPTED",
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold
+                )
             }
             Spacer(Modifier.height(4.dp))
             // Animated Glow Effect (Simulated via Brush)
-            Box(Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)).background(
-                brush = Brush.horizontalGradient(
-                    colors = listOf(MaterialTheme.colorScheme.primary.copy(alpha=0.8f), MaterialTheme.colorScheme.primary)
-                )
-            ))
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(
+                        brush = Brush.horizontalGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                                MaterialTheme.colorScheme.primary
+                            )
+                        )
+                    )
+            )
 
             Spacer(Modifier.height(32.dp))
 
             // BENEFITS CARDS
-            BenefitCard("Hide activity from ISP", "Mask your digital footprint completely", androidx.compose.material.icons.Icons.Default.VisibilityOff, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.surface)
+            BenefitCard(
+                "Hide activity from ISP",
+                "Mask your digital footprint completely",
+                androidx.compose.material.icons.Icons.Default.VisibilityOff,
+                MaterialTheme.colorScheme.primary,
+                MaterialTheme.colorScheme.surface
+            )
             Spacer(Modifier.height(12.dp))
-            BenefitCard("Block ads in apps", "Stop trackers & popups system-wide", androidx.compose.material.icons.Icons.Default.Security, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.surface)
+            BenefitCard(
+                "Block ads in apps",
+                "Stop trackers & popups system-wide",
+                androidx.compose.material.icons.Icons.Default.Security,
+                MaterialTheme.colorScheme.primary,
+                MaterialTheme.colorScheme.surface
+            )
             Spacer(Modifier.height(12.dp))
-            BenefitCard("2x Faster Loading", "Optimized DNS for speed", androidx.compose.material.icons.Icons.Default.Speed, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.surface)
+            BenefitCard(
+                "2x Faster Loading",
+                "Optimized DNS for speed",
+                androidx.compose.material.icons.Icons.Default.Speed,
+                MaterialTheme.colorScheme.primary,
+                MaterialTheme.colorScheme.surface
+            )
 
             Spacer(Modifier.height(32.dp))
 
             // PRICING
             if (isPremium) {
-                Text("PREMIUM ACTIVE", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.headlineLarge)
+                Text(
+                    "PREMIUM ACTIVE",
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.headlineLarge
+                )
             } else {
                 Row(
-                    Modifier.fillMaxWidth(), 
+                    Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // Monthly
@@ -168,36 +237,70 @@ fun PremiumScreen(
 
                 // CTA BUTTON
                 val isTrialEligible = remember { BillingManager.isTrialEligible(context) }
-                
+
                 Button(
                     onClick = {
                         selectedPackage?.let { pkg ->
-                            BillingManager.purchase(context as Activity, pkg) { loading -> isLoading = loading }
+                            BillingManager.purchase(
+                                context as Activity,
+                                pkg
+                            ) { loading -> isLoading = loading }
                         }
                     },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     if (isLoading) {
-                        CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(24.dp))
+                        CircularProgressIndicator(
+                            color = Color.Black,
+                            modifier = Modifier.size(24.dp)
+                        )
                     } else {
                         if (isTrialEligible) {
-                            Text("Start ${com.example.adshield.data.AppConfig.TRIAL_DURATION_DAYS}-Day Free Trial", color = Color.Black, fontWeight = FontWeight.Black, fontSize = 18.sp)
+                            Text(
+                                "Start ${com.example.adshield.data.AppConfig.TRIAL_DURATION_DAYS}-Day Free Trial",
+                                color = Color.Black,
+                                fontWeight = FontWeight.Black,
+                                fontSize = 18.sp
+                            )
                         } else {
-                            Text("SUBSCRIBE NOW", color = Color.Black, fontWeight = FontWeight.Black, fontSize = 18.sp)
+                            Text(
+                                "SUBSCRIBE NOW",
+                                color = Color.Black,
+                                fontWeight = FontWeight.Black,
+                                fontSize = 18.sp
+                            )
                         }
                     }
                 }
-                
+
                 Spacer(Modifier.height(12.dp))
-                Text("No commitment. Cancel anytime.", color = Color.Gray, style = MaterialTheme.typography.labelSmall)
-                
+                Text(
+                    "No commitment. Cancel anytime.",
+                    color = Color.Gray,
+                    style = MaterialTheme.typography.labelSmall
+                )
+
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text("RESTORE", color = Color.DarkGray, style = MaterialTheme.typography.labelSmall, modifier = Modifier.clickable { BillingManager.restorePurchases(context) {} })
-                    Text("TERMS", color = Color.DarkGray, style = MaterialTheme.typography.labelSmall)
-                    Text("PRIVACY", color = Color.DarkGray, style = MaterialTheme.typography.labelSmall)
+                    Text(
+                        "RESTORE",
+                        color = Color.DarkGray,
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.clickable { BillingManager.restorePurchases(context) {} })
+                    Text(
+                        "TERMS",
+                        color = Color.DarkGray,
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                    Text(
+                        "PRIVACY",
+                        color = Color.DarkGray,
+                        style = MaterialTheme.typography.labelSmall
+                    )
                 }
             }
         }
@@ -213,17 +316,31 @@ fun BenefitCard(title: String, subtitle: String, icon: ImageVector, accent: Colo
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Surface(color = accent.copy(alpha = 0.1f), shape = RoundedCornerShape(8.dp), modifier = Modifier.size(40.dp)) {
+        Surface(
+            color = accent.copy(alpha = 0.1f),
+            shape = RoundedCornerShape(8.dp),
+            modifier = Modifier.size(40.dp)
+        ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(icon, null, tint = accent, modifier = Modifier.size(24.dp))
             }
         }
         Spacer(Modifier.width(16.dp))
         Column(Modifier.weight(1f)) {
-            Text(title, color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                title,
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.bodyLarge
+            )
             Text(subtitle, color = Color.Gray, style = MaterialTheme.typography.bodySmall)
         }
-        Icon(androidx.compose.material.icons.Icons.Default.Lock, null, tint = Color.DarkGray, modifier = Modifier.size(16.dp))
+        Icon(
+            androidx.compose.material.icons.Icons.Default.Lock,
+            null,
+            tint = Color.DarkGray,
+            modifier = Modifier.size(16.dp)
+        )
     }
 }
 
@@ -245,14 +362,28 @@ fun PricingCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = if (badge != null) 12.dp else 0.dp) // Space for badge
-                .border(if (selected) 2.dp else 0.dp, if (selected) accentColor else Color.Transparent, RoundedCornerShape(16.dp))
+                .border(
+                    if (selected) 2.dp else 0.dp,
+                    if (selected) accentColor else Color.Transparent,
+                    RoundedCornerShape(16.dp)
+                )
                 .background(surfaceColor, RoundedCornerShape(16.dp))
                 .clickable { onClick() }
                 .padding(16.dp)
         ) {
-            Text(title, color = Color.Gray, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+            Text(
+                title,
+                color = Color.Gray,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold
+            )
             Spacer(Modifier.height(8.dp))
-            Text(price, color = Color.White, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            Text(
+                price,
+                color = Color.White,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold
+            )
             Text(sub, color = Color.Gray, style = MaterialTheme.typography.labelSmall)
             Spacer(Modifier.height(24.dp))
             // Radio Circle
@@ -263,11 +394,13 @@ fun PricingCard(
                     .padding(4.dp)
             ) {
                 if (selected) {
-                    Box(Modifier.fillMaxSize().background(accentColor, CircleShape))
+                    Box(Modifier
+                        .fillMaxSize()
+                        .background(accentColor, CircleShape))
                 }
             }
         }
-        
+
         // Badge Overlay
         if (badge != null) {
             Surface(

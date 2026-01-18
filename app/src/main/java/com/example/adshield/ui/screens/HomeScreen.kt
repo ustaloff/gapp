@@ -53,7 +53,7 @@ fun HomeView(
     onPremiumClick: () -> Unit  // NEW: For LOCK taps
 ) {
     val scrollState = rememberScrollState()
-    
+
     // Access control helper
     val isFree = userAccess.state.isFree()
 
@@ -263,7 +263,7 @@ fun HomeView(
                         modifier = Modifier.applyAccessState(if (isFree) UiAccessState.DIM else UiAccessState.FULL)
                     )
                 }
-                
+
                 // TOP DOMAINS - LOCK for FREE (tapping shows paywall)
                 Box(Modifier.fillMaxWidth()) {
                     if (isFree) {

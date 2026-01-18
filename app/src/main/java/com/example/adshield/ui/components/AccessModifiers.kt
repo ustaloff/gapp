@@ -19,8 +19,10 @@ import androidx.compose.ui.unit.dp
 enum class UiAccessState {
     /** Full access - no visual changes */
     FULL,
+
     /** Dimmed - visible but indicates limited access */
     DIM,
+
     /** Locked - tapping shows paywall */
     LOCK
 }
@@ -33,8 +35,8 @@ enum class UiAccessState {
  * Dims the content with reduced alpha.
  * Use for features that are visible but limited for FREE users.
  */
-fun Modifier.dim(alpha: Float = 0.4f): Modifier = this.graphicsLayer { 
-    this.alpha = alpha 
+fun Modifier.dim(alpha: Float = 0.4f): Modifier = this.graphicsLayer {
+    this.alpha = alpha
 }
 
 /**
@@ -54,7 +56,7 @@ fun Modifier.lock(
 
 /**
  * Applies the appropriate modifier based on UiAccessState.
- * 
+ *
  * Usage:
  * ```
  * MyComponent(
@@ -81,7 +83,7 @@ fun Modifier.applyAccessState(
 /**
  * A container that wraps content with a lock overlay.
  * Tapping anywhere in the container triggers the paywall.
- * 
+ *
  * Usage:
  * ```
  * if (isFree) {
@@ -104,7 +106,7 @@ fun LockedContainer(
             .lock(onClickLocked = onUnlockClick)
     ) {
         content()
-        
+
         // Lock icon overlay in top-right corner
         Box(
             modifier = Modifier

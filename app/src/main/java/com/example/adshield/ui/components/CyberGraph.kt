@@ -21,7 +21,7 @@ import com.example.adshield.ui.theme.AdShieldTheme
 fun CyberGraphSection(
     data: List<Int>, // Blocked
     totalData: List<Int> = emptyList(), // Total Traffic (Optional for compat, but we'll pass it)
-    bpm: Int, 
+    bpm: Int,
     isRunning: Boolean,
     showBpm: Boolean = true,           // FALSE for FREE users
     showThreatLevel: Boolean = true,   // FALSE for FREE users (shows "---")
@@ -32,7 +32,7 @@ fun CyberGraphSection(
     val offlineColor = MaterialTheme.colorScheme.error // Or Gray
 
     // ... (rest of val level, threatColor etc)
-    
+
     // Pulse and Threat Logic ...
     // Animation state for pulse
     val infiniteTransition = rememberInfiniteTransition(label = "monitoring_pulse")
@@ -119,9 +119,9 @@ fun CyberGraphSection(
                     color = secondaryColor.copy(alpha = 0.7f),
                     fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
                 )
-                
+
                 Spacer(Modifier.width(8.dp))
-                
+
                 // Blocked Legend
                 Box(
                     modifier = Modifier
@@ -159,16 +159,17 @@ fun CyberGraphSection(
             ) {
                 val width = size.width
                 val height = size.height
-                
+
                 // DATA PREP
                 val blockedData = data.ifEmpty { List(60) { 0 } }
                 val trafficData = totalData.ifEmpty { List(60) { 0 } }
-                
+
                 // Determine Max Scale based on TOTAL traffic (so blocked is relative to it)
                 val maxTotal = (trafficData.maxOrNull() ?: 5).coerceAtLeast(5).toFloat()
-                
+
                 // Colors
-                val trafficColor = if (isRunning) threatColor.copy(alpha = 0.5f) else offlineColor.copy(alpha = 0.1f)
+                val trafficColor =
+                    if (isRunning) threatColor.copy(alpha = 0.5f) else offlineColor.copy(alpha = 0.1f)
                 val blockedColor = if (isRunning) threatColor else offlineColor.copy(alpha = 0.3f)
 
                 // Draw Grid (Same)
@@ -197,7 +198,7 @@ fun CyberGraphSection(
 
                 // DRAW PATHS -- ONLY IF RUNNING
                 if (isRunning) {
-                    
+
                     // 1. BLOCKED TRAFFIC LINE (Background/Underlay)
                     if (blockedData.isNotEmpty()) {
                         val path = androidx.compose.ui.graphics.Path()
@@ -223,7 +224,7 @@ fun CyberGraphSection(
                         fillPath.lineTo(width, height)
                         fillPath.lineTo(0f, height)
                         fillPath.close()
-                        
+
                         drawPath(
                             path = fillPath,
                             brush = androidx.compose.ui.graphics.Brush.verticalGradient(
@@ -262,7 +263,7 @@ fun CyberGraphSection(
                                 path.cubicTo(cx, prevY, cx, y, x, y)
                             }
                         }
-                        
+
                         drawPath(
                             path = path,
                             color = trafficColor,
@@ -295,7 +296,7 @@ fun CyberGraphSection(
                 )
             }
         }
-        
+
         Spacer(Modifier.height(12.dp))
 
         // Threat Line (Progress Bar)

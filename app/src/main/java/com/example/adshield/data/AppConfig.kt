@@ -6,7 +6,8 @@ object AppConfig {
     const val TRIAL_DURATION_DAYS = 21
     const val FREE_WHITELIST_LIMIT = 3
     val DEFAULT_THEME = AppTheme.CyberGreen
-    const val DEFAULT_FILTER_URL = "https://raw.githubusercontent.com/ustaloff/adshield-lists/refs/heads/master/blocklist.txt"
+    const val DEFAULT_FILTER_URL =
+        "https://raw.githubusercontent.com/ustaloff/adshield-lists/refs/heads/master/blocklist.txt"
     const val FILTER_UPDATE_COOLDOWN_HOURS = 24
 
     // Network & Safety Limits

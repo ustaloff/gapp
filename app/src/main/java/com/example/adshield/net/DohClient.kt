@@ -15,7 +15,8 @@ object DohClient {
 
     suspend fun resolve(dnsQuery: ByteArray): ByteArray? = withContext(Dispatchers.IO) {
         // Try Cloudflare first, then Google as fallback
-        return@withContext tryDoh(AppConfig.DOH_PRIMARY_URL, dnsQuery) ?: tryDoh(AppConfig.DOH_BACKUP_URL, dnsQuery)
+        return@withContext tryDoh(AppConfig.DOH_PRIMARY_URL, dnsQuery)
+            ?: tryDoh(AppConfig.DOH_BACKUP_URL, dnsQuery)
     }
 
     private fun tryDoh(providerUrl: String, dnsQuery: ByteArray): ByteArray? {
