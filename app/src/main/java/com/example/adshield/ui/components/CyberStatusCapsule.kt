@@ -96,9 +96,9 @@ fun CyberStatusCapsule(
         modifier = modifier
             .fillMaxWidth()
             .height(48.dp)
-            .clip(RoundedCornerShape(24.dp))
+            .clip(MaterialTheme.shapes.small)
             .background(backgroundBrush)
-            .border(1.dp, borderBrush, RoundedCornerShape(24.dp))
+            .border(1.dp, borderBrush, MaterialTheme.shapes.small)
             .padding(horizontal = 16.dp),
         contentAlignment = Alignment.Center
     ) {
