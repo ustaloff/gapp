@@ -31,6 +31,8 @@ import com.example.adshield.data.UserAccessState
 import com.example.adshield.ui.components.UiAccessState
 import com.example.adshield.ui.components.applyAccessState
 
+import com.example.adshield.ui.components.LockedContainer
+
 enum class LogTab {
     DOMAINS, APPS
 }
@@ -40,6 +42,7 @@ fun LogsView(
     logs: List<VpnLogEntry>,
     onLogClick: (String) -> Unit,
     onBackClick: () -> Unit,
+    onPremiumClick: () -> Unit,
     userAccessState: UserAccessState = UserAccessState.FREE
 ) {
     val isFree = userAccessState.isFree()
@@ -120,14 +123,12 @@ fun LogsView(
             }
             Spacer(Modifier.height(16.dp))
 
-            // Search Bar - DIM for FREE
+            // Search Bar - STANDARD for everyone (Input allowed, but results locked via List)
             CyberTextField(
                 value = searchQuery,
-                onValueChange = { if (!isFree) searchQuery = it },
-                placeholder = if (isFree) "Search (Premium only)" else "Search query...",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .applyAccessState(if (isFree) UiAccessState.DIM else UiAccessState.FULL)
+                onValueChange = { searchQuery = it },
+                placeholder = "Search query...",
+                modifier = Modifier.fillMaxWidth()
             )
             Spacer(Modifier.height(12.dp))
 
@@ -143,6 +144,7 @@ fun LogsView(
                     )
                 }
             } else {
+                // Log List
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(8.dp),

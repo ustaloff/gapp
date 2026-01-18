@@ -394,9 +394,11 @@ fun PricingCard(
                     .padding(4.dp)
             ) {
                 if (selected) {
-                    Box(Modifier
-                        .fillMaxSize()
-                        .background(accentColor, CircleShape))
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .background(accentColor, CircleShape)
+                    )
                 }
             }
         }

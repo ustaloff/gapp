@@ -307,7 +307,8 @@ fun HomeView(
             CyberFilterCard(
                 ruleCount = filterCount,
                 isUpdating = isUpdatingFilters,
-                onReload = onReloadFilters
+                onReload = onReloadFilters,
+                modifier = Modifier.applyAccessState(if (isFree) UiAccessState.DIM else UiAccessState.FULL)
             )
 
             Spacer(modifier = Modifier.height(130.dp))

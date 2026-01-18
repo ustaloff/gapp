@@ -57,7 +57,9 @@ fun SettingsView(
     onLogsClick: () -> Unit,
     onPremiumClick: () -> Unit,
     onThemeChange: (AppTheme) -> Unit,
-    whitelistCount: Int // Added param
+    onReloadFilters: () -> Unit, // New
+    isUpdatingFilters: Boolean, // New
+    whitelistCount: Int
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -67,15 +69,84 @@ fun SettingsView(
             userAccessState == UserAccessState.TRIAL
     val isFree = !isPremium
 
-    var isUpdatingFilters by remember { mutableStateOf(false) }
+    // Removed local isUpdatingFilters state
 
-    @Suppress("UNUSED_VALUE") // False positive: Variable is assigned but analyzer thinks it's unused
+    @Suppress("UNUSED_VALUE")
     var showUrlDialog by remember { mutableStateOf(false) }
+
     var currentUrl by remember { mutableStateOf(prefs.getFilterSourceUrl()) }
 
     @Suppress("UNUSED_VALUE") // False positive on state delegation
     var tempUrl by remember { mutableStateOf(currentUrl) }
+// ... (start line 77 to 746 remains same, skipping to bottom) ...
+    // Item 3: Filter Source - DIM for FREE (custom URL locked)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.01f),
+                MaterialTheme.shapes.medium
+            )
+            .border(
+                1.dp,
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                MaterialTheme.shapes.medium
+            )
+            .clickable(onClick = {
+                if (isFree) {
+                    onPremiumClick()
+                } else {
+                    tempUrl = currentUrl
+                    showUrlDialog = true
+                }
+            })
+            .padding(16.dp)
+            .applyAccessState(if (isFree) UiAccessState.DIM else UiAccessState.FULL)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    "FILTER SOURCE",
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    if (isFree) "AdShield Recommended (Official) 🔒"
+                    else if (currentUrl.trim() == AppConfig.DEFAULT_FILTER_URL.trim() ||
+                        currentUrl.contains("ustaloff/adshield-lists") && currentUrl.endsWith(
+                            "blocklist.txt"
+                        )
+                    ) "AdShield Recommended (Official)" else currentUrl,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
 
+            Button(
+                onClick = onReloadFilters,
+                enabled = !isUpdatingFilters,
+                shape = MaterialTheme.shapes.small,
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
+                modifier = Modifier.height(32.dp)
+            ) {
+                if (isUpdatingFilters) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(12.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text("RELOAD", fontSize = 12.sp)
+                }
+            }
+        }
+    }
     // -- Google Sign In Setup --
     // We observe the user state to update UI immediately
     val currentUser by UserRepository.user.collectAsState()
@@ -714,8 +785,11 @@ fun SettingsView(
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
                             MaterialTheme.shapes.medium
                         )
-                        .clickable(onClick = onLogsClick)
+                        .clickable(onClick = {
+                            if (isFree) onPremiumClick() else onLogsClick()
+                        })
                         .padding(16.dp)
+                        .applyAccessState(if (isFree) UiAccessState.DIM else UiAccessState.FULL)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -729,13 +803,13 @@ fun SettingsView(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                "Traffic history (Apps & Domains)",
+                                if (isFree) "Traffic history (Apps & Domains) 🔒" else "Traffic history (Apps & Domains)",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         Icon(
-                            Icons.AutoMirrored.Filled.List,
+                            if (isFree) Icons.Default.Lock else Icons.AutoMirrored.Filled.List,
                             contentDescription = "Logs",
                             tint = MaterialTheme.colorScheme.primary
                         )
@@ -794,29 +868,7 @@ fun SettingsView(
                         }
 
                         Button(
-                            onClick = {
-                                val lastUpdate = AppPreferences(context).getLastFilterUpdate()
-                                val now = System.currentTimeMillis()
-                                val cooldownMs =
-                                    AppConfig.FILTER_UPDATE_COOLDOWN_HOURS * 60 * 60 * 1000L
-
-                                if (isFree && (now - lastUpdate) < cooldownMs) {
-                                    val remainingTime = cooldownMs - (now - lastUpdate)
-                                    val hours = remainingTime / (1000 * 60 * 60)
-                                    val minutes = (remainingTime % (1000 * 60 * 60)) / (1000 * 60)
-                                    Toast.makeText(
-                                        context,
-                                        "Free Limit: Update available in ${hours}h ${minutes}m",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                } else {
-                                    scope.launch {
-                                        isUpdatingFilters = true
-                                        FilterRepository.downloadAndParseFilters(context)
-                                        isUpdatingFilters = false
-                                    }
-                                }
-                            },
+                            onClick = onReloadFilters,
                             enabled = !isUpdatingFilters,
                             shape = MaterialTheme.shapes.small,
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),

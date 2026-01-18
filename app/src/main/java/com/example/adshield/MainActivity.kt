@@ -391,7 +391,50 @@ fun DashboardScreen(
         }
 
         // --- CONTENT ---
-        // Box wrapper removed to fix brace mismatch
+
+        // Helper to handle reload with Cooldown logic
+        val handleReloadFilters: () -> Unit = {
+            if (!isUpdatingFilters) {
+                val lastUpdate = preferences.getLastFilterUpdate()
+                val now = System.currentTimeMillis()
+                val isFree = userAccess.state.isFree()
+                val cooldownMs =
+                    com.example.adshield.data.AppConfig.FILTER_UPDATE_COOLDOWN_HOURS * 60 * 60 * 1000L
+
+                if (isFree && (now - lastUpdate) < cooldownMs) {
+                    val remainingTime = cooldownMs - (now - lastUpdate)
+                    val hours = remainingTime / (1000 * 60 * 60)
+                    val minutes = (remainingTime % (1000 * 60 * 60)) / (1000 * 60)
+
+                    onToastChange(
+                        true,
+                        "FREE LIMIT: Update available in ${hours}h ${minutes}m",
+                        CyberToastType.WARNING
+                    )
+                } else {
+                    isUpdatingFilters = true
+                    scope.launch {
+                        withContext(Dispatchers.IO) {
+                            val filterData = FilterRepository.downloadAndParseFilters(context)
+                            if (filterData.blockRules.isNotEmpty()) {
+                                FilterEngine.updateBlocklist(filterData)
+                            }
+                        }
+                        val newCount = FilterEngine.getRuleCount()
+                        filterCount = newCount
+                        isUpdatingFilters = false
+
+                        onToastChange(
+                            true,
+                            "FILTERS UPDATED ($newCount rules)",
+                            CyberToastType.SUCCESS
+                        )
+                    }
+                }
+            }
+        }
+
+        // --- CONTENT ---
         when (currentScreen) {
             "HOME" -> HomeView(
                 userAccess = userAccess,
@@ -406,28 +449,14 @@ fun DashboardScreen(
                 filterUpdateTrigger = filterUpdateTrigger,
                 isUpdatingFilters = isUpdatingFilters,
                 onWhitelistClick = { navigateTo("APP_LIST") },
-                onReloadFilters = {
-                    if (!isUpdatingFilters) {
-                        isUpdatingFilters = true
-                        scope.launch {
-                            withContext(Dispatchers.IO) {
-                                val filterData = FilterRepository.downloadAndParseFilters(context)
-                                if (filterData.blockRules.isNotEmpty()) {
-                                    FilterEngine.updateBlocklist(filterData)
-                                }
-                            }
-                            val newCount = FilterEngine.getRuleCount()
-                            filterCount = newCount
-                            isUpdatingFilters = false
-                        }
-                    }
-                },
+                onReloadFilters = handleReloadFilters, // Use centralized handler
                 onLogClick = handleLogClick,
                 onDomainManagerClick = { navigateTo("DOMAIN_LIST") },
                 onAppClick = { packageName ->
                     onWhitelistApp(packageName)
                     excludedApps = preferences.getExcludedApps()
                 },
+
                 onSettingsClick = { navigateTo("SETTINGS") },
                 onPowerClick = {
                     if (isRunning) onStopClick()
@@ -443,6 +472,7 @@ fun DashboardScreen(
                     logs = recentLogs,
                     onLogClick = handleLogClick,
                     onBackClick = { navigateBack() },
+                    onPremiumClick = { navigateTo("PREMIUM") },
                     userAccessState = userAccess.state  // Pass access state
                 )
             }
@@ -471,6 +501,8 @@ fun DashboardScreen(
                     onLogsClick = { navigateTo("LOGS") },
                     onPremiumClick = { navigateTo("PREMIUM") },
                     onThemeChange = onThemeChange,
+                    onReloadFilters = handleReloadFilters, // Pass handler
+                    isUpdatingFilters = isUpdatingFilters, // Pass state
                     whitelistCount = excludedApps.size // Pass count
                 )
             }

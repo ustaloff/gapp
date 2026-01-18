@@ -14,9 +14,14 @@
 - ✅ `HomeScreen` полностью покрыт access control (DIM/LOCK)
 - ✅ `LogsScreen` покрыт access control (DIM для поиска/фильтров)
 - ✅ Рефакторинг `SettingsScreen` (замена ручных alpha на `applyAccessState`)
-- ✅ **Accessibility**: Создан `ContentDescriptions.kt`, исправлены все `contentDescription = null`
-- ✅ **UI Constants**: Создан `Dimensions.kt` для стандартизации отступов
-- (Ранее) Настроена система правил `.agent/rules/workflow.md`
+- ✅ **Navigation Refactor**: Removed `CyberNavBar` & `RulesManagerScreen`, centralized in Settings
+- ✅ **Unified Filter Reload**: Centralized cooldown logic in MainActivity (Home & Settings consistent)
+- ✅ **System Logs**: Locked entry point for Free users (redirects to Premium)
+- ✅ **LogsScreen**: Unification (removed tabs), added Icons & Back button
+- ✅ **SettingsScreen**: Restructured (Config vs Monitoring)
+- ✅ **Accessibility**: Created `ContentDescriptions.kt`, fixed all `contentDescription = null`
+- ✅ **UI Constants**: Created `Dimensions.kt` for padding standardization
+- (Older) Created `AccessModifiers.kt` with dim(), lock()
 - (Ранее) Создана структура Memory Bank
 
 ## Access Control Matrix

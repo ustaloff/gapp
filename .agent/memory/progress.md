@@ -23,6 +23,8 @@
 - [x] **UI Access Control**: DIM/LOCK модификаторы для Free пользователей
 
 ### Phase 4: Polish & Auth 🔄
+- [x] **Navigation Refactor**: Removed BottomBar, Centralized in Settings
+- [x] **Logs UI**: Unified list, Icons, Back button
 - [x] **UI Refinement**: Разделение экранов, улучшение компонентов
 - [x] **Performance**: Оптимизация FilterEngine
 - [x] **Google Sign-In**: Интеграция (требует Firebase config)

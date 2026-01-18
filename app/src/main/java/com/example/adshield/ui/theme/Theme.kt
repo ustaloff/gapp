@@ -55,7 +55,7 @@ private fun getAdShieldScheme(theme: AppTheme): androidx.compose.material3.Color
 
         AppTheme.CyberBlue -> darkColorScheme(
             // === Main Accents ===
-            primary = NeonBluePrimary.copy(alpha = 0.4f),
+            primary = NeonBluePrimary,
             onPrimary = NeonBlueSurface,
             primaryContainer = NeonBluePrimary.copy(alpha = 0.2f),
             onPrimaryContainer = NeonBluePrimary,
@@ -85,7 +85,7 @@ private fun getAdShieldScheme(theme: AppTheme): androidx.compose.material3.Color
 
         AppTheme.CyberAmber -> darkColorScheme(
             // === Main Accents ===
-            primary = NeonAmberPrimary.copy(alpha = 0.4f),
+            primary = NeonAmberPrimary,
             onPrimary = NeonAmberSurface,
             primaryContainer = NeonAmberPrimary.copy(alpha = 0.2f),
             onPrimaryContainer = NeonAmberPrimary,
