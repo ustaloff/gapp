@@ -7,6 +7,9 @@ from datetime import datetime
 SOURCES = [
     "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts",
     "https://adaway.org/hosts.txt",
+    "https://v.firebog.net/hosts/AdguardDNS.txt",
+    "https://v.firebog.net/hosts/Admiral.txt",
+    "https://pgl.yoyo.org/adservers/serverlist.php?hostformat=hosts&showintro=0&mimetype=plaintext",
     "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/optional-list.txt" # Example Whitelist Source (we treat as blocklist in this simple aggregator, but logic below handles whitelisting)
 ]
 
@@ -83,9 +86,16 @@ def main():
     for source in SOURCES:
         domains = download_and_parse(source)
         print(f"  -> Found {len(domains)} domains.")
-        all_domains.update(domains)
         
-    print(f"\nTotal raw domains: {len(all_domains)}")
+        # Deduplication logic check
+        before_count = len(all_domains)
+        all_domains.update(domains)
+        after_count = len(all_domains)
+        duplicates_in_batch = len(domains) - (after_count - before_count)
+        if duplicates_in_batch > 0:
+             print(f"     (Ignored {duplicates_in_batch} duplicates)")
+        
+    print(f"\nTotal unique raw domains: {len(all_domains)}")
     
     # 2. Apply Whitelist
     print(f"Applying Allowlist ({len(ALLOWLIST)} rules)...")
